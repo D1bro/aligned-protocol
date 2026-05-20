@@ -1,0 +1,2599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Aligned Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050818;--bg2:#0E1728;--bg3:#131e32;--bg4:#192540;--bg5:#1f2d4e;
+  --gold:#E0B140;--gold2:#f0c860;
+  --gd:rgba(224,177,64,.14);--gd2:rgba(224,177,64,.08);--gd3:rgba(224,177,64,.04);
+  --text:#F8F5EF;--text2:#A7AFBC;--text3:#4e5870;
+  --green:#3fa06b;--coral:#b05050;
+  --bdr:rgba(224,177,64,.18);--bdr2:rgba(255,255,255,.07);--bdr3:rgba(255,255,255,.04);
+  --r:8px;--r2:12px;--r3:18px;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+/* LAYOUT */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:235px;background:var(--bg2);border-right:1px solid var(--bdr2);position:fixed;top:0;left:0;height:100vh;z-index:200;display:flex;flex-direction:column;overflow-y:auto}
+.main{margin-left:235px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}.mob-bar{display:flex!important}}
+.mob-bar{display:none;background:var(--bg2);border-bottom:1px solid var(--bdr2);padding:.8rem 1.25rem;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+/* SIDEBAR */
+.sb-logo{padding:1.75rem 1.5rem 1.25rem;border-bottom:1px solid var(--bdr2)}
+.sb-mark{display:flex;align-items:center;gap:.6rem}
+.sb-brand{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;letter-spacing:.18em}
+.sb-sub{font-family:'Sora',sans-serif;font-size:9px;font-weight:500;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-top:2px;padding-left:38px}
+.sb-nav{padding:.75rem 0;flex:1}
+.ni{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.5rem;font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;border-left:2px solid transparent;transition:all .18s}
+.ni:hover{color:var(--text2);background:rgba(255,255,255,.02)}
+.ni.active{color:var(--gold);background:var(--gd3);border-left-color:var(--gold)}
+.sb-q{margin:1rem;padding:1rem 1.1rem;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2)}
+.sb-qm{font-family:'Sora',sans-serif;font-size:26px;color:var(--gold);line-height:.8;margin-bottom:.5rem}
+.sb-qt{font-size:12px;color:var(--text2);line-height:1.65;font-style:italic}
+/* SCREENS */
+.screen{display:none;flex-direction:column;flex:1;animation:fu .25s ease}
+.screen.show{display:flex}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page{padding:2.5rem 3rem;max-width:960px;flex:1}
+@media(max-width:1100px){.page{padding:2rem}}
+@media(max-width:768px){.page{padding:1.25rem 1rem;max-width:100%}}
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.8rem 3rem;border-bottom:1px solid var(--bdr2);background:var(--bg2);position:sticky;top:0;z-index:50}
+@media(max-width:768px){.topbar{padding:.75rem 1rem}}
+.tb-back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;transition:color .18s}
+.tb-back:hover{color:var(--text)}
+.tb-label{font-size:12px;color:var(--text3);letter-spacing:.04em}
+.progbar{height:2px;background:var(--bg4);flex-shrink:0}
+.progfill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .4s ease}
+/* FOOTER NAV */
+.foot-nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.85rem 3rem;border-top:1px solid var(--bdr2);background:var(--bg2);position:sticky;bottom:0}
+@media(max-width:768px){.foot-nav{padding:.75rem 1rem}}
+/* TYPE */
+.eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.55rem}
+.eydot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block}
+h1{font-family:'Sora',sans-serif;font-size:clamp(26px,4vw,44px);font-weight:700;line-height:1.1;color:var(--text);margin-bottom:.75rem}
+h2{font-family:'Sora',sans-serif;font-size:clamp(20px,3vw,30px);font-weight:600;line-height:1.2;color:var(--text);margin-bottom:.6rem}
+h3{font-family:'Sora',sans-serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:.25rem}
+.acc{color:var(--gold)}
+.lead{font-size:15px;color:var(--text2);line-height:1.8;margin-bottom:1.25rem;max-width:600px}
+.body-t{font-size:14px;color:var(--text2);line-height:1.75}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:.75rem 1.6rem;border-radius:var(--r2);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;transition:all .18s;white-space:nowrap}
+.btn-p{background:var(--gold);color:#050818}
+.btn-p:hover:not(:disabled){background:var(--gold2);transform:translateY(-1px)}
+.btn-p:disabled{opacity:.3;cursor:default;transform:none}
+.btn-o{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
+.btn-o:hover{background:var(--gd2)}
+.btn-g{background:transparent;color:var(--text2);border:1px solid var(--bdr2)}
+.btn-g:hover{border-color:var(--bdr);color:var(--text)}
+.btn-block{display:flex;width:100%}
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r3);padding:1.5rem}
+.card-gold{background:var(--gd3);border:1px solid var(--bdr);border-radius:var(--r2);padding:1rem 1.25rem}
+.hbox{background:var(--gd3);border:1px solid var(--bdr);border-radius:var(--r2);padding:1rem 1.2rem;margin-bottom:.9rem}
+.hbox-l{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
+.hbox-v{font-size:15px;font-weight:500;color:var(--text)}
+/* FORM */
+.lbl{display:block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin:.9rem 0 .35rem}
+textarea,input[type=text]{width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;resize:vertical;outline:none;transition:border-color .18s;line-height:1.6}
+textarea:focus,input[type=text]:focus{border-color:rgba(224,177,64,.4)}
+textarea::placeholder,input::placeholder{color:var(--text3)}
+.char-c{font-size:11px;color:var(--text3);text-align:right;margin-top:3px}
+/* SCORE BUTTONS */
+.score-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin:.6rem 0 .4rem}
+.sbn{width:100%;aspect-ratio:1;border-radius:var(--r);background:var(--bg4);border:1px solid var(--bdr2);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center}
+.sbn:hover{border-color:var(--gold);color:var(--gold)}
+.sbn.picked{background:var(--gold);border-color:var(--gold);color:#050818;font-weight:700}
+.score-range{display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
+/* GUIDE */
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:.5rem;margin:.75rem 0 1.2rem}
+.guide-item{display:flex;align-items:center;gap:.65rem;padding:.6rem .9rem;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r)}
+.gdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.gscore{font-family:'Sora',sans-serif;font-size:12px;font-weight:700;min-width:28px;flex-shrink:0}
+.gtext{font-size:12px;color:var(--text2);line-height:1.3}
+/* COMPACT HINT */
+.compact-hint{display:flex;gap:5px;flex-wrap:wrap;margin:.5rem 0 .75rem}
+.ch{display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg4);border-radius:100px;border:1px solid var(--bdr2)}
+.chdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.chtext{font-size:11px;color:var(--text2)}
+/* RING */
+.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.ring-inner{position:absolute;text-align:center}
+.ring-num{font-family:'Sora',sans-serif;font-weight:700;color:var(--text);line-height:1}
+.ring-den{font-size:11px;color:var(--text3);margin-top:2px}
+/* BARS */
+.bar-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem}
+.bar-name{font-size:13px;color:var(--text2);flex-shrink:0;width:190px;line-height:1.3}
+.bar-track{flex:1;height:5px;background:var(--bg5);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px}
+.bar-num{font-size:12px;font-weight:700;width:28px;text-align:right;flex-shrink:0}
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;background:var(--bg3);border:1px solid var(--bdr2);border-radius:100px;padding:5px 13px;font-size:13px;color:var(--text2);cursor:pointer;margin:3px;user-select:none;transition:all .18s}
+.chip:hover{border-color:var(--bdr)}
+.chip.picked{background:var(--gd);border-color:var(--gold);color:var(--gold)}
+/* QBOX */
+.qbox{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:1.15rem 1.35rem;margin-bottom:.65rem}
+.qlabel{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.7rem}
+/* MISC */
+.div{height:1px;background:var(--bdr2);margin:1.5rem 0}
+.list-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--bdr3)}
+.sec-head{font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin:2rem 0 1.1rem}
+.sec-head::before,.sec-head::after{content:"";flex:1;height:1px;background:var(--bdr2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+@media(max-width:580px){.g2{grid-template-columns:1fr}}
+.area-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.65rem;margin-bottom:2rem}
+.area-card{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:.85rem 1rem;display:flex;gap:.65rem;align-items:flex-start;cursor:pointer;transition:border-color .18s}
+.area-card:hover{border-color:var(--bdr)}
+.area-num{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--text3);min-width:18px;margin-top:1px}
+.area-icon{width:32px;height:32px;border-radius:50%;background:var(--gd2);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.area-info{flex:1}
+.area-name{font-family:'Sora',sans-serif;font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.area-btrack{height:3px;background:var(--bg5);border-radius:2px;margin-top:5px;overflow:hidden}
+.area-bfill{height:100%;background:var(--gold);border-radius:2px;transition:width .4s}
+.how-card{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:.9rem 1.1rem;display:flex;gap:.85rem;align-items:flex-start}
+.how-num{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.clear-card{display:flex;gap:1.25rem;padding:1.15rem 1.35rem;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);margin-bottom:.65rem}
+.clear-L{font-family:'Sora',sans-serif;font-size:38px;font-weight:700;color:var(--gold);line-height:1;flex-shrink:0;width:40px}
+/* TRACKER */
+.track-row{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r2);margin-bottom:.55rem;overflow:hidden}
+.track-head{display:flex;justify-content:space-between;align-items:center;padding:.8rem 1.2rem;cursor:pointer}
+.track-body{padding:.75rem 1.2rem 1rem;border-top:1px solid var(--bdr2)}
+.yn{display:flex;gap:.5rem;margin-bottom:.75rem}
+.yn-btn{flex:1;padding:.55rem;border-radius:var(--r);border:1px solid var(--bdr2);background:var(--bg4);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .18s}
+.yn-btn.yn-yes.active{background:rgba(63,160,107,.1);border-color:var(--green);color:var(--green)}
+.yn-btn.yn-no.active{background:rgba(176,80,80,.1);border-color:var(--coral);color:var(--coral)}
+.tsbn{width:30px;height:30px;border-radius:6px;background:var(--bg5);border:1px solid var(--bdr2);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;justify-content:center;margin:2px}
+.tsbn.picked{background:var(--gd);border-color:var(--gold);color:var(--gold)}
+.incomplete-box{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r3);padding:2rem;text-align:center}
+.note-box{background:var(--bg4);border-left:3px solid var(--gold);border-radius:0 var(--r) var(--r) 0;padding:.7rem 1rem;margin-top:.7rem;font-size:13px;color:var(--text2);line-height:1.65;font-style:italic}
+.focus-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gd2);border:1px solid var(--bdr);border-radius:100px;padding:5px 14px;font-size:12px;color:var(--gold);font-weight:500;margin-bottom:1rem}
+.sc{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:.85rem 1.1rem}
+.sc-l{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:.3rem}
+.sc-v{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--gold)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.75rem;margin-bottom:1.75rem}
+/* GOAL BUILDER */
+.goal-section{display:flex;gap:1.25rem;margin-bottom:1.5rem;max-width:680px}
+.gs-num{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--bdr);color:var(--gold);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;background:var(--gd3)}
+.gs-body{flex:1}
+.gs-title{font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem}
+.gs-q{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.5rem;line-height:1.5}
+.gs-note{font-size:12px;color:var(--text3);margin-top:.4rem;font-style:italic;line-height:1.55}
+select option{background:var(--bg3);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-mark">
+        <svg width="30" height="27" viewBox="0 0 30 27" fill="none"><path d="M15 1 L29 25 L1 25 Z" stroke="#E0B140" stroke-width="2.2" fill="none"/><circle cx="15" cy="18" r="2.5" fill="#E0B140"/></svg>
+        <span class="sb-brand">ALIGNED</span>
+      </div>
+      <div class="sb-sub">Protocol</div>
+    </div>
+    <div class="sb-nav">
+      <div class="ni active" data-nav="overview">▦&nbsp;&nbsp;Dashboard</div>
+      <div class="ni" data-nav="audit">◎&nbsp;&nbsp;The Aligned Audit</div>
+      <div class="ni" data-nav="clearOv">◈&nbsp;&nbsp;CLEAR Process</div>
+      <div class="ni" data-nav="goalDash">★&nbsp;&nbsp;My Goals</div>
+      <div class="ni" data-nav="review">◑&nbsp;&nbsp;My Summary</div>
+    </div>
+    <div class="sb-q">
+      <div class="sb-qm">"</div>
+      <div class="sb-qt">Alignment is the foundation. Action is the transformation.</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="mob-bar">
+      <svg width="26" height="23" viewBox="0 0 30 27" fill="none"><path d="M15 1 L29 25 L1 25 Z" stroke="#E0B140" stroke-width="2.2" fill="none"/><circle cx="15" cy="18" r="2.5" fill="#E0B140"/></svg>
+      <span style="font-family:'Sora',sans-serif;font-size:12px;font-weight:700;letter-spacing:.14em">ALIGNED PROTOCOL</span>
+    </div>
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="screen show" id="s-overview">
+      <div class="page">
+        <div class="eyebrow"><span class="eydot"></span>Start Here</div>
+        <h1>The <span class="acc">Aligned</span> Audit</h1>
+        <p class="lead">Get honest about where you are, clear on who you are becoming, and focused on the first move that will create real change.</p>
+        <div style="display:flex;gap:1rem;margin-bottom:2.5rem;flex-wrap:wrap">
+          <button class="btn btn-p" onclick="go('audit')">Take the Audit →</button>
+          <button class="btn btn-o" onclick="go('clearOv')">Explore CLEAR →</button>
+        </div>
+        <div class="g2" style="margin-bottom:2.5rem">
+          <div id="score-card"></div>
+          <div id="focus-card"></div>
+        </div>
+        <div id="overview-goals-section"></div>
+        <div class="sec-head">10 Areas of Alignment</div>
+        <div class="area-grid" id="area-grid"></div>
+        <div class="sec-head">How it works</div>
+        <div class="g2" style="margin-bottom:2rem">
+          <div class="how-card"><div class="how-num">1</div><div><h3 style="font-size:13px;margin-bottom:4px">Complete The Aligned Audit</h3><div style="font-size:12px;color:var(--text2);line-height:1.5">Score yourself across 10 life areas and reflect on what is and is not working.</div></div></div>
+          <div class="how-card"><div class="how-num">2</div><div><h3 style="font-size:13px;margin-bottom:4px">Receive Your Life Alignment Score</h3><div style="font-size:12px;color:var(--text2);line-height:1.5">See your full score, strengths and priority growth areas.</div></div></div>
+          <div class="how-card"><div class="how-num">3</div><div><h3 style="font-size:13px;margin-bottom:4px">Choose Your Priority Focus</h3><div style="font-size:12px;color:var(--text2);line-height:1.5">The one area that will create the most momentum across your life.</div></div></div>
+          <div class="how-card"><div class="how-num">4</div><div><h3 style="font-size:13px;margin-bottom:4px">Begin CLEAR</h3><div style="font-size:12px;color:var(--text2);line-height:1.5">A personalised 5-step coaching framework tailored to your focus area.</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ AUDIT INTRO ═══ -->
+    <div class="screen" id="s-audit">
+      <div class="topbar">
+        <button class="tb-back" onclick="go('overview')">← Dashboard</button>
+        <span class="tb-label">The Aligned Audit</span>
+      </div>
+      <div class="page">
+        <div class="eyebrow"><span class="eydot"></span>The Aligned Audit</div>
+        <h2><span class="acc">The Aligned Audit</span></h2>
+        <p class="lead" style="max-width:600px">The Aligned Audit helps you get honest about where you are, clear on who you are becoming, and focused on the first move that will create real change.</p>
+        <p class="body-t" style="max-width:600px;margin-bottom:1.5rem">You can move through this process in your own time, with guided videos, or with the support of a coach. The breakthrough often begins when you stop guessing, face your reality honestly, and give yourself permission to change.</p>
+        <div class="card-gold" style="max-width:540px;margin-bottom:1.5rem">
+          <div style="font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem">Before you begin</div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.75;font-style:italic">Score where you genuinely are today — not where you think you should be. An honest score is the most valuable thing you can give yourself right now.</div>
+        </div>
+        <div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.7rem">Scoring Guide</div>
+        <div class="guide-grid">
+          <div class="guide-item"><div class="gdot" style="background:#9a4a4a"></div><div class="gscore" style="color:#b87070">1–2</div><div class="gtext">Deeply out of alignment</div></div>
+          <div class="guide-item"><div class="gdot" style="background:#a06030"></div><div class="gscore" style="color:#c08050">3–4</div><div class="gtext">Struggling / neglected</div></div>
+          <div class="guide-item"><div class="gdot" style="background:#c09020"></div><div class="gscore" style="color:var(--gold)">5–6</div><div class="gtext">Inconsistent / needs attention</div></div>
+          <div class="guide-item"><div class="gdot" style="background:#5a9060"></div><div class="gscore" style="color:#7ab880">7–8</div><div class="gtext">Strong but not fully aligned</div></div>
+          <div class="guide-item"><div class="gdot" style="background:#3a8060"></div><div class="gscore" style="color:#50a870">9–10</div><div class="gtext">Fully aligned / thriving</div></div>
+        </div>
+        <div class="div"></div>
+        <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;max-width:560px">You will score each area honestly, then reflect on what is working, what is not working, and what would move it forward by one point.</p>
+        <div style="max-width:520px;margin-bottom:1.75rem">
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:6px"><span style="color:var(--gold);font-size:11px;margin-top:4px;font-weight:700;flex-shrink:0">1.</span><span style="font-size:14px;color:var(--text2);line-height:1.65">Rate yourself from 1–10</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:6px"><span style="color:var(--gold);font-size:11px;margin-top:4px;font-weight:700;flex-shrink:0">2.</span><span style="font-size:14px;color:var(--text2);line-height:1.65">Explain why you gave that score</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:6px"><span style="color:var(--text3);font-size:11px;margin-top:4px;font-weight:500;flex-shrink:0">3.</span><span style="font-size:14px;color:var(--text2);line-height:1.65">What is currently working well — <em style="color:var(--text3);font-size:13px">optional</em></span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:6px"><span style="color:var(--text3);font-size:11px;margin-top:4px;font-weight:500;flex-shrink:0">4.</span><span style="font-size:14px;color:var(--text2);line-height:1.65">What is not working well — <em style="color:var(--text3);font-size:13px">optional</em></span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:6px"><span style="color:var(--gold);font-size:11px;margin-top:4px;font-weight:700;flex-shrink:0">5.</span><span style="font-size:14px;color:var(--text2);line-height:1.65">Name one move that would raise this area by one point</span></div>
+        </div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <button class="btn btn-p" onclick="go('area_0')">Start Area 1 of 10 →</button>
+          <button class="btn btn-g" onclick="go('overview')">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ AREA Q (built by JS) ═══ -->
+    <div class="screen" id="s-area">
+      <div class="topbar">
+        <button class="tb-back" id="area-back">← Back</button>
+        <span class="tb-label" id="area-step-label">Step 1 of 10</span>
+      </div>
+      <div class="progbar"><div class="progfill" id="area-prog" style="width:10%"></div></div>
+      <div class="page" id="area-page"></div>
+      <div class="foot-nav">
+        <button class="btn btn-g" id="area-prev-btn">← Previous</button>
+        <button class="btn btn-p" id="area-next-btn">Next Area →</button>
+      </div>
+    </div>
+
+    <!-- ═══ RESULTS ═══ -->
+    <div class="screen" id="s-results">
+      <div class="topbar">
+        <button class="tb-back" id="results-back">← Back</button>
+        <span class="tb-label">Your Results</span>
+      </div>
+      <div class="page" id="results-page"></div>
+    </div>
+
+    <!-- ═══ FOCUS PICK ═══ -->
+    <div class="screen" id="s-focus">
+      <div class="topbar">
+        <button class="tb-back" onclick="go('results')">← Results</button>
+        <span class="tb-label">Priority Focus</span>
+      </div>
+      <div class="page" id="focus-page"></div>
+    </div>
+
+    <!-- ═══ CLEAR OVERVIEW ═══ -->
+    <div class="screen" id="s-clearOv">
+      <div class="topbar">
+        <button class="tb-back" onclick="go('focus')">← Back</button>
+        <span class="tb-label">CLEAR Framework</span>
+      </div>
+      <div class="page" id="clearOv-page"></div>
+    </div>
+
+    <!-- ═══ CLEAR STEP (built by JS) ═══ -->
+    <div class="screen" id="s-clearStep">
+      <div class="topbar">
+        <button class="tb-back" id="cs-back">← Back</button>
+        <span class="tb-label" id="cs-step-label">Step 1 of 5</span>
+      </div>
+      <div class="progbar"><div class="progfill" id="cs-prog" style="width:20%"></div></div>
+      <div class="page" id="cs-page"></div>
+      <div class="foot-nav">
+        <button class="btn btn-g" id="cs-prev-btn">← Previous</button>
+        <button class="btn btn-p" id="cs-next-btn">Next →</button>
+      </div>
+    </div>
+
+    <!-- ═══ GOAL DASHBOARD ═══ -->
+    <div class="screen" id="s-goalDash">
+      <div class="topbar">
+        <button class="tb-back" onclick="go('overview')">← Dashboard</button>
+        <span class="tb-label">My Goals</span>
+      </div>
+      <div class="page" id="goalDash-page"></div>
+    </div>
+
+    <!-- ═══ GOAL BUILDER ═══ -->
+    <div class="screen" id="s-goal">
+      <div class="topbar">
+        <button class="tb-back" id="goal-back-btn" onclick="go('goalDash')">← My Goals</button>
+        <span class="tb-label">Goal Builder</span>
+      </div>
+      <div class="page" id="goal-page"></div>
+    </div>
+
+    <!-- ═══ TRACKER ═══ -->
+    <div class="screen" id="s-tracker">
+      <div class="topbar">
+        <button class="tb-back" onclick="go('goalDash')">← My Goals</button>
+        <span class="tb-label" id="tracker-label">30-Day Tracker</span>
+      </div>
+      <div class="page" id="tracker-page"></div>
+    </div>
+
+    <!-- ═══ REVIEW ═══ -->
+    <div class="screen" id="s-review">
+      <div class="topbar">
+        <button class="tb-back" onclick="go('tracker')">← Tracker</button>
+        <span class="tb-label">Your Summary</span>
+      </div>
+      <div class="page" id="review-page"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+/* ═══ DATA ═══ */
+const AREAS=[
+  {name:"Health & Energy",icon:"♥",desc:"How well you are looking after your body, including sleep, movement, nutrition, energy, physical health and overall wellbeing."},
+  {name:"Mindset & Thinking",icon:"◎",desc:"Your beliefs, thought patterns, self-talk and mental habits — how you interpret yourself, your life and what is possible for you."},
+  {name:"Confidence & Self-Belief",icon:"★",desc:"How you feel about yourself, your ability to move forward, and your right to take up space, be seen and pursue what you want."},
+  {name:"Relationships & Connection",icon:"⬡",desc:"The quality of your relationships, support network, communication and boundaries across your personal, intimate and professional life.",hint:"Consider the relationships that matter most right now, not every relationship equally."},
+  {name:"Career, Work & Business",icon:"◈",desc:"How aligned you feel with your work, career direction, business growth, contribution, ambition and progress."},
+  {name:"Money & Stability",icon:"◇",desc:"Your financial clarity, stability, habits and relationship with money, including income, spending, saving, debt, planning and future security."},
+  {name:"Purpose & Direction",icon:"⊕",desc:"How connected you feel to your values, vision, meaning, future direction and the person you feel called to become."},
+  {name:"Daily Structure & Discipline",icon:"▦",desc:"How well your routines, habits, planning, focus and follow-through support the life you are trying to build."},
+  {name:"Emotional Wellbeing",icon:"◐",desc:"How well you understand, process and respond to your emotions, stress, triggers and inner world."},
+  {name:"Self-Respect & Identity",icon:"⬟",desc:"Your relationship with yourself, your standards, boundaries, choices, self-image and the identity your actions are reinforcing."}
+];
+
+const CLEAR_META=[
+  {L:"C",title:"Current Reality",label:"C — Current Reality"},
+  {L:"L",title:"Life Vision",label:"L — Life Vision"},
+  {L:"E",title:"Emotional Blocks",label:"E — Emotional Blocks"},
+  {L:"A",title:"Aligned Goal",label:"A — Aligned Goal"},
+  {L:"R",title:"Roadmap & Review",label:"R — Roadmap & Review"},
+];
+
+/* focusAreaContent — 3 questions per step, Go Deeper options */
+const FC={
+  "Money & Stability":{
+    C:{h:"Where are you with money right now?",
+       s:"This is not about shame or judgement. It is about seeing clearly. Once you can look honestly, you can make calmer decisions.",
+       q:[{q:"What does your current financial reality look like?",p:"What is coming in, what is going out, what feels uncertain?"},
+          {q:"Where do you feel the most pressure, stress or avoidance?",p:"Income, debt, spending, saving, planning, business finances..."},
+          {q:"What money pattern keeps repeating?",p:"Avoiding your bank account, inconsistent income, overspending, no clear plan..."}],
+       note:"You only need to see this clearly enough to choose one honest next step.",
+       deeper:["Explore your money story in the workbook","Watch the Current Reality coaching video","Bring this into your next session"]},
+    L:{h:"What would financial alignment look and feel like?",
+       s:"You are not pretending everything is solved. You are defining the direction — what calmer, clearer, more stable feels like.",
+       q:[{q:"What would feeling aligned with money look like for you?",p:"Calm, clarity, confidence, stability, freedom..."},
+          {q:"How would your behaviour change if this area improved?",p:"How would you spend, save, earn, plan or make decisions differently?"},
+          {q:"What kind of relationship with money do you want to build?",p:"More honest, more organised, more intentional, less avoidant..."}],
+       deeper:["Map your ideal financial life in the workbook","Watch the Life Vision coaching video","Explore this with your coach"]},
+    E:{h:"What is really getting in the way?",
+       s:"Money blocks are not always about numbers. They often come from fear, shame, avoidance or old stories. Naming the pattern is the first step to changing it.",
+       q:[{q:"What belief or story do you carry about money?",p:"Money is hard to keep, I am bad with money, I never have enough, I cannot charge more..."},
+          {q:"What emotion comes up when you look honestly at your finances?",p:"Anxiety, shame, guilt, avoidance, confusion, frustration..."},
+          {q:"What do you do to avoid financial discomfort?",p:"Ignore your bank account, delay decisions, overspend, not plan, not ask for help..."}],
+       note:"You do not need to solve the block today. You only need to name it.",
+       deeper:["Do the Emotional Blocks workbook exercise","Watch the Emotional Blocks coaching video","Bring this pattern into your next coaching session"]},
+    A:{h:"Choose one clear, trackable money goal.",
+       s:"One repeated, honest action over 30 days builds more trust than any perfect plan.",
+       q:[],
+       note:"Your goal builder is next. Use the prompts to define your action, rhythm and tracking.",
+       deeper:[]},
+    R:{h:"How will you stay on track?",
+       s:"A goal without a review rhythm is just a wish. Keep this simple.",
+       q:[{q:"What is your one weekly action that will move this forward?",p:"The specific thing you will do each week."},
+          {q:"What could get in the way?",p:"Avoidance, busyness, stress, old habits, unexpected bills..."},
+          {q:"When will you check in on your progress?",p:"Every Sunday, at the end of the month, weekly with a coach..."}],
+       note:"The goal is not perfection. The goal is to keep showing up.",
+       deeper:["Build your full roadmap in the workbook","Set up a weekly review ritual","Bring your plan into your next coaching session"]}
+  },
+  "Health & Energy":{
+    C:{h:"Where are you with your health and energy right now?",
+       s:"This is not about what you should be doing. It is about seeing where you actually are, without the filter.",
+       q:[{q:"What does a typical week look like for your body?",p:"Sleep, movement, food, energy, rest — the honest picture."},
+          {q:"Where are you most inconsistent, avoidant or unsupported?",p:"Exercise, sleep, nutrition, hydration, rest, stress..."},
+          {q:"What health pattern keeps repeating?",p:"Starting strong then falling off, putting everyone else first, ignoring what your body needs..."}],
+       note:"Your body tells the truth. This step is about listening without judgement.",
+       deeper:["Track your baseline in the workbook","Watch the Health Reality coaching video","Bring this into your next session"]},
+    L:{h:"What would feeling physically aligned look and feel like?",
+       s:"Not perfect — just consistently looked after. What does that version of you look like?",
+       q:[{q:"What would physical alignment look and feel like for you?",p:"Energy, strength, sleep, vitality, consistency — describe it."},
+          {q:"What habits would support that version of you?",p:"Morning routine, movement, sleep time, food choices, rest..."},
+          {q:"How would stable energy change your daily life?",p:"Work, mood, relationships, focus, confidence..."}],
+       deeper:["Map your healthy life vision in the workbook","Watch the Life Vision coaching video","Explore this with your coach"]},
+    E:{h:"What is really getting in the way?",
+       s:"Most health blocks are not about information — we know what to do. The block is usually emotional, habitual or structural.",
+       q:[{q:"What belief do you carry about your body or health?",p:"I am not the type who exercises, I am always tired, I do not have time..."},
+          {q:"What emotion or situation usually leads you to neglect this area?",p:"Exhaustion, overwhelm, guilt, shame, a stressful week, putting others first..."},
+          {q:"What do you tend to do when you avoid looking after yourself?",p:"Scroll, overwork, eat for comfort, push through without rest..."}],
+       deeper:["Explore the block in the workbook","Watch the Emotional Blocks coaching video","Bring this into your next session"]},
+    A:{h:"Choose one clear, trackable health goal.",
+       s:"One consistent action over 30 days will do more than any perfect plan that falls apart in a week.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you stay consistent?",
+       s:"Keep it simple. One habit supported by one review rhythm.",
+       q:[{q:"What will you do each week to protect this habit?",p:"The specific action, time of day, or non-negotiable you will hold."},
+          {q:"What could knock you off track?",p:"Travel, work pressure, tiredness, social pressure..."},
+          {q:"When will you check in on yourself?",p:"Weekly weigh-in, Sunday review, daily log..."}],
+       note:"Falling off is not failure. Coming back is.",
+       deeper:["Build your health plan in the workbook","Set a weekly check-in ritual","Work with your coach on accountability"]}
+  },
+  "Mindset & Thinking":{
+    C:{h:"What is your mindset like right now?",
+       s:"Your mindset shapes how you see everything. This step asks you to look at your patterns honestly.",
+       q:[{q:"What does your internal dialogue usually sound like?",p:"Critical, scattered, fearful, confident, overthinking, clear..."},
+          {q:"What thought pattern feels most stuck or limiting?",p:"Imposter syndrome, catastrophising, comparison, fear of failure..."},
+          {q:"Where does your mindset seem to hold you back most?",p:"Decisions, relationships, work, visibility, taking action..."}],
+       deeper:["Track your thought patterns in the workbook","Watch the Mindset Reality coaching video","Bring this into your next session"]},
+    L:{h:"What would a healthier, clearer mindset feel like?",
+       s:"Not fearless — just calmer, more grounded and more honest with yourself.",
+       q:[{q:"What would an aligned mindset look like for you?",p:"Clear, calm, grounded, confident, resilient, compassionate..."},
+          {q:"How would you approach problems and setbacks differently?",p:"More calmly, more curiously, with less self-attack..."},
+          {q:"What becomes possible when your thinking is clearer?",p:"In your work, relationships, decisions, self-belief..."}],
+       deeper:["Map your mindset vision in the workbook","Watch the Life Vision coaching video"]},
+    E:{h:"What belief is driving the pattern?",
+       s:"Mindset blocks are often invisible until you name them. This step helps you surface the core one.",
+       q:[{q:"What belief or story do you keep coming back to?",p:"I am not good enough, I am not ready, people will judge me, it will not work for me..."},
+          {q:"What fear sits underneath that belief?",p:"Fear of failure, rejection, being seen, not being enough, being too much..."},
+          {q:"What does this belief make you avoid?",p:"Decisions, visibility, risks, honesty, putting yourself forward..."}],
+       deeper:["Rewrite the belief in the workbook","Watch the Emotional Blocks coaching video","Bring this to your next coaching session"]},
+    A:{h:"Choose one clear, trackable mindset goal.",
+       s:"A mindset goal is a commitment to practise a new way of thinking — consistently.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you practise this consistently?",
+       s:"Mindset shifts happen through repeated small actions, not one big moment.",
+       q:[{q:"What will you practise each day or week?",p:"Journalling, meditation, reframing, reading, coaching..."},
+          {q:"What tends to pull you back into old thinking?",p:"Conflict, criticism, comparison, pressure, isolation..."},
+          {q:"When will you review how your thinking is shifting?",p:"Weekly journal review, monthly reflection, coaching check-in..."}],
+       deeper:["Build your mindset practice plan in the workbook","Set up a daily reframe ritual","Explore this with your coach"]}
+  },
+  "Confidence & Self-Belief":{
+    C:{h:"Where are you with confidence right now?",
+       s:"Confidence is not a fixed trait. It is built through evidence. This step asks where yours is right now.",
+       q:[{q:"Where do you feel least confident right now?",p:"Work, relationships, visibility, decisions, your voice, your value, putting yourself forward..."},
+          {q:"What does low confidence stop you from doing?",p:"Speaking up, taking action, charging more, being seen, going after what you want..."},
+          {q:"What do you tell yourself when you start to doubt yourself?",p:"The words, feelings or inner voice that shows up most when you hesitate..."}],
+       deeper:["Explore your confidence history in the workbook","Watch the Current Reality coaching video"]},
+    L:{h:"What would a confident version of you look like?",
+       s:"Not fearless — moving forward honestly even when uncomfortable.",
+       q:[{q:"What would a more confident version of you do differently?",p:"How they speak, act, decide, show up and treat themselves."},
+          {q:"What becomes possible if you trust yourself more?",p:"In work, relationships, creativity, how you live and what you pursue..."},
+          {q:"What kind of person would you become if you built more self-belief?",p:"More visible, more honest, more boundaried, more self-respecting, more decisive..."}],
+       deeper:["Map your confidence vision in the workbook","Explore this with your coach"]},
+    E:{h:"What is really blocking your confidence?",
+       s:"Confidence blocks are often tied to old experiences, fear of judgement, comparison, or a lack of evidence that you can trust yourself.",
+       q:[{q:"What fear sits underneath your low confidence?",p:"Fear of rejection, failure, judgement, being too much, not being enough, getting it wrong..."},
+          {q:"Where do you think this doubt may have come from?",p:"A relationship, a period of your life, a voice you still carry, a pattern you learned early..."},
+          {q:"What evidence have you dismissed that shows you are capable?",p:"Wins you have brushed off, compliments you have deflected, things you have done despite fear..."}],
+       deeper:["Rewrite your evidence in the workbook","Watch the Emotional Blocks coaching video"]},
+    A:{h:"Choose one confidence-building action for the next 30 days.",
+       s:"Confidence is built through action. This goal should ask you to do one consistent stretching thing that builds evidence of your capability.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you keep showing up?",
+       s:"Consistency builds confidence faster than courage.",
+       q:[{q:"What stretching action will you commit to each week?",p:"The specific moment you will choose discomfort over avoidance."},
+          {q:"What will your inner critic say when you feel like stopping?",p:"Name it in advance so you can see it coming."},
+          {q:"When will you reflect on what you have done?",p:"Choose a date to review your actions and the evidence you have built."}],
+       deeper:["Build your confidence plan in the workbook","Explore accountability with your coach"]}
+  },
+  "Relationships & Connection":{
+    C:{h:"What are your relationships like right now?",
+       s:"Relationships shape your energy, your sense of self and what feels possible. This step is about noticing the quality of your connection without judging yourself or anyone else.",
+       q:[{q:"How would you describe the quality of your key relationships?",p:"Supportive, draining, surface-level, honest, complicated, distant, nourishing, one-sided..."},
+          {q:"Which relationships or connection areas feel most out of alignment?",p:"Romantic, family, friendships, work, social, your relationship with yourself..."},
+          {q:"What pattern keeps showing up?",p:"People-pleasing, conflict avoidance, isolation, over-giving, attracting unavailability, difficulty trusting..."}],
+       note:"Focus on the relationships or connection patterns that feel most relevant right now. You do not need to analyse every relationship in your life.",
+       deeper:["Explore your relationship patterns in the workbook","Watch the Current Reality coaching video"]},
+    L:{h:"What would aligned relationships feel like?",
+       s:"What would your relationships look like if they were genuinely nourishing, honest and mutual?",
+       q:[{q:"What would deeply aligned relationships feel like?",p:"Safe, honest, reciprocal, supportive, boundaried, energising, calm, freeing..."},
+          {q:"How would you feel differently if your relationships were healthier?",p:"More loved, more seen, lighter, more supported, more energised, more at ease..."},
+          {q:"What kind of person do you want to become in your relationships?",p:"More present, honest, boundaried, open, reliable, emotionally available..."}],
+       deeper:["Map your relationship vision in the workbook","Explore this with your coach"]},
+    E:{h:"What is really in the way?",
+       s:"Relationship blocks often come from fear, past experiences, protection patterns or learned habits. Naming them helps you respond differently.",
+       q:[{q:"What fear or concern tends to show up in your relationships?",p:"Fear of abandonment, rejection, intimacy, conflict, being too much, losing yourself, getting hurt again..."},
+          {q:"How do you protect yourself in ways that might also create distance?",p:"Staying busy, being self-sufficient, avoiding difficult conversations, not asking for help, withdrawing..."},
+          {q:"What would change if you allowed yourself to be more honest, open or supported?",p:"In your closest relationship, your family, your friendships, your working relationships..."}],
+       deeper:["Explore your relationship patterns in the workbook","Watch the Emotional Blocks coaching video","Bring this into your next session"]},
+    A:{h:"Choose one clear relationship goal for the next 30 days.",
+       s:"Relationships improve through small, consistent choices — one honest word, one boundary held.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you follow through?",
+       s:"Relationships change through actions, not intentions.",
+       q:[{q:"What will you do each week to improve this area?",p:"A conversation, a commitment, a new habit, a boundary, a reach-out..."},
+          {q:"What might get in the way?",p:"Fear, busyness, old patterns, conflict avoidance, not knowing how..."},
+          {q:"When will you reflect on how things are shifting?",p:"Weekly journal, monthly check-in, coaching session..."}],
+       deeper:["Build your relationship plan in the workbook","Bring this into your next coaching session"]}
+  },
+  "Career, Work & Business":{
+    C:{h:"Where are you in your work right now?",
+       s:"Work takes up a significant part of your life. This step asks you to see it clearly — not what you want it to be, but what it actually is.",
+       q:[{q:"How does your work feel right now?",p:"Fulfilling, stagnant, stressful, exciting, draining, purposeful, stuck, uncertain..."},
+          {q:"Where does your work feel most misaligned?",p:"Direction, income, impact, growth, confidence, relationships, workload, recognition, purpose..."},
+          {q:"What career, work or business pattern keeps repeating?",p:"Overworking, undercharging, staying in the wrong role, not backing yourself, starting but not finishing..."}],
+       deeper:["Map your current work reality in the workbook","Watch the Career Reality coaching video"]},
+    L:{h:"What would aligned work feel like?",
+       s:"What would your work, career or business look like if it reflected who you are, what you value and what you are building?",
+       q:[{q:"What would aligned work, career or business look and feel like?",p:"Income, impact, freedom, growth, contribution, environment, direction, meaning..."},
+          {q:"What would you be doing if you trusted yourself fully?",p:"The thing you keep coming back to but have been avoiding or delaying..."},
+          {q:"How would your energy, confidence or direction change if this was aligned?",p:"How would your daily life, your relationships and your sense of self feel different?"}],
+       deeper:["Map your career vision in the workbook","Explore this with your coach"]},
+    E:{h:"What is really in the way?",
+       s:"Career blocks are rarely about skills. They are usually about fear, identity or self-belief.",
+       q:[{q:"What belief or story is holding you back professionally?",p:"I am not ready, not qualified, it is not the right time, people like me do not do that..."},
+          {q:"What have you been waiting for before taking the next step?",p:"More experience, more confidence, the right moment, someone's permission, the perfect plan..."},
+          {q:"What would you do if you knew it would work?",p:"Name it specifically. The clearer the better."}],
+       deeper:["Explore your career blocks in the workbook","Watch the Emotional Blocks coaching video","Bring this to your next session"]},
+    A:{h:"Choose one clear career or business goal for the next 30 days.",
+       s:"One clear action repeated consistently over 30 days can create real professional momentum.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you keep moving forward?",
+       s:"Clarity without action is just insight. This step makes your commitment practical.",
+       q:[{q:"What is the one weekly action that will move this forward?",p:"Specific, realistic, aligned with your goal."},
+          {q:"What might get in the way?",p:"Fear, perfectionism, distraction, imposter syndrome, overworking..."},
+          {q:"When will you review your progress?",p:"Weekly, fortnightly, at the end of each month..."}],
+       deeper:["Build your career roadmap in the workbook","Set up weekly accountability with your coach"]}
+  },
+  "Purpose & Direction":{
+    C:{h:"How connected do you feel to your sense of purpose right now?",
+       s:"Purpose is not always a grand calling. It is often a quiet sense of whether your daily life feels meaningful.",
+       q:[{q:"How aligned does your life feel with what truly matters to you?",p:"Does your daily life reflect your values and what feels genuinely important to you?"},
+          {q:"Where do you feel most directionless or disconnected?",p:"Work, relationships, creativity, contribution, spirituality, daily routine..."},
+          {q:"Where might you be chasing something that no longer feels true to you?",p:"Status, approval, someone else's definition of success, an old version of what you wanted..."}],
+       note:"Do not pressure yourself to solve your whole life direction here. Look for the next honest step.",
+       deeper:["Explore your values in the workbook","Watch the Purpose coaching video"]},
+    L:{h:"What does a purposeful life look and feel like for you?",
+       s:"You do not need a perfectly mapped life purpose. You need enough clarity to take the next step.",
+       q:[{q:"What would a purposeful life look like for you?",p:"What are you contributing, creating, building or experiencing that matters?"},
+          {q:"What activities make you feel most alive and like yourself?",p:"These are often the clearest clues to your direction."},
+          {q:"What would you regret not exploring, doing or becoming?",p:"If your life stayed exactly as it is for the next five to ten years..."}],
+       deeper:["Write your personal mission in the workbook","Explore this with your coach"]},
+    E:{h:"What is stopping you from living with more purpose?",
+       s:"Purpose blocks are often about fear, pressure, confusion or staying with what feels safe. Naming the block helps you take a clearer next step.",
+       q:[{q:"What belief or story stops you from pursuing what feels meaningful?",p:"It is too late, I do not know what I want, it is not practical, I need to be more certain first..."},
+          {q:"What are you afraid might happen if you took your next honest step?",p:"Failure, judgement, loss of security, disrupting others, getting it wrong..."},
+          {q:"What comfortable distraction keeps you from going deeper?",p:"Busyness, overthinking, waiting for the right moment, people-pleasing, scrolling..."}],
+       deeper:["Explore your purpose blocks in the workbook","Bring this into your next coaching session"]},
+    A:{h:"Choose one purposeful action for the next 30 days.",
+       s:"Purpose is often found by doing, not thinking.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you stay connected to what matters?",
+       s:"Purpose grows through small, consistent choices.",
+       q:[{q:"What is one weekly action that will move you closer to what feels meaningful?",p:"A project, a conversation, a reflection, a creative session, a values-based decision..."},
+          {q:"What might pull you back towards drift or distraction?",p:"Busyness, comparison, obligation, comfort, other people's expectations..."},
+          {q:"When will you check in on whether you are moving in the right direction?",p:"Weekly reflection, monthly review, journalling prompt, coaching session..."}],
+       deeper:["Build your purpose plan in the workbook","Explore this with your coach"]}
+  },
+  "Daily Structure & Discipline":{
+    C:{h:"What does your structure look like right now?",
+       s:"Structure is not about rigidity. It is about having enough of a foundation to follow through on what matters.",
+       q:[{q:"What does a typical day currently look like?",p:"Be honest about your rhythms, routines, gaps and where your energy goes."},
+          {q:"Where do you feel most inconsistent or unsupported?",p:"Morning routine, focus time, sleep, planning, commitments to yourself, digital habits..."},
+          {q:"What task, habit or routine do you keep starting and stopping?",p:"The thing you keep coming back to but have not been able to make stick yet."}],
+       deeper:["Map your current structure in the workbook","Watch the Structure coaching video"]},
+    L:{h:"What would an aligned, structured day look like?",
+       s:"Imagine a day that gives you focus, energy and enough flexibility to stay consistent.",
+       q:[{q:"What would a fully aligned day look like from start to finish?",p:"The anchor habits, rhythms and boundaries that would support you — not a perfect schedule, a supportive one."},
+          {q:"What simple anchor habits would support your day?",p:"A morning routine, a planning rhythm, a wind-down, a focus block, a reset habit..."},
+          {q:"How would better structure change your results and confidence?",p:"What becomes possible when you consistently follow through on what matters?"}],
+       deeper:["Design your ideal day in the workbook","Explore this with your coach"]},
+    E:{h:"Why does consistency feel hard?",
+       s:"Lack of discipline is rarely laziness. It is usually tied to fear, perfectionism, overwhelm or unclear priorities.",
+       q:[{q:"Why do you think consistency has been difficult?",p:"Too many commitments, unclear priorities, perfectionism, low energy, not enough support, self-sabotage..."},
+          {q:"What emotion usually pulls you away from your structure?",p:"Overwhelm, boredom, rebellion, exhaustion, shame, fear of getting it wrong..."},
+          {q:"What would your aligned response be when you feel like giving up?",p:"Start small, honour the minimum version, return without drama, reset and continue..."}],
+       deeper:["Explore your structure blocks in the workbook","Watch the Emotional Blocks coaching video"]},
+    A:{h:"Choose one structure habit for the next 30 days.",
+       s:"One habit done imperfectly for 30 days beats a perfect routine that lasts five days.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you protect the habit?",
+       s:"Your structure will only work if it survives real life. Plan for the busy days now.",
+       q:[{q:"What will you do to protect this habit when life gets busy?",p:"Minimum viable version, non-negotiable time block, reset habit, accountability partner..."},
+          {q:"What tends to break your routine?",p:"Late nights, unexpected demands, low energy, travel, other people's needs, emotional dips..."},
+          {q:"When will you review and adjust?",p:"End of each week, Sunday reset, monthly check-in, after a particularly difficult stretch..."}],
+       deeper:["Build your structure plan in the workbook","Set up a weekly review ritual"]}
+  },
+  "Emotional Wellbeing":{
+    C:{h:"How are you doing emotionally right now?",
+       s:"Emotional wellbeing is not about feeling happy all the time. It is about your ability to understand and move through your inner life.",
+       q:[{q:"How would you describe your emotional state recently?",p:"Stable, anxious, numb, low, overwhelmed, content, reactive, disconnected, carrying a lot..."},
+          {q:"Which emotions feel hardest for you to sit with?",p:"Anger, sadness, anxiety, loneliness, shame, guilt, fear, grief, frustration..."},
+          {q:"What do you usually do when an uncomfortable emotion shows up?",p:"Avoid, numb, overwork, scroll, eat, lash out, shut down, people-please, push through..."}],
+       deeper:["Track your emotional patterns in the workbook","Watch the Emotional Wellbeing coaching video"]},
+    L:{h:"What would healthier emotional wellbeing feel like?",
+       s:"Not perfect — just more stable, honest and free.",
+       q:[{q:"What would emotional stability, honesty or freedom look like for you?",p:"More regulated, more expressive, more grounded, more at peace, more honest with yourself..."},
+          {q:"What emotional skills do you most want to develop?",p:"Naming feelings, self-regulation, setting boundaries, expressing needs, sitting with discomfort..."},
+          {q:"How would stronger emotional wellbeing change your relationships, work or daily life?",p:"What would become easier, lighter or more honest?"}],
+       deeper:["Map your emotional wellbeing vision in the workbook","Explore this with your coach"]},
+    E:{h:"What patterns are getting in the way?",
+       s:"Emotional blocks are often protective patterns. They may have helped you cope before, but they may not be helping you now.",
+       q:[{q:"What emotional pattern keeps repeating for you?",p:"Suppressing feelings, people-pleasing, shutting down, seeking validation, numbing, avoiding conflict..."},
+          {q:"What do you believe about showing or feeling your emotions?",p:"It is weak, it makes others uncomfortable, it means losing control, no one wants to hear it..."},
+          {q:"What would it mean to take your emotional health seriously?",p:"What would you need to let yourself feel, say, ask for or stop pretending is fine?"}],
+       note:"This is a self-reflection tool, not a replacement for professional mental health support. If you feel unsafe or overwhelmed, please speak to a qualified professional or someone you trust.",
+       deeper:["Do the Emotional Blocks workbook exercise","Watch the coaching video","Bring this into your next session"]},
+    A:{h:"Choose one emotional wellbeing practice for the next 30 days.",
+       s:"Emotional health is built through small, consistent practices — not one breakthrough moment.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you make space for your emotional health?",
+       s:"Consistent care — not perfect insight.",
+       q:[{q:"What space will you protect each week for your emotional wellbeing?",p:"A journalling practice, a therapy session, a walk, a conversation, a moment of quiet..."},
+          {q:"What tends to pull you away from your own emotional needs?",p:"Busyness, other people's needs, numbing habits, shame, putting it off..."},
+          {q:"When will you check in with yourself?",p:"Weekly journalling, a Sunday reflection, a regular coaching session, a daily mood note..."}],
+       deeper:["Build your wellbeing plan in the workbook","Consider working with a therapist or coach"]}
+  },
+  "Self-Respect & Identity":{
+    C:{h:"What is your relationship with yourself like right now?",
+       s:"Self-respect is the quiet foundation of how you treat yourself and allow others to treat you.",
+       q:[{q:"How would you describe your relationship with yourself?",p:"Harsh, compassionate, neglectful, confused, grounded, critical, loving, complicated..."},
+          {q:"In which areas of life are you not honouring yourself?",p:"Boundaries, standards, decisions, relationships, time, what you say yes to, what you tolerate..."},
+          {q:"What are you tolerating that no longer feels aligned?",p:"A situation, a relationship, a behaviour, a standard you have accepted that does not feel right anymore..."}],
+       deeper:["Explore your self-respect patterns in the workbook","Watch the coaching video"]},
+    L:{h:"Who is the most aligned version of you?",
+       s:"Who you are becoming matters as much as what you are achieving.",
+       q:[{q:"How would you describe the most aligned version of yourself?",p:"Their values, how they live, how they treat themselves, how they show up for others..."},
+          {q:"What would change in your daily life if your self-respect was stronger?",p:"Decisions, boundaries, standards, how you speak about yourself, what you stop accepting..."},
+          {q:"What values do you want to live by more fully?",p:"Honesty, integrity, courage, compassion, discipline, service, rest, authenticity..."}],
+       deeper:["Write your identity vision in the workbook","Explore this with your coach"]},
+    E:{h:"What is getting in the way of self-respect?",
+       s:"Low self-respect often comes from old patterns, past experiences or beliefs that made you put yourself last.",
+       q:[{q:"What belief do you carry about your own worth?",p:"I am not enough, I need to earn love, I need to be useful to be valued, my needs are not important..."},
+          {q:"Where do you put yourself last to keep others comfortable?",p:"Saying yes when you mean no, dimming yourself, not asking for help, shrinking your needs, over-giving..."},
+          {q:"What would it mean to treat yourself the way you treat people you love?",p:"What would you stop doing, start doing or allow yourself more of?"}],
+       deeper:["Do the Self-Respect workbook exercise","Bring this pattern into your next coaching session"]},
+    A:{h:"Choose one self-respect commitment for the next 30 days.",
+       s:"Self-respect is rebuilt through the promises you keep to yourself.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you hold your standard?",
+       s:"Self-respect grows through small, consistent acts of self-honouring.",
+       q:[{q:"What will you do each week to strengthen your relationship with yourself?",p:"A boundary, a promise, a practice, a kind word to yourself, a moment of honesty..."},
+          {q:"What tends to pull you away from honouring yourself?",p:"Other people's expectations, guilt, old habits, fear of conflict, wanting to be liked..."},
+          {q:"When will you review how your self-respect is changing?",p:"Weekly, monthly, at your 30-day review, in your journal or coaching session..."}],
+       deeper:["Build your self-respect plan in the workbook","Explore this with your coach"]}
+  }
+};
+
+/* Generic fallback — 3 questions max */
+function getFC(area){
+  if(FC[area]) return FC[area];
+  const a=area;
+  return{
+    C:{h:`Where are you with ${a} right now?`,
+       s:"This is not about judgement. It is about seeing clearly so you can choose one honest next step.",
+       q:[{q:"What does your current reality in this area actually look like?",p:"Honest and specific — not what you wish it looked like."},
+          {q:"Where do you feel the most pressure, resistance or neglect?",p:"What has been slipping or feeling most out of alignment?"},
+          {q:"What pattern keeps repeating?",p:"The thing that happens again and again, even when you try to change it."}],
+       note:"You only need to see this clearly enough to choose your next move.",
+       deeper:["Explore this step in the workbook","Watch the coaching video","Bring this into your next session"]},
+    L:{h:`What would alignment in ${a} look and feel like?`,
+       s:"Describe what a genuinely improved, more aligned version of this area looks like for you.",
+       q:[{q:"What would this area look like if it was thriving?",p:"Specific and honest — what would actually be different?"},
+          {q:"How would your life feel if this area improved significantly?",p:"Emotionally, practically, in your energy and relationships."},
+          {q:"What kind of person would you be becoming?",p:"The qualities, values and ways of being you would embody."}],
+       deeper:["Map your vision in the workbook","Explore this with your coach"]},
+    E:{h:"What is really getting in the way?",
+       s:"Most blocks are about fear, belief and habit. This step helps you name yours.",
+       q:[{q:"What belief or story is keeping you stuck here?",p:"The thing you tell yourself that justifies staying where you are."},
+          {q:"What emotion drives the avoidance or struggle?",p:"Fear, shame, guilt, overwhelm, confusion, sadness..."},
+          {q:"What would your aligned response be when the block shows up?",p:"The person you are becoming would respond by..."}],
+       deeper:["Do the Emotional Blocks workbook exercise","Watch the coaching video","Bring this into your next session"]},
+    A:{h:`Choose one clear goal for ${a} in the next 30 days.`,
+       s:"One specific, meaningful action taken consistently creates more change than ten vague intentions.",
+       q:[],note:"Your goal builder is next.",deeper:[]},
+    R:{h:"How will you stay on track?",
+       s:"A plan without a review rhythm is just a wish.",
+       q:[{q:"What is the one weekly action that will move this forward?",p:"Specific, realistic and aligned with your goal."},
+          {q:"What could get in the way?",p:"Be honest about the obstacles you will likely face."},
+          {q:"When will you check in on your progress?",p:"Choose a specific date or weekly rhythm."}],
+       deeper:["Build your roadmap in the workbook","Set up accountability with your coach"]}
+  };
+}
+
+/* ═══ HELPERS ═══ */
+function makeTracker(){
+  const t=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    t.push({date:d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}),completed:null,conf:null,energy:null,trust:null,momentum:null,clarity:null,calm:null,honest:null,fulfilment:null,respect:null,note:""});
+  }
+  return t;
+}
+
+function makeGoal(type,focusArea){
+  return {
+    goalId:"g_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
+    goalType:type, // "primary" | "supporting"
+    focusArea:focusArea||"",
+    status:"active",
+    outcome:"",action:"",minimum:"",freq:"",metrics:[],success:"",why:"",impact:"",noChange:"",start:"",review:"",checkins:[],
+    trackerEntries:makeTracker()
+  };
+}
+
+/* ═══ STATE ═══ */
+const state={
+  areas: AREAS.map(a=>({...a,score:null,why:"",working:"",notWorking:"",moveUp:""})),
+  clearAnswers: Array(5).fill(null).map(()=>({})),
+  focusArea:"",
+  goals:[], // array of goal objects
+  activeGoalId:null, // which goal is being built/viewed
+  currentArea:0,
+  currentClearStep:0,
+  openTracker:-1
+};
+
+// Convenience: get goal by id
+function getGoal(id){ return state.goals.find(g=>g.goalId===id)||null; }
+function getPrimary(){ return state.goals.find(g=>g.goalType==="primary")||null; }
+function getSupporting(){ return state.goals.filter(g=>g.goalType==="supporting"); }
+function activeGoal(){ return getGoal(state.activeGoalId)||getPrimary()||state.goals[0]||null; }
+
+// Migrate: if old single state.goal exists (fresh session won't have it), no-op needed
+
+/* ═══ NAV ═══ */
+const NAV_MAP={overview:"overview",audit:"audit",results:"audit",focus:"audit","area":"audit",clearOv:"clearOv",clearStep:"clearOv",goalDash:"goalDash",goal:"goalDash",tracker:"goalDash",review:"review"};
+let currentScreen="overview";
+
+function go(id){
+  // save any textarea/input values before switching
+  saveCurrentInputs();
+  currentScreen=id;
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("show"));
+  if(id.startsWith("area_")){
+    state.currentArea=parseInt(id.split("_")[1]);
+    renderArea();
+    document.getElementById("s-area").classList.add("show");
+    setNav("audit");
+  } else if(id.startsWith("clearStep_")){
+    state.currentClearStep=parseInt(id.split("_")[1]);
+    renderClearStep();
+    document.getElementById("s-clearStep").classList.add("show");
+    setNav("clearOv");
+  } else {
+    const el=document.getElementById("s-"+id);
+    if(el) el.classList.add("show");
+    // render dynamic screens
+    if(id==="overview") renderOverview();
+    if(id==="results") renderResults();
+    if(id==="focus") renderFocus();
+    if(id==="clearOv") renderClearOv();
+    if(id==="goalDash") renderGoalDash();
+    if(id==="goal") renderGoal();
+    if(id==="tracker") renderTracker();
+    if(id==="review") renderReview();
+    setNav(NAV_MAP[id]||"overview");
+  }
+  window.scrollTo(0,0);
+}
+
+function setNav(id){
+  document.querySelectorAll(".ni").forEach(n=>{
+    n.classList.toggle("active",n.dataset.nav===id);
+  });
+}
+document.querySelectorAll(".ni").forEach(n=>n.addEventListener("click",()=>go(n.dataset.nav)));
+
+/* ═══ HELPERS ═══ */
+function scoreColor(s){
+  if(s===null||s===undefined||s===0) return "var(--text3)";
+  if(s<=2) return "#b87070";
+  if(s<=4) return "#c08050";
+  if(s<=6) return "var(--gold)";
+  if(s<=8) return "#7ab880";
+  return "#50a870";
+}
+function ring(score,max,sz){
+  sz=sz||120; max=max||100;
+  const r=sz/2-10,cx=sz/2,cy=sz/2,circ=2*Math.PI*r;
+  const fill=score!=null?(score/max)*circ:0;
+  return `<div class="ring-wrap" style="width:${sz}px;height:${sz}px">
+    <svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg4)" stroke-width="9"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--gold)" stroke-width="9" stroke-dasharray="${fill} ${circ}" stroke-linecap="round"/>
+    </svg>
+    <div class="ring-inner">
+      <div class="ring-num" style="font-size:${sz*.27}px">${score!=null?score:"—"}</div>
+      <div class="ring-den">/${max}</div>
+    </div>
+  </div>`;
+}
+function saveCurrentInputs(){
+  if(currentScreen.startsWith("area_")){
+    const i=state.currentArea;
+    ["why","working","notWorking","moveUp"].forEach(k=>{
+      const el=document.getElementById("area-"+k);
+      if(el) state.areas[i][k]=el.value;
+    });
+  }
+  if(currentScreen.startsWith("clearStep_")){
+    const si=state.currentClearStep;
+    const ans={...state.clearAnswers[si]};
+    for(let qi=0;qi<3;qi++){
+      const el=document.getElementById("cs-q-"+qi);
+      if(el) ans[qi]=el.value;
+    }
+    state.clearAnswers[si]=ans;
+  }
+  if(currentScreen==="goal"){
+    // goal fields saved live via event listeners
+  }
+  if(currentScreen==="tracker"){
+    const g=activeGoal();
+    if(g) g.trackerEntries.forEach((entry,i)=>{
+      const el=document.getElementById("tnote-"+i);
+      if(el) g.trackerEntries[i].note=el.value;
+    });
+  }
+}
+
+/* ═══ OVERVIEW ═══ */
+function renderOverview(){
+  const filled=state.areas.filter(a=>a.score!==null).length;
+  const total=state.areas.reduce((s,a)=>s+(a.score||0),0);
+  const complete=filled===10;
+  const inProg=filled>0&&!complete;
+
+  // score card
+  let sc;
+  if(complete){
+    const interp=total<=30?"Choose one area to stabilise first":total<=50?"Clear gaps need honest attention":total<=70?"Build momentum from your foundation":total<=85?"Strengthen consistency and intention":"Refine, deepen and expand what works";
+    sc=`<div class="card" style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+      ${ring(total,100,120)}
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Life Alignment Score</div>
+        <div style="font-family:'Sora',sans-serif;font-size:34px;font-weight:700;color:var(--gold);line-height:1">${total}<span style="font-size:16px;color:var(--text3);font-weight:400"> /100</span></div>
+        <div style="font-size:13px;color:var(--text2);margin-top:5px;line-height:1.5">${interp}</div>
+        <div style="display:flex;gap:1.25rem;margin-top:1rem">
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Areas</div><div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--gold)">10/10</div></div>
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Average</div><div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--gold)">${(total/10).toFixed(1)}</div></div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    const ringH=inProg?`<div style="font-family:'Sora',sans-serif;font-size:13px;color:var(--text3)">${filled}/10</div>`:`<div style="font-family:'Sora',sans-serif;font-size:13px;color:var(--text3)">—</div>`;
+    const msg=inProg
+      ?`<div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">Audit in progress</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:1rem">${filled} of 10 areas completed. Complete all areas to unlock your full report.</div>
+        <button class="btn btn-p" onclick="go('area_${filled}')">Continue — Area ${filled+1} →</button>`
+      :`<div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">Your Life Alignment Score will appear here</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:1rem;max-width:300px;margin-left:auto;margin-right:auto">Complete all 10 areas to unlock your full score, strengths, growth areas and priority focus.</div>
+        <button class="btn btn-p" onclick="go('audit')">Begin the Audit →</button>`;
+    sc=`<div class="incomplete-box">
+      <div style="width:80px;height:80px;border-radius:50%;border:6px solid var(--bg5);margin:0 auto 1rem;display:flex;align-items:center;justify-content:center">${ringH}</div>
+      ${msg}
+    </div>`;
+  }
+
+  // focus card
+  const bot=[...state.areas].sort((a,b)=>(a.score||0)-(b.score||0));
+  let fc;
+  if(complete && bot[0]){
+    const hasPrimary=!!getPrimary();
+    fc=`<div class="card">
+      <div class="eyebrow"><span class="eydot"></span>Priority Focus</div>
+      <div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:.4rem">${bot[0].name}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:1rem">Your lowest scoring area. Improving here often creates the most momentum.</div>
+      ${hasPrimary
+        ?`<button class="btn btn-p btn-block" onclick="go('goalDash')">My Goals →</button>`
+        :`<button class="btn btn-p btn-block" onclick="go('clearOv')">Begin CLEAR →</button>`
+      }
+    </div>`;
+  } else {
+    fc=`<div class="incomplete-box">
+      <div style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:1rem">Your priority focus will be revealed after completing The Aligned Audit.</div>
+      <button class="btn btn-o btn-block" onclick="go('audit')">Begin the Audit</button>
+    </div>`;
+  }
+
+  document.getElementById("score-card").innerHTML=sc;
+  document.getElementById("focus-card").innerHTML=fc;
+
+  // area grid
+  document.getElementById("area-grid").innerHTML=AREAS.map((a,i)=>{
+    const s=state.areas[i].score;
+    return `<div class="area-card" onclick="go('audit')">
+      <span class="area-num">${i+1}</span>
+      <div class="area-icon">${a.icon}</div>
+      <div class="area-info">
+        <div class="area-name">${a.name}</div>
+        <div style="font-size:11px;color:${s!=null?'var(--gold)':'var(--text3)'}">${s!=null?s+' / 10':'Not scored'}</div>
+        <div class="area-btrack"><div class="area-bfill" style="width:${(s||0)*10}%"></div></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Goals section on dashboard
+  const goalsSectionEl=document.getElementById("overview-goals-section");
+  if(goalsSectionEl){
+    const primary=getPrimary();
+    const supporting=getSupporting();
+    const hasAnyGoal=primary||supporting.length>0;
+    if(hasAnyGoal){
+      function miniGoalCard(g,isPrimary){
+        const {done,logged,streak}=getProgressStats(g);
+        const pct=logged>0?Math.round(done/Math.max(logged,1)*100):0;
+        const title=(g.goalTitle&&g.goalTitle.trim())||(g.action&&g.action.trim())||(g.outcome&&g.outcome.trim())||((g.focusArea||"")+" goal");
+        return `<div class="card" style="padding:1.1rem 1.25rem;border:1px solid ${isPrimary?"var(--bdr)":"var(--bdr2)"};cursor:pointer" onclick="openGoalTracker('${g.goalId}')">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem;gap:.5rem">
+            <span style="display:inline-flex;align-items:center;gap:5px;background:${isPrimary?"var(--gd2)":"var(--bg4)"};border:1px solid ${isPrimary?"var(--bdr)":"var(--bdr2)"};border-radius:100px;padding:3px 11px;font-size:10px;font-weight:600;color:${isPrimary?"var(--gold)":"var(--text3)"};letter-spacing:.07em">${isPrimary?"⬡ Primary":"◇ Supporting"}</span>
+            <span style="font-size:11px;color:var(--text3)">${g.focusArea||""}</span>
+          </div>
+          <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:.55rem;line-height:1.35">${title}</div>
+          <div style="display:flex;gap:.65rem;margin-bottom:.55rem">
+            <div style="font-size:11px;color:var(--text3)">Actions: <span style="color:var(--gold);font-weight:600">${done}</span></div>
+            <div style="font-size:11px;color:var(--text3)">Streak: <span style="color:var(--gold);font-weight:600">${streak}d</span></div>
+            ${g.freq?`<div style="font-size:11px;color:var(--text3)">${g.freq}</div>`:""}
+          </div>
+          ${logged>0
+            ?`<div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:.25rem"><span>Completion</span><span style="color:var(--gold)">${pct}%</span></div><div class="bar-track" style="height:4px;border-radius:2px"><div class="bar-fill" style="width:${pct}%;background:var(--gold);height:4px;border-radius:2px"></div></div></div>`
+            :`<div style="font-size:11px;color:var(--text3);font-style:italic">Tap to open tracker</div>`
+          }
+        </div>`;
+      }
+
+      goalsSectionEl.innerHTML=`
+        <div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin:2rem 0 1rem">
+          <span style="flex:1;height:1px;background:var(--bdr2)"></span>Active Goals<span style="flex:1;height:1px;background:var(--bdr2)"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.85rem;margin-bottom:.75rem">
+          ${primary?miniGoalCard(primary,true):""}
+          ${supporting.map(g=>miniGoalCard(g,false)).join("")}
+        </div>
+        <div style="text-align:right;margin-bottom:.5rem">
+          <button class="btn btn-g" style="font-size:12px;padding:.45rem 1rem" onclick="go('goalDash')">Manage all goals →</button>
+        </div>`;
+    } else {
+      goalsSectionEl.innerHTML="";
+    }
+  }
+
+  // update top nav button text
+  const auditBtn=document.querySelector('#s-overview .btn-p');
+  if(auditBtn) auditBtn.textContent=filled===10?"Retake the Audit":"Take the Audit →";
+}
+
+/* ═══ AREA Q ═══ */
+function renderArea(){
+  const i=state.currentArea;
+  const a=state.areas[i];
+  const sc=scoreColor(a.score);
+  document.getElementById("area-step-label").textContent=`Step ${i+1} of 10`;
+  document.getElementById("area-prog").style.width=`${(i+1)/10*100}%`;
+  document.getElementById("area-back").onclick=()=>go(i===0?"audit":"area_"+(i-1));
+  document.getElementById("area-prev-btn").textContent=i>0?"← Previous":"← Intro";
+  document.getElementById("area-prev-btn").onclick=()=>go(i===0?"audit":"area_"+(i-1));
+  document.getElementById("area-next-btn").textContent=i<9?"Next Area →":"See My Results →";
+  document.getElementById("area-next-btn").onclick=()=>go(i<9?"area_"+(i+1):"results");
+
+  document.getElementById("area-page").innerHTML=`
+    <div style="margin-bottom:1.5rem">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem">Section ${i+1} of 10</div>
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.4rem">
+        <div class="area-icon" style="width:40px;height:40px;font-size:17px">${a.icon}</div>
+        <h2 style="margin:0;font-size:clamp(20px,3vw,26px)">${a.name}</h2>
+      </div>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6;margin:0;max-width:560px">${a.desc}</p>
+      ${a.hint?`<p style="font-size:13px;color:var(--text3);line-height:1.55;margin:.5rem 0 0;font-style:italic;max-width:520px">${a.hint}</p>`:''}
+    </div>
+    <div class="qbox">
+      <div class="qlabel">1. How would you rate yourself in this area right now?</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:.5rem">
+        <div id="score-display" style="font-family:'Sora',sans-serif;font-size:42px;font-weight:700;color:${sc};line-height:1">${a.score||"—"}</div>
+        <div style="font-size:13px;color:var(--text3)">${a.score?"/ 10":""}</div>
+      </div>
+      <div class="score-grid" id="score-btns"></div>
+      <div class="score-range"><span>Not aligned</span><span>Fully aligned</span></div>
+      <div class="compact-hint">
+        <div class="ch"><div class="chdot" style="background:#9a4a4a"></div><div class="chtext">1–2 Deeply out of alignment</div></div>
+        <div class="ch"><div class="chdot" style="background:#a06030"></div><div class="chtext">3–4 Struggling</div></div>
+        <div class="ch"><div class="chdot" style="background:#c09020"></div><div class="chtext">5–6 Needs attention</div></div>
+        <div class="ch"><div class="chdot" style="background:#5a9060"></div><div class="chtext">7–8 Strong</div></div>
+        <div class="ch"><div class="chdot" style="background:#3a8060"></div><div class="chtext">9–10 Thriving</div></div>
+      </div>
+    </div>
+    ${[{k:"why",q:"2. Why did you give yourself this score?",p:"Be honest and specific — what led you here?",req:true},
+       {k:"working",q:"3. What is currently working well in this area?",p:"What is going well, even if small?",req:false},
+       {k:"notWorking",q:"4. What is not working well in this area?",p:"What is holding you back or causing friction?",req:false},
+       {k:"moveUp",q:"5. What would move this area up by one point?",p:"One specific thing you could start, stop or change...",req:true}
+      ].map(({k,q,p,req})=>`
+      <div class="qbox">
+        <div class="qlabel" style="display:flex;align-items:center;gap:.5rem">${q}${req?'':' <span style="font-size:10px;font-weight:400;color:var(--text3);letter-spacing:.06em;text-transform:uppercase">Optional</span>'}</div>
+        <textarea id="area-${k}" rows="4" placeholder="${p}">${a[k]}</textarea>
+        <div class="char-c">${a[k].length}/500</div>
+      </div>`).join("")}
+    <div style="height:1rem"></div>`;
+
+  // score buttons
+  const grid=document.getElementById("score-btns");
+  for(let n=1;n<=10;n++){
+    const btn=document.createElement("button");
+    btn.className="sbn"+(a.score===n?" picked":"");
+    btn.textContent=n;
+    btn.onclick=()=>{
+      state.areas[i].score=n;
+      document.getElementById("score-display").textContent=n;
+      document.getElementById("score-display").style.color=scoreColor(n);
+      document.querySelectorAll(".sbn").forEach((b,bi)=>b.classList.toggle("picked",bi===n-1));
+    };
+    grid.appendChild(btn);
+  }
+
+  // char counters
+  ["why","working","notWorking","moveUp"].forEach(k=>{
+    const el=document.getElementById("area-"+k);
+    if(el){
+      el.addEventListener("input",()=>{
+        state.areas[i][k]=el.value;
+        el.nextElementSibling.textContent=el.value.length+"/500";
+      });
+    }
+  });
+}
+
+/* ═══ RESULTS ═══ */
+function renderResults(){
+  const filled=state.areas.filter(a=>a.score!==null).length;
+  const total=state.areas.reduce((s,a)=>s+(a.score||0),0);
+  document.getElementById("results-back").onclick=()=>go(filled<10?"overview":"area_9");
+
+  if(filled<10){
+    document.getElementById("results-page").innerHTML=`
+      <div class="incomplete-box">
+        <div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">Audit not yet complete</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:1.25rem">You have completed ${filled} of 10 areas. Finish all areas to see your full results.</div>
+        <button class="btn btn-p" onclick="go('area_${filled}')">Continue — Area ${filled+1} of 10 →</button>
+      </div>`;
+    return;
+  }
+
+  const srt=[...state.areas].sort((a,b)=>(b.score||0)-(a.score||0));
+  const top3=srt.slice(0,3);
+  const bot3=[...state.areas].sort((a,b)=>(a.score||0)-(b.score||0)).slice(0,3);
+  const interp=total<=30
+    ?"You may be feeling disconnected, overwhelmed or unclear. The priority is not to fix everything at once. The priority is to choose one area to stabilise first."
+    :total<=50
+    ?"There are clear gaps that need honest attention. This is a powerful place to begin because awareness gives you something real to work with."
+    :total<=70
+    ?"You have a foundation to build from, but some areas are pulling you out of alignment. Now you can see where you are, your next step is to choose one focus area and create momentum."
+    :total<=85
+    ?"You are already showing signs of alignment. The opportunity now is to strengthen your consistency, raise your standards and move with more intention."
+    :"You have strong foundations. Your next step is to refine, deepen and expand what is already working.";
+
+  document.getElementById("results-page").innerHTML=`
+    <div class="eyebrow"><span class="eydot"></span>Life Alignment Score</div>
+    <div class="card" style="display:flex;align-items:center;gap:2rem;margin-bottom:2rem;flex-wrap:wrap">
+      ${ring(total,100,140)}
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'Sora',sans-serif;font-size:clamp(32px,5vw,46px);font-weight:700;color:var(--gold);line-height:1;margin-bottom:8px">${total}<span style="font-size:20px;color:var(--text3);font-weight:400"> / 100</span></div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.75;margin-bottom:1rem;max-width:400px">${interp}</div>
+        <div style="display:flex;gap:1.5rem">
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Areas</div><div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--gold)">10/10</div></div>
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Average</div><div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--gold)">${(total/10).toFixed(1)}</div></div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-bottom:1rem">Score Breakdown</h3>
+    <div style="margin-bottom:2rem">
+      ${state.areas.map(a=>{
+        const c=scoreColor(a.score||0);
+        return `<div class="bar-row">
+          <span class="bar-name">${a.name}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${(a.score||0)*10}%;background:${c}"></div></div>
+          <span class="bar-num" style="color:${c}">${a.score}</span>
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="g2" style="margin-bottom:2rem">
+      <div>
+        <div style="font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.7rem">Your 3 Strengths</div>
+        ${top3.map(a=>`<div class="list-row"><span style="font-size:13px">${a.name}</span><span style="color:#50a870;font-weight:600">${a.score}/10</span></div>`).join("")}
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.7rem">3 Priority Growth Areas</div>
+        ${bot3.map((a,i)=>`<div class="list-row"><span style="font-size:13px">${i===0?"⚑ ":""}${a.name}</span><span style="color:var(--gold);font-weight:600">${a.score}/10</span></div>`).join("")}
+      </div>
+    </div>
+    <div class="card-gold" style="margin-bottom:1.5rem">
+      <div style="font-size:14px;color:var(--text2);line-height:1.8;font-style:italic;max-width:560px">You now have a clearer picture of where you are. The next step is not to fix everything at once. It is to choose one area that, if improved, could create momentum across the rest of your life.</div>
+    </div>
+    <div style="font-size:13px;color:var(--text3);line-height:1.7;max-width:560px;margin-bottom:1.5rem">Your Life Alignment Score is not a judgement. It is a starting point. Now you can see where you are, you get to decide where you are going and what needs your attention first.</div>
+    <button class="btn btn-p" onclick="state.focusArea=getLowest();go('focus')">Choose Your Focus Area →</button>`;
+}
+
+function getLowest(){
+  return [...state.areas].sort((a,b)=>(a.score||0)-(b.score||0))[0]?.name||"";
+}
+
+/* ═══ FOCUS PICK ═══ */
+function renderFocus(){
+  const sug=[...state.areas].sort((a,b)=>(a.score||0)-(b.score||0))[0];
+  const chosen=state.areas.find(a=>a.name===state.focusArea);
+
+  document.getElementById("focus-page").innerHTML=`
+    <div class="eyebrow"><span class="eydot"></span>Priority Focus</div>
+    <h2>Where will you <span class="acc">focus first?</span></h2>
+    <p class="lead" style="max-width:600px">This is often where the breakthrough begins. When you choose one area to face honestly and improve intentionally, you create momentum across the rest of your life.</p>
+    <p class="body-t" style="margin-bottom:.75rem;max-width:580px">You do not need to fix everything at once. You only need to begin where the next honest shift matters most.</p>
+    <p class="body-t" style="margin-bottom:1.5rem;max-width:580px">You can follow the suggested focus or choose a different area if another one feels more important right now.</p>
+    ${sug?`<div class="hbox" style="max-width:560px">
+      <div class="hbox-l">Suggested First Focus</div>
+      <div class="hbox-v">${sug.name}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:5px">Current score: ${sug.score||0}/10 — your lowest scoring area right now.</div>
+    </div>`:""}
+    <div style="margin-bottom:1.5rem">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:.6rem;letter-spacing:.06em;text-transform:uppercase">Or choose a different area:</div>
+      <div id="focus-chips"></div>
+    </div>
+    <div id="focus-chosen" style="margin-bottom:1.5rem"></div>
+    <button class="btn btn-p" id="focus-cta" ${!state.focusArea?"disabled":""} onclick="go('clearOv')">Begin the CLEAR Framework →</button>`;
+
+  renderFocusChips();
+}
+
+function renderFocusChips(){
+  document.getElementById("focus-chips").innerHTML=state.areas.map(a=>
+    `<span class="chip${state.focusArea===a.name?" picked":""}" onclick="pickFocus('${a.name}')">
+      <span style="font-size:11px;margin-right:4px;color:var(--text3)">${a.score||"?"}</span>${a.name}
+    </span>`
+  ).join("");
+
+  const chosen=state.areas.find(a=>a.name===state.focusArea);
+  document.getElementById("focus-chosen").innerHTML=chosen?`
+    <div class="card" style="max-width:560px">
+      <div style="font-size:10px;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.4rem">Your Focus Area</div>
+      <div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:5px">${chosen.name}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:.75rem">${chosen.desc}</div>
+      <div style="font-size:13px;color:var(--gold);font-weight:500">Score: ${chosen.score}/10</div>
+    </div>`:"";
+
+  const cta=document.getElementById("focus-cta");
+  if(cta) cta.disabled=!state.focusArea;
+}
+
+function pickFocus(name){
+  state.focusArea=name;
+  renderFocusChips();
+}
+
+/* ═══ CLEAR OVERVIEW ═══ */
+function renderClearOv(){
+  const fc=getFC(state.focusArea);
+  document.getElementById("clearOv-page").innerHTML=`
+    <div class="eyebrow"><span class="eydot"></span>The Framework</div>
+    <h2>The <span class="acc">CLEAR</span> Framework</h2>
+    <p class="lead" style="max-width:600px">CLEAR is the bridge between awareness and action. It guides you through five steps — understanding where you are, clarifying who you are becoming, facing what is in the way, choosing a meaningful goal, and creating a plan to follow through.</p>
+    ${state.focusArea?`<div class="hbox" style="max-width:480px;margin-bottom:1.5rem">
+      <div class="hbox-l">Your Focus Area</div>
+      <div class="hbox-v">${state.focusArea}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">Every CLEAR step is guided specifically around this area.</div>
+    </div>`:""}
+    ${CLEAR_META.map((m,i)=>{
+      const c=fc[m.L];
+      return `<div class="clear-card">
+        <div class="clear-L">${m.L}</div>
+        <div style="flex:1">
+          <h3 style="margin-bottom:3px">${m.label}</h3>
+          ${c?`<div style="font-size:13px;color:var(--text2);margin-bottom:.3rem">${c.h}</div>`:""}
+          ${i===0?`<div style="font-size:12px;color:var(--gold);margin-top:4px;font-weight:500">Start here →</div>`:""}
+        </div>
+      </div>`;
+    }).join("")}
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;flex-wrap:wrap">
+      <button class="btn btn-p" onclick="go('clearStep_0')">Start with Current Reality →</button>
+      <button class="btn btn-g" onclick="go('focus')">← Back</button>
+    </div>`;
+}
+
+/* ═══ CLEAR STEP ═══ */
+function renderClearStep(){
+  const si=state.currentClearStep;
+  const meta=CLEAR_META[si];
+  const fc=getFC(state.focusArea)[meta.L];
+  const ans=state.clearAnswers[si]||{};
+  const isGoalStep=meta.L==="A";
+
+  document.getElementById("cs-step-label").textContent=`Step ${si+1} of 5`;
+  document.getElementById("cs-prog").style.width=`${(si+1)/5*100}%`;
+  document.getElementById("cs-back").onclick=()=>go(si===0?"clearOv":"clearStep_"+(si-1));
+  document.getElementById("cs-prev-btn").onclick=()=>go(si===0?"clearOv":"clearStep_"+(si-1));
+
+  const nextLabel=isGoalStep?`Next: ${CLEAR_META[si+1].title} →`:
+    si===4?"Finish & Go to My Goals →":
+    si<4?`Next: ${CLEAR_META[si+1].title} →`:"Finish →";
+  document.getElementById("cs-next-btn").textContent=nextLabel;
+  document.getElementById("cs-next-btn").onclick=()=>{
+    saveCurrentInputs();
+    if(isGoalStep){
+      // Goal object already exists (created on render). Just persist text fields.
+      const ag=activeGoal();
+      if(ag){
+        const actionEl=document.getElementById("cs-action");
+        const minimumEl=document.getElementById("cs-minimum");
+        const successEl=document.getElementById("cs-success");
+        const whyEl=document.getElementById("cs-why");
+        const startEl=document.getElementById("cs-start");
+        const reviewEl=document.getElementById("cs-review");
+        if(actionEl) ag.action=actionEl.value;
+        if(minimumEl) ag.minimum=minimumEl.value;
+        if(successEl) ag.success=successEl.value;
+        if(whyEl) ag.why=whyEl.value;
+        if(startEl) ag.start=startEl.value;
+        if(reviewEl) ag.review=reviewEl.value;
+        ag.currentPattern=state.clearAnswers[0]&&(state.clearAnswers[0][2]||state.clearAnswers[0][0])||"";
+        ag.desiredShift=state.clearAnswers[1]&&(state.clearAnswers[1][0]||state.clearAnswers[1][2])||"";
+        ag.mainBlock=state.clearAnswers[2]&&(state.clearAnswers[2][0]||state.clearAnswers[2][1])||"";
+        ag.status="active";
+      }
+      go("clearStep_4"); // proceed to R
+    } else if(si===4){
+      // R step done — ensure primary goal exists with focusArea, then show dashboard
+      if(!getPrimary()){
+        const ng=makeGoal("primary",state.focusArea);
+        ng.status="active";
+        state.goals.push(ng);
+        state.activeGoalId=ng.goalId;
+      } else {
+        const p=getPrimary();
+        if(!p.focusArea) p.focusArea=state.focusArea;
+        p.status="active";
+        state.activeGoalId=p.goalId;
+      }
+      _justCompletedCLEAR=true;
+      go("goalDash");
+    } else {
+      go("clearStep_"+(si+1));
+    }
+  };
+
+  // Show at most 3 questions
+  const questions=(fc&&fc.q||[]).slice(0,3);
+  const deeper=fc&&fc.deeper&&fc.deeper.length>0?fc.deeper:null;
+
+  // For the A step — ensure a goal object exists BEFORE rendering so chips can save into it
+  if(isGoalStep && !activeGoal()){
+    const ng=makeGoal("primary",state.focusArea);
+    ng.status="active";
+    state.goals.push(ng);
+    state.activeGoalId=ng.goalId;
+  } else if(isGoalStep && activeGoal() && !activeGoal().focusArea){
+    activeGoal().focusArea=state.focusArea;
+  }
+
+  // Build discovery summary from C/L/E answers
+  const cAns=state.clearAnswers[0]||{};
+  const lAns=state.clearAnswers[1]||{};
+  const eAns=state.clearAnswers[2]||{};
+  const currentPattern=cAns[2]||cAns[0]||"";
+  const desiredShift=lAns[0]||lAns[2]||"";
+  const mainBlock=eAns[0]||eAns[1]||"";
+  const hasDiscovery=currentPattern||desiredShift||mainBlock;
+
+  // Reference active goal (now guaranteed to exist for A step)
+  const ag=isGoalStep?activeGoal():null;
+
+  document.getElementById("cs-page").innerHTML=`
+    ${state.focusArea?`<div class="focus-badge"><span class="eydot"></span>Focus: ${state.focusArea}</div>`:""}
+    <div class="eyebrow"><span class="eydot"></span>${meta.label}</div>
+    ${fc?`<h2 style="font-size:clamp(18px,3vw,26px);margin-bottom:.5rem">${fc.h}</h2>`:""}
+    ${fc?`<p style="font-size:14px;color:var(--text2);line-height:1.75;max-width:560px;margin-bottom:1.5rem">${fc.s}</p>`:""}
+
+    ${isGoalStep?`
+      ${hasDiscovery?`
+      <div style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:1.2rem 1.4rem;margin-bottom:1.5rem;max-width:620px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.85rem">What you have discovered</div>
+        ${currentPattern?`<div style="margin-bottom:.65rem"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem">Current pattern</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${currentPattern}</div></div>`:""}
+        ${desiredShift?`<div style="margin-bottom:.65rem"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem">Desired shift</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${desiredShift}</div></div>`:""}
+        ${mainBlock?`<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem">Main block</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${mainBlock}</div></div>`:""}
+      </div>`:""}
+
+      <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:560px;margin-bottom:1.5rem">Now choose one clear, repeated action you will commit to for the next 30 days. Make it behaviour-based — something you can actually do and track.</div>
+
+      <!-- Goal type -->
+      <div style="margin-bottom:1.25rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">1. What type of goal is this?</div>
+        <div id="cs-goaltype-chips" style="display:flex;flex-wrap:wrap">
+          ${(getGDFor(state.focusArea).goalTypes||["Take action","Build a habit","Have a conversation","Set a boundary","Create consistency"]).map(t=>`<span class="chip${(ag&&ag.goalTitle===t)?" picked":""}" onclick="csPickGoalType('${t.replace(/'/g,"\\'")}',this)">${t}</span>`).join("")}
+        </div>
+      </div>
+
+      <!-- Repeated action -->
+      <div style="margin-bottom:1.25rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">2. What action will you repeat for the next 30 days?</div>
+        <textarea id="cs-action" rows="2" placeholder="${getGDFor(state.focusArea).actionPh||"Describe the specific thing you will do..."}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;resize:vertical;outline:none;line-height:1.6">${ag&&ag.action||""}</textarea>
+      </div>
+
+      <!-- Minimum version (shown for structure area only) -->
+      ${state.focusArea==="Daily Structure & Discipline"?`
+      <div style="margin-bottom:1.25rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">2b. What is the minimum version you can still do on a difficult day?</div>
+        <textarea id="cs-minimum" rows="2" placeholder="${getGDFor(state.focusArea).minimumPh||"Example: 5 minutes of planning, one focused task, lights out by 11pm..."}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;resize:vertical;outline:none;line-height:1.6">${ag&&ag.minimum||""}</textarea>
+        <div style="font-size:12px;color:var(--text3);margin-top:.35rem;font-style:italic">The minimum version is your commitment on hard days. It keeps the chain alive.</div>
+      </div>`:""}
+
+      <!-- Rhythm -->
+      <div style="margin-bottom:1.25rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">3. How often?</div>
+        <div id="cs-freq-chips" style="display:flex;flex-wrap:wrap">
+          ${(getGDFor(state.focusArea).freqs||["Daily","Every weekday","3x per week","Weekly","Custom"]).map(f=>`<span class="chip${(ag&&ag.freq===f)?" picked":""}" onclick="csPickFreq('${f}')">${f}</span>`).join("")}
+        </div>
+      </div>
+
+      <!-- Success definition -->
+      <div style="margin-bottom:1.25rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">4. What would make this a successful 30 days?</div>
+        <textarea id="cs-success" rows="2" placeholder="${getGDFor(state.focusArea).successPh||"e.g. completing 20 out of 30 days, having 4 honest conversations..."}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;resize:vertical;outline:none;line-height:1.6">${ag&&ag.success||""}</textarea>
+      </div>
+
+      <!-- Tracking metrics -->
+      <div style="margin-bottom:1.25rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">5. What will you track?</div>
+        <div id="cs-metric-chips" style="display:flex;flex-wrap:wrap">
+          ${(getGDFor(state.focusArea).metrics||["Action completed","Confidence score","Self-trust score","Custom"]).map(m=>`<span class="chip${(ag&&ag.metrics&&ag.metrics.includes(m))?" picked":""}" onclick="csToggleMetric('${m.replace(/'/g,"\\'")}',this)">${m}</span>`).join("")}
+        </div>
+      </div>
+
+      <!-- Why it matters -->
+      <div style="margin-bottom:1.25rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">6. Why does this matter to you?</div>
+        <textarea id="cs-why" rows="3" placeholder="Emotionally, practically and personally — why is this the right next step?" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;resize:vertical;outline:none;line-height:1.6">${ag&&ag.why||""}</textarea>
+      </div>
+
+      <!-- Dates -->
+      <div style="margin-bottom:1.5rem;max-width:620px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.55rem">7. Dates</div>
+        <div class="g2">
+          <div><label class="lbl">Start Date</label><input type="date" id="cs-start" value="${ag&&ag.start||""}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;outline:none" onchange="csOnStartDate(this.value)"></div>
+          <div><label class="lbl">30-Day Review</label><input type="date" id="cs-review" value="${ag&&ag.review||""}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;outline:none"></div>
+        </div>
+      </div>
+
+      <!-- Live summary -->
+      <div id="cs-summary-wrap" style="display:none;max-width:620px;margin-bottom:1rem">
+        <div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin-bottom:.85rem"><span style="flex:1;height:1px;background:var(--bdr2)"></span>Your Aligned Goal<span style="flex:1;height:1px;background:var(--bdr2)"></span></div>
+        <div class="card" style="padding:1.25rem 1.4rem"><div id="cs-summary-text" style="font-size:14px;color:var(--text2);line-height:1.9"></div></div>
+      </div>
+    `:questions.map((q,qi)=>`
+      <div class="qbox">
+        <div class="qlabel">${qi+1}. ${q.q}</div>
+        <textarea id="cs-q-${qi}" rows="3" placeholder="${q.p}">${ans[qi]||""}</textarea>
+        <div class="char-c">${(ans[qi]||"").length}/600</div>
+      </div>`).join("")}
+
+    ${fc&&fc.note&&!isGoalStep?`<div class="note-box" style="margin-top:.25rem">${fc.note}</div>`:""}
+
+    ${deeper&&!isGoalStep?`
+      <div style="margin-top:1.5rem;padding:1rem 1.25rem;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2)">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:.6rem">Go Deeper</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+          ${deeper.map(d=>`<div style="font-size:12px;color:var(--text2);background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r);padding:6px 12px;line-height:1.4">${d}</div>`).join("")}
+        </div>
+      </div>`:""}
+
+    <div style="height:1rem"></div>`;
+
+  // char counters — only 3 questions
+  for(let qi=0;qi<3;qi++){
+    const el=document.getElementById("cs-q-"+qi);
+    if(el){
+      el.addEventListener("input",()=>{
+        const upd={...state.clearAnswers[si]};
+        upd[qi]=el.value;
+        state.clearAnswers[si]=upd;
+        el.nextElementSibling.textContent=el.value.length+"/600";
+      });
+    }
+  }
+
+  // A-step live saves
+  if(isGoalStep){
+    const saveAndRefresh=()=>{
+      const ag=_ensureGoal();
+      const actionEl=document.getElementById("cs-action");
+      const minimumEl=document.getElementById("cs-minimum");
+      const successEl=document.getElementById("cs-success");
+      const whyEl=document.getElementById("cs-why");
+      const startEl=document.getElementById("cs-start");
+      const reviewEl=document.getElementById("cs-review");
+      if(actionEl) ag.action=actionEl.value;
+      if(minimumEl) ag.minimum=minimumEl.value;
+      if(successEl) ag.success=successEl.value;
+      if(whyEl) ag.why=whyEl.value;
+      if(startEl) ag.start=startEl.value;
+      if(reviewEl) ag.review=reviewEl.value;
+      // Also copy C/L/E discovery fields into goal
+      ag.currentPattern=currentPattern;
+      ag.desiredShift=desiredShift;
+      ag.mainBlock=mainBlock;
+      _csSummaryRefresh(ag);
+    };
+    ["cs-action","cs-minimum","cs-success","cs-why"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.addEventListener("input",saveAndRefresh);
+    });
+    ["cs-start","cs-review"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.addEventListener("change",saveAndRefresh);
+    });
+    // Trigger once to populate summary if returning to step
+    saveAndRefresh();
+  }
+}
+
+/* A-step chip helpers */
+function _ensureGoal(){
+  let ag=activeGoal();
+  if(!ag){
+    ag=makeGoal("primary",state.focusArea);
+    ag.status="active";
+    state.goals.push(ag);
+    state.activeGoalId=ag.goalId;
+  }
+  return ag;
+}
+
+function csPickGoalType(t){
+  const ag=_ensureGoal();
+  ag.goalTitle=t;
+  document.querySelectorAll("#cs-goaltype-chips .chip").forEach(c=>c.classList.toggle("picked",c.textContent.trim()===t));
+}
+function csPickFreq(f){
+  const ag=_ensureGoal();
+  ag.freq=f;
+  document.querySelectorAll("#cs-freq-chips .chip").forEach(c=>c.classList.toggle("picked",c.textContent.trim()===f));
+  _csSummaryRefresh(ag);
+}
+function csToggleMetric(m){
+  const ag=_ensureGoal();
+  if(!ag.metrics) ag.metrics=[];
+  const idx=ag.metrics.indexOf(m);
+  if(idx>=0) ag.metrics.splice(idx,1); else ag.metrics.push(m);
+  document.querySelectorAll("#cs-metric-chips .chip").forEach(c=>c.classList.toggle("picked",ag.metrics.includes(c.textContent.trim())));
+  _csSummaryRefresh(ag);
+}
+function csOnStartDate(val){
+  const ag=_ensureGoal();
+  ag.start=val;
+  if(val){
+    const d=new Date(val);
+    if(!isNaN(d.getTime())){
+      d.setDate(d.getDate()+30);
+      const rev=d.toISOString().slice(0,10);
+      const el=document.getElementById("cs-review");
+      if(el&&!ag.review){ el.value=rev; ag.review=rev; }
+    }
+  }
+}
+function _csSummaryRefresh(ag){
+  ag=ag||activeGoal(); if(!ag) return;
+  const txt=buildSummaryText(ag);
+  const wrap=document.getElementById("cs-summary-wrap");
+  const card=document.getElementById("cs-summary-text");
+  if(wrap) wrap.style.display=txt?"":"none";
+  if(card) card.innerHTML=txt;
+}
+
+/* ═══ GOAL BUILDER DATA ═══ */
+const GOAL_DATA={
+  "Money & Stability":{
+    heading:"Your first aligned money goal.",
+    support:"This is not about fixing your whole financial life. It is about choosing one honest, repeated action that helps you rebuild trust, reduce avoidance and create momentum.",
+    goalTypes:["Review regularly","Track spending","Reduce debt","Save consistently","Generate income","Stop avoiding money","Separate finances","Make consistent offers"],
+    outcomePh:"Example: improve my financial clarity, create stability, reduce avoidance, build consistent income...",
+    actionPh:"Example: review finances every Sunday, send 10 outreach messages per week, track all spending daily, pay £100 off debt each week...",
+    successPh:"Example: reviewing money 4 times, making 30 outreach attempts, tracking spending every day for 30 days...",
+    metrics:["Money reviewed","Spending tracked","Income generated","Outreach sent","Follow-ups sent","Sales calls booked","Proposals sent","Clients closed","Revenue secured","Savings added","Debt reduced","Budget reviewed","Offers made","Custom"],
+    freqs:["Daily","Every weekday","3x per week","Weekly","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your confidence or stability change?","What part of your future self does this connect to?"]
+  },
+  "Health & Energy":{
+    heading:"Your first aligned health goal.",
+    support:"One consistent action repeated over 30 days will build more self-trust and momentum than any perfect plan that falls apart after a week.",
+    goalTypes:["Move my body","Improve sleep","Train consistently","Hydrate properly","Improve food habits","Rest properly","Reduce alcohol / caffeine / sugar","Track energy"],
+    outcomePh:"Example: improve my energy, train consistently, sleep better, move my body regularly, feel stronger...",
+    actionPh:"Example: walk 20 minutes daily, train 3x per week, sleep before midnight every night, drink 2 litres of water daily...",
+    successPh:"Example: completing at least 20 walks, training 12 times, sleeping before midnight on 25 nights...",
+    metrics:["Workout completed","Walk completed","Steps tracked","Sleep time logged","Sleep quality rated","Water intake tracked","Meals prepared","Alcohol-free day","Caffeine cut-off followed","Rest taken","Energy score","Mood score","Self-trust score","Custom"],
+    freqs:["Daily","Every weekday","5x per week","3x per week","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your energy, mood or confidence change?","What part of your future self does this connect to?"]
+  },
+  "Mindset & Thinking":{
+    heading:"Your first aligned mindset goal.",
+    support:"A mindset goal is a commitment to practise a new way of thinking — consistently and deliberately. Small repeated actions create lasting change.",
+    goalTypes:["Journal consistently","Meditate daily","Challenge limiting beliefs","Read purposefully","Reframe negative thoughts","Practise gratitude","Work with a coach"],
+    outcomePh:"Example: rebuild clarity, reduce overthinking, develop a healthier inner voice, strengthen my focus...",
+    actionPh:"Example: journal every morning, meditate 10 minutes daily, challenge one limiting belief per week...",
+    successPh:"Example: completing 25 journal entries, meditating 20 times, noticing and reframing one thought per day...",
+    metrics:["Journal completed","Thought pattern noticed","Reframe completed","Meditation completed","Reading completed","Pause taken","Negative thought challenged","Evidence written down","Self-talk score","Clarity score","Self-trust score","Custom"],
+    freqs:["Daily","Every weekday","5x per week","3x per week","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your clarity, calm or confidence change?","What part of your future self does this connect to?"]
+  },
+  "Confidence & Self-Belief":{
+    heading:"Your first aligned confidence goal.",
+    support:"Confidence is built through action. This goal should ask you to do one consistent stretching thing that builds evidence of your capability.",
+    goalTypes:["Speak up","Be visible","Make decisions","Take action despite fear","Set a boundary","Stop seeking reassurance","Share work publicly"],
+    outcomePh:"Example: rebuild self-belief, become more visible, speak up more, stop shrinking, trust my own decisions...",
+    actionPh:"Example: speak up in one meeting per week, make one ask per week, stop apologising unnecessarily, post once per week...",
+    successPh:"Example: speaking up 4 times, making 12 asks, posting on social media 12 times, holding 4 boundaries...",
+    metrics:["Stretching action taken","Speak-up moment","Ask or offer made","Boundary held","Apology avoided","Visible action taken","Decision made","Reassurance avoided","Action taken despite fear","Comparison interrupted","Confidence score","Self-trust score","Courage score","Custom"],
+    freqs:["Daily","3x per week","Weekly","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your self-trust or visibility change?","What part of your future self does this connect to?"]
+  },
+  "Relationships & Connection":{
+    heading:"Your first aligned relationship goal.",
+    support:"Relationships improve through small, consistent choices — one honest word, one boundary held, one genuine reach-out made.",
+    goalTypes:["Reconnect","Communicate honestly","Set a boundary","Create quality time","Ask for support","Reduce avoidance","Repair a relationship","Build new connection"],
+    outcomePh:"Example: rebuild a relationship, reduce isolation, communicate more honestly, set clearer boundaries, feel more connected...",
+    actionPh:"Example: reach out to one person per week, have one honest conversation, say no to one misaligned obligation, plan quality time weekly...",
+    successPh:"Example: having 4 honest conversations, making 8 reach-outs, saying no 4 times, completing 4 quality time sessions...",
+    metrics:["Honest conversation had","Message sent","Quality time completed","Boundary communicated","Check-in completed","Avoidance reduced","Connection score","Emotional honesty score","Self-trust score","Custom"],
+    freqs:["Daily","3x per week","Weekly","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your relationships or sense of connection change?","What part of your future self does this connect to?"]
+  },
+  "Career, Work & Business":{
+    heading:"Your first aligned career or business goal.",
+    support:"One clear, consistent action taken over 30 days can shift your entire professional trajectory. Progress is built through deliberate repetition.",
+    goalTypes:["Send outreach","Apply consistently","Launch an offer","Sign new clients","Create deep work blocks","Define direction","Set working boundaries"],
+    outcomePh:"Example: build momentum in my business, get clarity on my direction, sign new clients, move into a new role, launch something new...",
+    actionPh:"Example: send 10 outreach messages per week, apply to 3 jobs per week, block 2 hours of deep work daily, make one offer per week...",
+    successPh:"Example: sending 40 outreach messages, applying to 12 roles, completing 20 deep work sessions, making 4 offers...",
+    metrics:["Action completed","Outreach sent","Applications sent","Follow-up sent","Calls booked","Meeting requested","Proposals sent","Clients signed","Revenue secured","Offers made","Deep work session","Content published","Connections made","Skill practice completed","Project milestone completed","Decision made","Custom"],
+    freqs:["Daily","Every weekday","3x per week","Weekly","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your direction, income or fulfilment change?","What part of your future self does this connect to?"]
+  },
+  "Purpose & Direction":{
+    heading:"Your first aligned purpose goal.",
+    support:"Purpose is often found by doing, not thinking. This goal should pull you towards living in a way that feels more meaningful — one action at a time.",
+    goalTypes:["Start a creative project","Define my values","Have purposeful conversations","Volunteer for something I care about","Write my mission","Cut misaligned commitments","Create something meaningful","Explore a direction","Serve or help someone","Make a values-based decision","Spend time in reflection","Take one brave step","Reduce a distraction","Reconnect with faith / spirituality","Custom"],
+    outcomePh:"Example: reconnect with what matters, start something creative, explore a direction, live with more intention...",
+    actionPh:"Example: spend 30 minutes twice a week exploring my personal mission, write one page per week on what matters, have one meaningful conversation per week, say no to one commitment that does not align with my values...",
+    successPh:"Example: completing 4 creative sessions, writing 4 reflection pages, having 4 meaningful conversations, saying no to 2 misaligned commitments...",
+    metrics:["Purposeful action taken","Creative time logged","Reflection done","Meaningful conversation had","Values reviewed","Aligned decision made","Values-based choice made","Distraction reduced","Mission work completed","Service / help given","Energy score","Fulfilment score","Clarity score","Custom"],
+    freqs:["Daily","3x per week","Weekly","Twice a week","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your sense of meaning or direction change?","What part of your future self does this connect to?"]
+  },
+  "Daily Structure & Discipline":{
+    heading:"Your first aligned structure goal.",
+    support:"One habit done imperfectly for 30 days builds far more self-trust than a perfect plan abandoned after five days.",
+    goalTypes:["Build a morning routine","Plan each evening","Create focus blocks","Wake consistently","Protect non-negotiables","Review weekly","Reduce digital distraction","Set a bedtime routine","Create a weekly plan","Start the day without phone","Finish work at a set time","Clear my workspace","Block deep work time","Create a reset routine","Custom"],
+    outcomePh:"Example: build a morning routine, create more focus, improve my planning, stop starting and stopping...",
+    actionPh:"Example: wake at the same time every morning, plan the next day the night before, complete a 30-minute morning routine daily, no phone for the first 30 minutes of the day...",
+    successPh:"Example: completing my routine 20 out of 30 days, planning 4 evenings per week, waking at the same time on 25 mornings...",
+    minimumPh:"Example: 5 minutes of planning, 10 minutes of movement, one focused task, lights out by 11pm...",
+    metrics:["Habit completed","Morning routine done","Evening plan written","Focus session done","Screen time respected","Commitment kept","Wake time logged","Sleep time logged","Planning completed","Deep work completed","Phone-free block completed","Weekly review completed","Reset completed","Self-trust score","Consistency score","Custom"],
+    freqs:["Daily","Every weekday","5x per week","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your self-trust or results change?","What part of your future self does this connect to?"]
+  },
+  "Emotional Wellbeing":{
+    heading:"Your first aligned emotional wellbeing goal.",
+    support:"Emotional health is built through small, consistent practices — not one breakthrough moment. Showing up for yourself repeatedly is the work.",
+    goalTypes:["Journal consistently","Name my emotions daily","Take phone-free walks","Practise breathwork","Create a wind-down ritual","Reduce numbing habits","Strengthen emotional boundaries","Have one honest conversation","Ask for support","Create a calm-down routine","Practise self-compassion","Take one proper rest block","Book or attend therapy / coaching","Custom"],
+    outcomePh:"Example: build emotional stability, feel less reactive, process feelings more honestly, develop a calming practice...",
+    actionPh:"Example: journal 10 minutes every morning, name one emotion per day, take a daily phone-free walk, practise one breathing exercise daily, attend therapy weekly...",
+    successPh:"Example: journalling 20 times, naming my emotions daily for 2 weeks, taking 15 walks, attending all 4 therapy sessions...",
+    metrics:["Practice completed","Emotion named","Journal done","Therapy / coaching attended","Walk taken","Breathing done","Screen-free time","Boundary held","Honest conversation had","Support requested","Numbing habit avoided","Rest taken","Mood score","Calmness score","Self-trust score","Custom"],
+    freqs:["Daily","Every weekday","5x per week","3x per week","Weekly","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your inner stability or relationships change?","What part of your future self does this connect to?"]
+  },
+  "Self-Respect & Identity":{
+    heading:"Your first aligned self-respect goal.",
+    support:"Self-respect is rebuilt through action — through the promises you keep to yourself and the standards you choose to hold.",
+    goalTypes:["Keep promises to myself","Say no to misaligned things","Set a clear boundary","Speak kindly to myself","Raise my standards","Stop tolerating a pattern","Honour my own needs","Make one honest decision","Stop over-explaining","Protect my time","Ask for what I need","Choose myself without guilt","Custom"],
+    outcomePh:"Example: rebuild my relationship with myself, raise my standards, stop tolerating what drains me, honour my own needs consistently...",
+    actionPh:"Example: keep one promise to myself every day, say no to one misaligned thing per week, speak kindly to myself, set one clear boundary...",
+    successPh:"Example: keeping 25 promises to myself, declining 4 misaligned requests, setting 4 clear boundaries, not over-explaining 10 decisions...",
+    metrics:["Promise kept","Boundary held","Kind self-talk practised","Misaligned yes declined","Standards upheld","Need honoured","Time protected","Honest decision made","Over-explaining avoided","Value-led choice made","Self-respect score","Self-trust score","Custom"],
+    freqs:["Daily","Every weekday","3x per week","Weekly","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your relationship with yourself change?","What part of your future self does this connect to?"]
+  }
+};
+
+function getGDFor(area){
+  return GOAL_DATA[area]||{
+    heading:"Your first aligned goal.",
+    support:"One specific, meaningful action taken consistently over 30 days creates more change than ten vague intentions.",
+    goalTypes:["Take action","Build a habit","Have a conversation","Set a boundary","Create consistency"],
+    outcomePh:"What do you want to improve or create in this area over the next 30 days?",
+    actionPh:"What repeated action will help you move towards this?",
+    successPh:"What would make this a successful 30 days?",
+    metrics:["Action completed","Habit done","Confidence score","Self-trust score","Custom"],
+    freqs:["Daily","3x per week","Weekly","Custom"],
+    whyPrompts:["What will this give you more of?","What will this help you stop feeling?","What would achieving this prove to you?","How would your life change?","What part of your future self does this connect to?"]
+  };
+}
+function getGD(){ return getGDFor(state.focusArea); }
+
+/* ═══ GOAL BUILDER ═══ */
+function renderGoal(){
+  const g=activeGoal();
+  if(!g){
+    // No goal yet — create primary from CLEAR flow
+    const ng=makeGoal("primary",state.focusArea);
+    state.goals.push(ng);
+    state.activeGoalId=ng.goalId;
+    renderGoal();
+    return;
+  }
+  const isPrimary=g.goalType==="primary";
+  const fromClear=isPrimary&&state.currentClearStep>=3;
+  const gd=getGDFor(g.focusArea);
+
+  function suggestReview(startVal){
+    if(!startVal) return "";
+    const d=new Date(startVal);
+    if(isNaN(d.getTime())) return "";
+    d.setDate(d.getDate()+30);
+    return d.toISOString().slice(0,10);
+  }
+
+  const summaryTxt=buildSummaryText(g);
+
+  document.getElementById("goal-page").innerHTML=`
+    <div class="eyebrow"><span class="eydot"></span>${isPrimary?"Primary Goal":"Supporting Goal"}</div>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.35rem;flex-wrap:wrap">
+      <span style="display:inline-flex;align-items:center;gap:5px;background:${isPrimary?"var(--gold-dim2)":"var(--bg4)"};border:1px solid ${isPrimary?"var(--bdr)":"var(--bdr2)"};border-radius:100px;padding:4px 12px;font-size:11px;font-weight:600;color:${isPrimary?"var(--gold)":"var(--text3)"};letter-spacing:.06em">
+        ${isPrimary?"⬡ Primary Focus":"◇ Supporting Goal"}
+      </span>
+      ${g.focusArea?`<span style="font-size:13px;color:var(--text2)">${g.focusArea}</span>`:""}
+    </div>
+    <h2 style="margin-top:.25rem">${gd.heading}</h2>
+    <p class="lead" style="max-width:600px">${gd.support}</p>
+
+    <!-- 1: Outcome -->
+    <div class="goal-section">
+      <div class="gs-num">1</div>
+      <div class="gs-body">
+        <div class="gs-title">Define the outcome</div>
+        <div class="gs-q">What do you want to improve or create in this area over the next 30 days?</div>
+        <textarea id="gb-outcome" rows="2" placeholder="${gd.outcomePh}">${g.outcome}</textarea>
+        <div class="gs-note">This is the direction, not the to-do list. Keep it honest and specific to where you are right now.</div>
+      </div>
+    </div>
+
+    <!-- 2: Aligned action -->
+    <div class="goal-section">
+      <div class="gs-num">2</div>
+      <div class="gs-body">
+        <div class="gs-title">Choose the aligned action</div>
+        <div class="gs-q">What repeated action will help you move towards this?</div>
+        <textarea id="gb-action" rows="2" placeholder="${gd.actionPh}">${g.action}</textarea>
+        <div class="gs-note">Focus on the behaviour, not the outcome. What will you actually do?</div>
+      </div>
+    </div>
+
+    <!-- 3: Rhythm -->
+    <div class="goal-section">
+      <div class="gs-num">3</div>
+      <div class="gs-body">
+        <div class="gs-title">Set the rhythm</div>
+        <div class="gs-q">How often will you take this action?</div>
+        <div style="display:flex;flex-wrap:wrap;margin-top:.5rem" id="freq-chips">
+          ${gd.freqs.map(f=>`<span class="chip${g.freq===f?" picked":""}" onclick="pickFreq('${f}')">${f}</span>`).join("")}
+        </div>
+      </div>
+    </div>
+
+    <!-- 4: Tracking -->
+    <div class="goal-section">
+      <div class="gs-num">4</div>
+      <div class="gs-body">
+        <div class="gs-title">Choose what you will track</div>
+        <div class="gs-q">What will show that you are following through? Select all that apply.</div>
+        <div style="display:flex;flex-wrap:wrap;margin-top:.5rem" id="metric-chips">
+          ${gd.metrics.map(m=>`<span class="chip${g.metrics.includes(m)?" picked":""}" onclick="toggleMetric('${m}')">${m}</span>`).join("")}
+        </div>
+        <div class="gs-note">These will become your daily tracker fields. Choose what feels honest and useful, not exhaustive.</div>
+      </div>
+    </div>
+
+    <!-- 5: Define success -->
+    <div class="goal-section">
+      <div class="gs-num">5</div>
+      <div class="gs-body">
+        <div class="gs-title">Define success</div>
+        <div class="gs-q">What would make this a successful 30 days?</div>
+        <textarea id="gb-success" rows="2" placeholder="${gd.successPh}">${g.success}</textarea>
+        <div class="gs-note">Set a realistic, behaviour-based bar. This is what you will measure yourself against at the end.</div>
+      </div>
+    </div>
+
+    <!-- 6: Why it matters -->
+    <div class="goal-section">
+      <div class="gs-num">6</div>
+      <div class="gs-body">
+        <div class="gs-title">Why it matters</div>
+        <div class="gs-q">Why does this goal matter to you — emotionally, practically and personally?</div>
+        <textarea id="gb-why" rows="4" placeholder="Take your time here. The more honest this is, the more powerful your goal becomes.">${g.why}</textarea>
+        <div style="margin-top:.75rem">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.45rem">Consider:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+            ${gd.whyPrompts.map(p=>`<div style="font-size:12px;color:var(--text3);background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r);padding:5px 10px;cursor:pointer;line-height:1.4" onclick="appendWhy('${p.replace(/'/g,"\\'")} ')">${p}</div>`).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7: Future impact -->
+    <div class="goal-section">
+      <div class="gs-num">7</div>
+      <div class="gs-body">
+        <div class="gs-title">Future impact</div>
+        <div class="gs-q">If you achieve this goal, what becomes possible?</div>
+        <textarea id="gb-impact" rows="3" placeholder="What changes in your confidence, stability, energy, options or self-belief?">${g.impact}</textarea>
+        <div class="gs-q" style="margin-top:1rem">If nothing changes, what is likely to continue?</div>
+        <textarea id="gb-noChange" rows="3" placeholder="What pattern, pressure or frustration might stay the same?">${g.noChange}</textarea>
+      </div>
+    </div>
+
+    <!-- 8: Dates -->
+    <div class="goal-section">
+      <div class="gs-num">8</div>
+      <div class="gs-body">
+        <div class="gs-title">Dates</div>
+        <div class="g2" style="margin-top:.5rem">
+          <div>
+            <label class="lbl">Start Date</label>
+            <input type="date" id="gb-start" value="${g.start}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;outline:none;transition:border-color .18s" onchange="onStartDateChange(this.value)">
+          </div>
+          <div>
+            <label class="lbl">30-Day Review Date</label>
+            <input type="date" id="gb-review" value="${g.review||suggestReview(g.start)}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;outline:none;transition:border-color .18s">
+          </div>
+        </div>
+        <div style="margin-top:.85rem">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.45rem">Optional check-ins:</div>
+          <div style="display:flex;flex-wrap:wrap" id="checkin-chips">
+            ${["7-day check-in","14-day check-in","30-day review"].map(c=>`<span class="chip${(g.checkins||[]).includes(c)?" picked":""}" onclick="toggleCheckin('${c}')">${c}</span>`).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9: Generated summary -->
+    <div id="goal-summary-wrap" style="${summaryTxt?"":"display:none"}">
+      <div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin:2rem 0 1rem">
+        <span style="flex:1;height:1px;background:var(--bdr2)"></span>Your First Aligned Goal<span style="flex:1;height:1px;background:var(--bdr2)"></span>
+      </div>
+      <div class="card" style="max-width:660px;padding:1.4rem 1.5rem">
+        <div id="goal-summary-card" style="font-size:14px;color:var(--text2);line-height:1.9">${summaryTxt}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap">
+      <button class="btn btn-g" onclick="go('goalDash')">← My Goals</button>
+      <button class="btn btn-p" id="goal-next" ${!g.outcome&&!g.action?"disabled":""} onclick="commitGoalAndGo()">Save Goal →</button>
+    </div>`;
+
+  // Live save & summary refresh — save into the active goal object
+  ["outcome","action","success","why","impact","noChange"].forEach(k=>{
+    const el=document.getElementById("gb-"+k);
+    if(!el) return;
+    el.addEventListener("input",e=>{
+      const ag=activeGoal(); if(!ag) return;
+      ag[k]=e.target.value;
+      const canProceed=!!(ag.outcome||ag.action);
+      const btn=document.getElementById("goal-next");
+      if(btn) btn.disabled=!canProceed;
+      refreshGoalSummary();
+    });
+  });
+  ["gb-start","gb-review"].forEach(id=>{
+    const el=document.getElementById(id);
+    const k=id==="gb-start"?"start":"review";
+    if(el) el.addEventListener("change",e=>{ const ag=activeGoal(); if(ag) ag[k]=e.target.value; refreshGoalSummary(); });
+  });
+}
+
+function appendWhy(txt){
+  const el=document.getElementById("gb-why");
+  if(!el) return;
+  const ag=activeGoal(); if(!ag) return;
+  el.value=(el.value?el.value+"\n":"")+txt;
+  ag.why=el.value;
+  refreshGoalSummary();
+}
+
+function onStartDateChange(val){
+  const ag=activeGoal(); if(!ag) return;
+  ag.start=val;
+  if(val){
+    const d=new Date(val);
+    if(!isNaN(d.getTime())){
+      d.setDate(d.getDate()+30);
+      const rev=d.toISOString().slice(0,10);
+      const el=document.getElementById("gb-review");
+      if(el&&!ag.review){ el.value=rev; ag.review=rev; }
+    }
+  }
+  refreshGoalSummary();
+}
+
+function pickFreq(f){
+  const ag=activeGoal(); if(!ag) return;
+  ag.freq=f;
+  document.querySelectorAll("#freq-chips .chip").forEach(c=>c.classList.toggle("picked",c.textContent.trim()===f));
+  refreshGoalSummary();
+}
+
+function toggleMetric(m){
+  const ag=activeGoal(); if(!ag) return;
+  const idx=ag.metrics.indexOf(m);
+  if(idx>=0) ag.metrics.splice(idx,1); else ag.metrics.push(m);
+  document.querySelectorAll("#metric-chips .chip").forEach(c=>c.classList.toggle("picked",ag.metrics.includes(c.textContent.trim())));
+  refreshGoalSummary();
+}
+
+function toggleCheckin(c){
+  const ag=activeGoal(); if(!ag) return;
+  if(!ag.checkins) ag.checkins=[];
+  const idx=ag.checkins.indexOf(c);
+  if(idx>=0) ag.checkins.splice(idx,1); else ag.checkins.push(c);
+  document.querySelectorAll("#checkin-chips .chip").forEach(el=>el.classList.toggle("picked",ag.checkins.includes(el.textContent.trim())));
+}
+
+function refreshGoalSummary(){
+  const ag=activeGoal();
+  const txt=ag?buildSummaryText(ag):"";
+  const wrap=document.getElementById("goal-summary-wrap");
+  const card=document.getElementById("goal-summary-card");
+  if(wrap) wrap.style.display=txt?"":"none";
+  if(card) card.innerHTML=txt;
+}
+
+/* Clean and rewrite raw user text into natural, polished language */
+function isTestText(s){
+  if(!s||s.trim().length<6) return true;
+  const bad=["test","asdf","xxx","aaa","123","abc","hello","hi ","lol","jkl","qwe"];
+  const low=s.toLowerCase().trim();
+  return bad.some(b=>low===b||low.startsWith(b+" ")||low.startsWith(b+"\n"));
+}
+
+function cleanPhrase(raw){
+  if(!raw||isTestText(raw)) return null;
+  let s=raw.trim().replace(/\n+/g," ").replace(/\s+/g," ");
+  // Strip leading filler words
+  s=s.replace(/^(i want to|i will|i am going to|to|my goal is to|basically|just|so that i can|because i|because)\s+/i,"");
+  // Lowercase first char for mid-sentence embedding
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function cleanAction(raw){
+  if(!raw||isTestText(raw)) return null;
+  let s=raw.trim().replace(/\n+/g," ").replace(/\s+/g," ");
+  // Strip leading "go back to" → "go to", tidy capitalisation
+  s=s.replace(/^go back to /i,"go to ");
+  // Ensure it starts lower-case for "I will [action]" embedding
+  return s.charAt(0).toLowerCase()+s.slice(1);
+}
+
+function cleanOutcome(raw){
+  if(!raw||isTestText(raw)) return null;
+  let s=raw.trim().replace(/\n+/g," ").replace(/\s+/g," ");
+  // Remove leading filler
+  s=s.replace(/^(more |better |improve(d|) |build(ing|) |create |rebuild )/i,(m)=>m);
+  // Collapse comma-heavy lists: "More Energy, Better health, Stronger and fitter" → "improve my energy, health, strength and fitness"
+  // Detect if it looks like a comma list of goals
+  if(/,/.test(s)&&s.length<120){
+    const parts=s.split(/,\s*|\s+and\s+/).map(p=>p.trim().toLowerCase()).filter(Boolean);
+    // Normalise each part
+    const normed=parts.map(p=>p.replace(/^(more |better |improved? |stronger? |fitter? |greater )/,"").trim());
+    const unique=[...new Set(normed)];
+    if(unique.length>1){
+      const last=unique.pop();
+      return unique.join(", ")+" and "+last;
+    }
+    return unique[0]||s;
+  }
+  return s.charAt(0).toLowerCase()+s.slice(1);
+}
+
+function cleanWhy(raw){
+  if(!raw||isTestText(raw)) return null;
+  let s=raw.trim().replace(/\n+/g," ").replace(/\s+/g," ");
+  // Rewrite "Because I can do it and look forward to feeling good and looking good and being healthy"
+  // → "I want to feel good, look after myself and build evidence that I can stay committed"
+  s=s.replace(/^because i /i,"I ");
+  s=s.replace(/^because /i,"");
+  // Lowercase start for mid-sentence "This matters because ..."
+  return s.charAt(0).toLowerCase()+s.slice(1);
+}
+
+function cleanSuccess(raw){
+  if(!raw||isTestText(raw)) return null;
+  let s=raw.trim().replace(/\n+/g," ").replace(/\s+/g," ").toLowerCase();
+  // Single-word vague answers → expand gently
+  if(s==="commitment"||s==="consistency"||s==="committed"||s==="consistent"){
+    return "consistent action, not perfection";
+  }
+  if(s==="completing it"||s==="finishing it"||s==="done"){
+    return "completing the full 30 days";
+  }
+  // Return as-is otherwise, with leading lowercase for sentence embedding
+  return s.charAt(0).toLowerCase()+s.slice(1);
+}
+
+function buildSummaryText(goalObj){
+  const g=goalObj||activeGoal()||{};
+  if((!g.outcome||g.outcome.trim().length<6)&&(!g.action||g.action.trim().length<6)) return "";
+  if(isTestText(g.outcome)&&isTestText(g.action)) return "";
+
+  const action=cleanAction(g.action);
+  const outcome=cleanOutcome(g.outcome);
+  const freq=g.freq?` ${g.freq.toLowerCase()}`:"";
+  const metrics=g.metrics.filter(m=>m!=="Custom");
+  const why=cleanWhy(g.why);
+  const success=cleanSuccess(g.success);
+
+  // Metric list — lowercase, strip "tracked/completed/done/rated" suffixes for fluency
+  const metricWords=metrics.map(m=>m.toLowerCase()
+    .replace(/ (completed|done|tracked|taken|logged|rated|followed|communicated|noticed|practised|had|made|sent|booked|secured|added|reduced|reviewed|written|finished|applied)$/,"")
+  );
+  let trackStr="";
+  if(metricWords.length===1) trackStr=metricWords[0];
+  else if(metricWords.length===2) trackStr=metricWords.join(" and ");
+  else if(metricWords.length>2){
+    const last=metricWords[metricWords.length-1];
+    trackStr=metricWords.slice(0,-1).join(", ")+" and "+last;
+  }
+  else trackStr="my progress";
+
+  // Build sentence
+  let s="For the next 30 days, I will ";
+  if(action) s+=`<strong>${action}</strong>${freq}`;
+  else s+=`take consistent action${freq}`;
+  if(outcome) s+=` to <strong>improve my ${outcome}</strong>`;
+  s+=`.`;
+
+  if(trackStr) s+=` I will track <em>${trackStr}</em>.`;
+  if(why) s+=` This matters because <em>${why}</em>.`;
+  if(success) s+=` A successful 30 days would look like <em>${success}</em>.`;
+
+  return s;
+}
+
+function refreshGoalSummary(){
+  const txt=buildSummaryText();
+  const wrap=document.getElementById("goal-summary-wrap");
+  const card=document.getElementById("goal-summary-card");
+  if(wrap) wrap.style.display=txt?"":"none";
+  if(card) card.innerHTML=txt;
+}
+
+function commitGoalAndGo(){
+  const g=activeGoal();
+  if(!g) return;
+  ["gb-start","gb-review"].forEach(id=>{
+    const el=document.getElementById(id);
+    const k=id==="gb-start"?"start":"review";
+    if(el) g[k]=el.value;
+  });
+  // Mark as saved
+  g.status="active";
+  go("goalDash");
+}
+
+function formatDate(iso){
+  if(!iso) return "";
+  const d=new Date(iso+"T00:00:00");
+  if(isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+}
+
+/* ═══ GOAL DASHBOARD ═══ */
+let _justCompletedCLEAR=false;
+
+/* helpers */
+function _goalTitle(g){
+  return (g.goalTitle&&g.goalTitle.trim())||(g.action&&g.action.trim())||(g.outcome&&g.outcome.trim())||null;
+}
+function _goalComplete(g){
+  return !!(_goalTitle(g)&&g.freq);
+}
+function _daysRemaining(g){
+  if(!g.review) return null;
+  const diff=Math.ceil((new Date(g.review+"T00:00:00")-new Date())/86400000);
+  return diff>0?diff:0;
+}
+function _logActionForGoal(goalId){
+  state.activeGoalId=goalId;
+  state.openTracker=-1;
+  // open tracker and auto-open today's entry (last entry)
+  const ag=activeGoal();
+  if(ag&&ag.trackerEntries) state.openTracker=ag.trackerEntries.length-1;
+  go("tracker");
+}
+
+function renderGoalDash(){
+  const primary=getPrimary();
+  const supporting=getSupporting();
+  const allGoals=state.goals.filter(g=>g.status!=="paused");
+  const auditDone=state.areas.filter(a=>a.score!==null).length===10;
+  const showSuccess=_justCompletedCLEAR;
+  _justCompletedCLEAR=false;
+
+  /* ── shared helpers ── */
+  function badge(isPrimary){
+    return isPrimary
+      ?`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--gd2);border:1px solid var(--bdr);border-radius:100px;padding:4px 13px;font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-transform:uppercase">⬡ Primary Focus</span>`
+      :`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg4);border:1px solid var(--bdr2);border-radius:100px;padding:4px 13px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.08em;text-transform:uppercase">◇ Supporting Goal</span>`;
+  }
+  function statusPill(g){
+    return g.status==="paused"
+      ?`<span style="font-size:11px;color:var(--text3);background:var(--bg4);border:1px solid var(--bdr2);border-radius:100px;padding:3px 10px">Paused</span>`
+      :`<span style="font-size:11px;color:#3fa06b;background:rgba(63,160,107,.08);border:1px solid rgba(63,160,107,.2);border-radius:100px;padding:3px 10px">Active</span>`;
+  }
+  function progressBar(pct,h){
+    h=h||6;
+    return `<div class="bar-track" style="height:${h}px;border-radius:${h/2}px"><div class="bar-fill" style="width:${pct}%;background:var(--gold);height:${h}px;border-radius:${h/2}px;transition:width .5s ease"></div></div>`;
+  }
+  function divider(label){
+    return `<div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin:2rem 0 1.1rem"><span style="flex:1;height:1px;background:var(--bdr2)"></span>${label}<span style="flex:1;height:1px;background:var(--bdr2)"></span></div>`;
+  }
+
+  /* ── 30-day cycle summary card ── */
+  function cycleSummaryCard(){
+    if(!primary) return "";
+    const {done,logged,streak}=getProgressStats(primary);
+    const daysLeft=_daysRemaining(primary);
+    const dayNum=Math.min(logged+1,30);
+    const pct=logged>0?Math.round(done/Math.max(logged,1)*100):0;
+    const title=_goalTitle(primary)||(primary.focusArea+" goal");
+    return `<div style="background:linear-gradient(135deg,var(--bg3) 0%,var(--bg2) 100%);border:1px solid var(--bdr);border-radius:var(--r2);padding:1.4rem 1.6rem;max-width:740px;margin-bottom:2rem">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.9rem">30-Day Goal Cycle</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.65rem;margin-bottom:1rem">
+        <div class="sc" style="padding:.7rem 1rem"><div class="sc-l">Day</div><div class="sc-v">${dayNum}<span style="font-size:11px;color:var(--text3);font-weight:400"> / 30</span></div></div>
+        <div class="sc" style="padding:.7rem 1rem"><div class="sc-l">Actions Done</div><div class="sc-v">${done}</div></div>
+        <div class="sc" style="padding:.7rem 1rem"><div class="sc-l">Streak</div><div class="sc-v">${streak}<span style="font-size:11px;color:var(--text3);font-weight:400">d</span></div></div>
+        ${daysLeft!==null?`<div class="sc" style="padding:.7rem 1rem"><div class="sc-l">Days Left</div><div class="sc-v" style="color:${daysLeft<=5?"#b87070":"var(--gold)"}">${daysLeft}</div></div>`:""}
+        ${primary.review?`<div class="sc" style="padding:.7rem 1rem"><div class="sc-l">Review Date</div><div class="sc-v" style="font-size:12px;line-height:1.4">${formatDate(primary.review)}</div></div>`:""}
+      </div>
+      <div style="margin-bottom:.45rem"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:.35rem"><span>Overall completion rate</span><span style="color:var(--gold);font-weight:600">${pct}%</span></div>${progressBar(pct,7)}</div>
+      <div style="margin-top:.9rem;padding-top:.9rem;border-top:1px solid var(--bdr2)">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem">Primary focus</div>
+        <div style="font-size:13px;color:var(--text2);font-weight:500">${primary.focusArea||""} · ${title}</div>
+      </div>
+    </div>`;
+  }
+
+  /* ── today's actions card ── */
+  function todaysActionsCard(){
+    if(!allGoals.length) return "";
+    const actionItems=allGoals.map(g=>{
+      const title=_goalTitle(g)||(g.focusArea+" goal");
+      const action=g.action&&g.action.trim()?g.action.trim():"Action not yet defined";
+      const isComplete=_goalComplete(g);
+      return `<div style="background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r2);padding:1rem 1.2rem;display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;flex-wrap:wrap">
+            ${badge(g.goalType==="primary")}
+            ${g.focusArea?`<span style="font-size:11px;color:var(--text3)">${g.focusArea}</span>`:""}
+          </div>
+          <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--text);margin-bottom:.2rem;line-height:1.35">${title}</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">${isComplete?"→ "+action:"<em style=\"color:var(--text3)\">No action defined yet — click Edit to add one</em>"}</div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-shrink:0;padding-top:.15rem">
+          ${isComplete?`<button class="btn btn-p" style="padding:.45rem 1rem;font-size:12px" onclick="_logActionForGoal('${g.goalId}')">Log Action</button>`:""}
+          <button class="btn btn-g" style="padding:.45rem 1rem;font-size:12px" onclick="openGoalTracker('${g.goalId}')">Tracker</button>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div style="max-width:740px;margin-bottom:.5rem">
+      <h3 style="font-size:16px;margin-bottom:.85rem;color:var(--text)">Today's <span style="color:var(--gold)">Aligned Actions</span></h3>
+      <div style="display:flex;flex-direction:column;gap:.6rem">${actionItems}</div>
+    </div>`;
+  }
+
+  /* ── primary goal card (full) ── */
+  function primaryCard(g){
+    if(!g) return "";
+    const {done,logged,streak}=getProgressStats(g);
+    const pct=logged>0?Math.round(done/Math.max(logged,1)*100):0;
+    const title=_goalTitle(g);
+    const daysLeft=_daysRemaining(g);
+    const complete=_goalComplete(g);
+    const action=g.action&&g.action.trim()?g.action.trim():null;
+    return `<div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r2);padding:1.5rem 1.6rem;max-width:740px;margin-bottom:1.25rem">
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
+          ${badge(true)}
+          ${g.focusArea?`<span style="font-size:12px;color:var(--text3)">${g.focusArea}</span>`:""}
+          ${statusPill(g)}
+        </div>
+        <div style="display:flex;gap:.5rem;flex-shrink:0">
+          <button class="btn btn-g" style="padding:.45rem 1rem;font-size:12px" onclick="openGoalBuilder('${g.goalId}')">Edit</button>
+          <button class="btn btn-g" style="padding:.45rem 1rem;font-size:12px" onclick="openGoalTracker('${g.goalId}')">Tracker</button>
+        </div>
+      </div>
+      <!-- Title -->
+      <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:.35rem;line-height:1.3">${title||"Goal not yet named"}</div>
+      ${!complete?`<div style="font-size:13px;color:var(--text3);font-style:italic;margin-bottom:.9rem">Goal not yet complete. Click Edit to define your action, rhythm and success target.</div>`:""}
+      <!-- Meta row -->
+      ${complete?`<div style="display:flex;flex-wrap:wrap;gap:1.25rem;margin-bottom:1rem;font-size:12px;color:var(--text3)">
+        ${action?`<div><span style="color:var(--text2);font-weight:500">Action:</span> ${action}</div>`:""}
+        ${g.freq?`<div><span style="color:var(--text2);font-weight:500">Rhythm:</span> ${g.freq}</div>`:""}
+        ${g.success?`<div><span style="color:var(--text2);font-weight:500">Success:</span> ${g.success}</div>`:""}
+      </div>`:""}
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.5rem;margin-bottom:.9rem">
+        <div class="sc" style="padding:.65rem .9rem"><div class="sc-l">Actions Done</div><div class="sc-v" style="font-size:20px">${done}</div></div>
+        <div class="sc" style="padding:.65rem .9rem"><div class="sc-l">Streak</div><div class="sc-v" style="font-size:20px">${streak}<span style="font-size:12px;color:var(--text3)">d</span></div></div>
+        ${daysLeft!==null?`<div class="sc" style="padding:.65rem .9rem"><div class="sc-l">Days Left</div><div class="sc-v" style="font-size:20px;color:${daysLeft<=5?"#b87070":"var(--gold)"}">${daysLeft}</div></div>`:""}
+        ${g.review?`<div class="sc" style="padding:.65rem .9rem"><div class="sc-l">Review Date</div><div class="sc-v" style="font-size:12px;line-height:1.4">${formatDate(g.review)}</div></div>`:""}
+      </div>
+      <!-- Progress -->
+      <div style="margin-bottom:1.1rem">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:.35rem"><span>Completion rate</span><span style="color:var(--gold);font-weight:600">${pct}%</span></div>
+        ${progressBar(pct,8)}
+        ${logged===0?`<div style="font-size:11px;color:var(--text3);margin-top:.35rem;font-style:italic">No entries yet — log your first action below.</div>`:""}
+      </div>
+      <!-- CTA -->
+      ${complete?`<button class="btn btn-p" style="width:100%;justify-content:center;font-size:14px;padding:.75rem 1rem" onclick="_logActionForGoal('${g.goalId}')">Log Today's Action →</button>`:""}
+    </div>`;
+  }
+
+  /* ── supporting goal card ── */
+  function supportingCard(g){
+    if(!g) return "";
+    const {done,logged,streak}=getProgressStats(g);
+    const pct=logged>0?Math.round(done/Math.max(logged,1)*100):0;
+    const title=_goalTitle(g);
+    const complete=_goalComplete(g);
+    const action=g.action&&g.action.trim()?g.action.trim():null;
+    return `<div style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:1.2rem 1.4rem;max-width:740px;margin-bottom:.85rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+          ${badge(false)}
+          ${g.focusArea?`<span style="font-size:12px;color:var(--text3)">${g.focusArea}</span>`:""}
+          ${statusPill(g)}
+        </div>
+        <div style="display:flex;gap:.45rem;flex-shrink:0">
+          <button class="btn btn-g" style="padding:.4rem .85rem;font-size:11px" onclick="openGoalBuilder('${g.goalId}')">Edit</button>
+          <button class="btn btn-g" style="padding:.4rem .85rem;font-size:11px" onclick="openGoalTracker('${g.goalId}')">Tracker</button>
+          ${complete?`<button class="btn btn-p" style="padding:.4rem .85rem;font-size:11px" onclick="_logActionForGoal('${g.goalId}')">Log Action</button>`:""}
+        </div>
+      </div>
+      <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:.3rem;line-height:1.35">${title||"Goal not yet named"}</div>
+      ${!complete?`<div style="font-size:12px;color:var(--text3);font-style:italic;margin-bottom:.6rem">Click Edit to complete this goal.</div>`:""}
+      ${action?`<div style="font-size:12px;color:var(--text2);margin-bottom:.55rem">→ ${action}</div>`:""}
+      <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:.6rem;font-size:12px;color:var(--text3)">
+        ${g.freq?`<div>Rhythm: <span style="color:var(--text2)">${g.freq}</span></div>`:""}
+        <div>Done: <span style="color:var(--gold);font-weight:600">${done}</span></div>
+        <div>Streak: <span style="color:var(--gold);font-weight:600">${streak}d</span></div>
+        ${g.review?`<div>Review: <span style="color:var(--text2)">${formatDate(g.review)}</span></div>`:""}
+      </div>
+      ${logged>0?`<div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:.3rem"><span>Completion</span><span style="color:var(--gold)">${pct}%</span></div>${progressBar(pct,5)}</div>`:`<div style="font-size:11px;color:var(--text3);font-style:italic">No entries yet.</div>`}
+    </div>`;
+  }
+
+  /* ── add supporting goal panel ── */
+  const canAdd=!!primary&&supporting.length<2;
+  const addPanel=canAdd?`
+    <div style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:1.15rem 1.25rem;max-width:740px;margin-top:.5rem">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:.65rem">Add a supporting goal:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.55rem">
+        ${AREAS.filter(a=>(!primary||a.name!==primary.focusArea)&&!supporting.find(s=>s.focusArea===a.name)).map(a=>
+          `<span class="chip" style="cursor:pointer" onclick="addSupportingGoal('${a.name}')">${a.icon} ${a.name}</span>`
+        ).join("")}
+      </div>
+      <div style="font-size:11px;color:var(--text3)">${2-supporting.length} slot${2-supporting.length===1?"":"s"} remaining · Your Primary Goal is your main focus. Add supporting goals only if they help, not overwhelm.</div>
+    </div>`
+    :supporting.length>=2?`<div style="font-size:12px;color:var(--text3);margin-top:.25rem;font-style:italic">Supporting goal limit reached (2/2).</div>`:"";
+
+  /* ── render ── */
+  document.getElementById("goalDash-page").innerHTML=`
+    <div class="eyebrow"><span class="eydot"></span>My Goals</div>
+    <h2>30-Day <span class="acc">Command Centre</span></h2>
+
+    ${showSuccess?`<div style="background:rgba(63,160,107,.08);border:1px solid rgba(63,160,107,.25);border-radius:var(--r2);padding:1rem 1.25rem;margin-bottom:1.5rem;max-width:740px;display:flex;align-items:center;gap:.75rem">
+      <span style="font-size:18px">✓</span>
+      <div>
+        <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:#3fa06b;margin-bottom:2px">CLEAR complete — your goal is set</div>
+        <div style="font-size:13px;color:var(--text2)">Your Primary Goal is active. Log your first action to start building momentum.</div>
+      </div>
+    </div>`:""}
+
+    ${cycleSummaryCard()}
+    ${todaysActionsCard()}
+
+    ${divider("Primary Focus")}
+    ${primary
+      ? primaryCard(primary)
+      : `<div class="incomplete-box" style="max-width:740px;margin-bottom:1.5rem">
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:.5rem">No primary goal yet</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:1rem">${auditDone?"Work through CLEAR to set your First Aligned Goal.":"Complete The Aligned Audit first, then use CLEAR to set your Primary Goal."}</div>
+          <button class="btn btn-p" onclick="${auditDone?"go('clearOv')":"go('audit')"}">${auditDone?"Begin CLEAR →":"Take The Aligned Audit →"}</button>
+        </div>`
+    }
+
+    ${divider("Supporting Goals ("+supporting.length+"/2)")}
+    ${supporting.length>0
+      ? supporting.map(sg=>supportingCard(sg)).join("")
+      : `<div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:.75rem">No supporting goals added yet.</div>`
+    }
+    ${addPanel}`;
+}
+function openGoalBuilder(goalId){
+  state.activeGoalId=goalId;
+  go("goal");
+}
+
+function openGoalTracker(goalId){
+  state.activeGoalId=goalId;
+  state.openTracker=-1;
+  go("tracker");
+}
+
+function addSupportingGoal(areaName){
+  if(getSupporting().length>=2){ alert("You have reached the limit of 2 supporting goals."); return; }
+  const ng=makeGoal("supporting",areaName);
+  state.goals.push(ng);
+  state.activeGoalId=ng.goalId;
+  go("goal");
+}
+
+/* ═══ TRACKER ═══ */
+
+/* Determine which score/metric fields to show per entry based on goal */
+function getTrackerFields(g){
+  g=g||activeGoal()||{};
+  const area=g.focusArea||"";
+  const metrics=(g.metrics||[]).filter(m=>m!=="Custom");
+
+  // Always-present scored fields per area
+  const areaScores={
+    "Money & Stability":[["conf","Confidence"],["trust","Self-Trust"],["momentum","Momentum"]],
+    "Health & Energy":[["energy","Energy"],["conf","Confidence"],["momentum","Momentum"]],
+    "Relationships & Connection":[["honest","Emotional Honesty"],["trust","Self-Trust"],["momentum","Momentum"]],
+    "Career, Work & Business":[["conf","Confidence"],["trust","Self-Trust"],["momentum","Momentum"]],
+    "Mindset & Thinking":[["conf","Confidence"],["clarity","Clarity"],["momentum","Momentum"]],
+    "Confidence & Self-Belief":[["conf","Confidence"],["trust","Self-Trust"],["momentum","Momentum"]],
+    "Purpose & Direction":[["fulfilment","Fulfilment"],["trust","Self-Trust"],["momentum","Momentum"]],
+    "Daily Structure & Discipline":[["trust","Self-Trust"],["conf","Confidence"],["momentum","Momentum"]],
+    "Emotional Wellbeing":[["calm","Calmness"],["trust","Self-Trust"],["momentum","Momentum"]],
+    "Self-Respect & Identity":[["respect","Self-Respect"],["trust","Self-Trust"],["momentum","Momentum"]],
+  };
+  const scores=areaScores[area]||[["conf","Confidence"],["trust","Self-Trust"],["momentum","Momentum"]];
+  return {metrics,scores};
+}
+
+function goalIsValid(g){
+  g=g||activeGoal();
+  if(!g) return false;
+  // A goal is valid if it has any meaningful content — action, outcome, goalTitle, or explicit status
+  const hasOutcome=g.outcome&&g.outcome.trim().length>=4&&!isTestText(g.outcome);
+  const hasAction=g.action&&g.action.trim().length>=4&&!isTestText(g.action);
+  const hasTitle=!!(g.goalTitle&&g.goalTitle.trim().length>0);
+  const hasStatus=g.status==="active";
+  return hasOutcome||hasAction||hasTitle||hasStatus;
+}
+
+function getProgressStats(g){
+  g=g||activeGoal()||{};
+  const t=g.trackerEntries||[];
+  const done=t.filter(e=>e.completed===true).length;
+  const logged=t.filter(e=>e.completed!==null).length;
+  let streak=0;
+  for(let i=t.length-1;i>=0;i--){
+    if(t[i].completed===true) streak++; else if(t[i].completed===false) break;
+  }
+  function avg(key){
+    const vals=t.map(e=>e[key]).filter(v=>v!=null&&v>0);
+    return vals.length?Math.round(vals.reduce((s,v)=>s+v,0)/vals.length*10)/10:null;
+  }
+  function metricTotal(m){
+    const mk="m_"+m.replace(/[^a-z0-9]/gi,"_");
+    return t.reduce((s,e)=>{ const v=parseFloat(e[mk]); return s+(isNaN(v)?0:v); },0);
+  }
+  return {done,logged,streak,avg,metricTotal};
+}
+
+function isWeeklyFreq(g){
+  g=g||activeGoal()||{};
+  const f=g.freq||"";
+  return f==="Weekly"||f==="3x per week";
+}
+
+function renderTracker(){
+  const g=activeGoal();
+  const pg=document.getElementById("tracker-page");
+
+  if(!g||!goalIsValid(g)){
+    const msg=!g||!g.outcome&&!g.action
+      ?"Complete your First Aligned Goal to generate your tracker."
+      :"Your goal needs a clearer action or outcome before your tracker can be generated.";
+    pg.innerHTML=`
+      <div class="eyebrow"><span class="eydot"></span>30-Day Tracker</div>
+      <h2>Daily <span class="acc">Check-In</span></h2>
+      <div class="incomplete-box" style="max-width:520px;margin-top:1rem">
+        <div style="font-size:18px;margin-bottom:.75rem">◎</div>
+        <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:.5rem">${msg}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:1.25rem">Head back to the Goal Builder and set a specific, meaningful outcome for the next 30 days.</div>
+        <button class="btn btn-p" onclick="go('goalDash')">← My Goals</button>
+      </div>`;
+    return;
+  }
+
+  const {metrics,scores}=getTrackerFields(g);
+  const {done,logged,streak,avg,metricTotal}=getProgressStats(g);
+  const weekly=isWeeklyFreq(g);
+  const dayNum=Math.min(logged+1,30);
+
+  // Progress panel stats
+  const confAvg=avg("conf");
+  const trustAvg=avg("trust");
+  const momentumAvg=avg("momentum");
+  const calmAvg=avg("calm");
+  const clarityAvg=avg("clarity");
+  const honestyAvg=avg("honest");
+  const fulfilAvg=avg("fulfilment");
+  const respectAvg=avg("respect");
+  const energyAvg=avg("energy");
+
+  // Primary score label for this area
+  function score1Avg(){
+    const s=scores[0];
+    if(!s) return null;
+    return avg(s[0]);
+  }
+  function score2Avg(){
+    const s=scores[1];
+    if(!s) return null;
+    return avg(s[0]);
+  }
+  function fmtAvg(v){ return v!=null?v+"":"—"; }
+
+  // Build metric totals row for progress panel
+  const metricTotalsHTML=metrics.length>0?metrics.slice(0,6).map(m=>{
+    const tot=metricTotal(m);
+    const disp=tot>0?tot:"—";
+    return `<div class="sc"><div class="sc-l">${m}</div><div class="sc-v" style="font-size:${String(disp).length>5?14:20}px">${disp}</div></div>`;
+  }).join(""):"";
+
+  // Target progress display — removed (behaviour-based tracking model)
+  const hasTarget=false;
+  const targetPct=null;
+
+  pg.innerHTML=`
+    <div class="eyebrow"><span class="eydot"></span>30-Day Tracker</div>
+    <h2>${weekly?"Weekly":"Daily"} <span class="acc">Check-In</span></h2>
+
+    <!-- GOAL SUMMARY CARD -->
+    <div class="card" style="max-width:680px;margin-bottom:1.75rem;padding:1.25rem 1.5rem">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.85rem">Your 30-Day Goal</div>
+      ${g.action?`<div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:.35rem;line-height:1.45">${g.action}</div>`:""}
+      ${g.outcome?`<div style="font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.5">→ ${g.outcome}</div>`:""}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.65rem">
+        <div><div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Focus Area</div><div style="font-size:13px;color:var(--text2)">${g.focusArea||"—"}</div></div>
+        <div><div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Action Rhythm</div><div style="font-size:13px;color:var(--text2)">${g.freq||"—"}</div></div>
+        ${g.start?`<div><div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Start Date</div><div style="font-size:13px;color:var(--text2)">${formatDate(g.start)}</div></div>`:""}
+        ${g.review?`<div><div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Review Date</div><div style="font-size:13px;color:var(--text2)">${formatDate(g.review)}</div></div>`:""}
+        ${g.success?`<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Success looks like</div><div style="font-size:13px;color:var(--text2)">${g.success}</div></div>`:""}
+      </div>
+      ${metrics.length>0?`<div style="margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--bdr2)"><div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.4rem">Tracking</div><div style="font-size:13px;color:var(--text2)">${metrics.join(" · ")}</div></div>`:""}
+    </div>
+
+    <!-- PROGRESS PANEL -->
+    <div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin-bottom:1.1rem">
+      <span style="flex:1;height:1px;background:var(--bdr2)"></span>Progress<span style="flex:1;height:1px;background:var(--bdr2)"></span>
+    </div>
+    <div class="stat-grid" style="margin-bottom:${metricTotalsHTML?"1rem":"1.75rem"}">
+      <div class="sc"><div class="sc-l">Day</div><div class="sc-v">${dayNum}<span style="font-size:12px;color:var(--text3);font-weight:400"> / 30</span></div></div>
+      <div class="sc"><div class="sc-l">Actions Done</div><div class="sc-v">${done}</div></div>
+      <div class="sc"><div class="sc-l">Current Streak</div><div class="sc-v">${streak}<span style="font-size:12px;color:var(--text3);font-weight:400"> days</span></div></div>
+      <div class="sc"><div class="sc-l">${scores[0]?scores[0][1]:"Confidence"}</div><div class="sc-v">${fmtAvg(score1Avg())}</div></div>
+      <div class="sc"><div class="sc-l">${scores[1]?scores[1][1]:"Self-Trust"}</div><div class="sc-v">${fmtAvg(score2Avg())}</div></div>
+      <div class="sc"><div class="sc-l">Momentum</div><div class="sc-v">${fmtAvg(momentumAvg)}</div></div>
+    </div>
+    ${metricTotalsHTML?`<div class="stat-grid" style="margin-bottom:1.75rem">${metricTotalsHTML}</div>`:""}
+    ${hasTarget&&targetActual!==null?`
+    <div style="max-width:540px;margin-bottom:1.75rem">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.4rem">
+        <div style="font-size:13px;color:var(--text2)">Goal progress — ${g.targetType}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--gold)">${targetActual} / ${g.targetNum}</div>
+      </div>
+      <div class="bar-track" style="height:8px;border-radius:4px">
+        <div class="bar-fill" style="width:${targetPct}%;background:var(--gold);height:8px;border-radius:4px;transition:width .6s ease"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:.35rem">${targetPct}% of target</div>
+    </div>`:""}
+
+    <!-- DAILY / WEEKLY ENTRIES -->
+    <div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin-bottom:1.1rem">
+      <span style="flex:1;height:1px;background:var(--bdr2)"></span>${weekly?"Weekly Progress":"Daily Entries"}<span style="flex:1;height:1px;background:var(--bdr2)"></span>
+    </div>
+    <div id="tracker-rows"></div>
+    <div style="margin-top:1.25rem;display:flex;gap:1rem;flex-wrap:wrap">
+      <button class="btn btn-g" onclick="go('goalDash')">← My Goals</button>
+      <button class="btn btn-p" onclick="go('review')">View My Summary →</button>
+    </div>`;
+
+  renderTrackerRows();
+}
+
+function renderTrackerRows(){
+  if(!document.getElementById("tracker-rows")) return;
+  const ag=activeGoal();
+  const {metrics,scores}=getTrackerFields(ag);
+  const _te=(ag||{trackerEntries:[]}).trackerEntries;
+  // Render newest (today) first — reverse display order, keep original indices
+  const indices=[..._te.keys()].reverse();
+  document.getElementById("tracker-rows").innerHTML=indices.map(i=>{
+    const entry=_te[i];
+    const statusColor=entry.completed===true?"#50a870":entry.completed===false?"#b87070":"var(--text3)";
+    const statusText=entry.completed===true?"✓ Completed":entry.completed===false?"✗ Missed":"Not logged yet";
+    return `
+    <div class="track-row">
+      <div class="track-head" onclick="toggleTracker(${i})">
+        <div style="display:flex;align-items:center;gap:.85rem">
+          <div style="width:8px;height:8px;border-radius:50%;background:${statusColor};flex-shrink:0"></div>
+          <div>
+            <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600">${entry.date}</div>
+            <div style="font-size:12px;color:${statusColor};margin-top:2px">${statusText}</div>
+          </div>
+        </div>
+        <span style="color:var(--gold);font-size:17px">${state.openTracker===i?"−":"+"}</span>
+      </div>
+      ${state.openTracker===i?`
+      <div class="track-body">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.6rem">Did you take your aligned action today?</div>
+        <div class="yn">
+          <button class="yn-btn yn-yes${entry.completed===true?" active":""}" onclick="setTracker(${i},'completed',true)">Yes ✓</button>
+          <button class="yn-btn yn-no${entry.completed===false?" active":""}" onclick="setTracker(${i},'completed',false)">No ✗</button>
+        </div>
+        ${metrics.length>0?`
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:1rem 0 .55rem">Today's metrics</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.5rem;margin-bottom:1rem">
+            ${metrics.map(m=>{
+              const mk="m_"+m.replace(/[^a-z0-9]/gi,"_");
+              const v=entry[mk]||"";
+              return `<div style="background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r);padding:.6rem .85rem">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:.3rem">${m}</div>
+                <input type="text" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--bdr2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:2px 0;outline:none" placeholder="0" value="${v}" oninput="setTrackerMetric(${i},'${mk}',this.value)">
+              </div>`;
+            }).join("")}
+          </div>`:""}
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.55rem">How are you feeling?</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem;margin-bottom:1rem">
+          ${scores.map(([k,label])=>`
+          <div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:.35rem">${label} (1–10)</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap">
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="tsbn${entry[k]===n?" picked":""}" onclick="setTracker(${i},'${k}',${n})">${n}</button>`).join("")}
+            </div>
+          </div>`).join("")}
+        </div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Reflection</div>
+        <textarea id="tnote-${i}" rows="3" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.75rem 1rem;resize:vertical;outline:none;line-height:1.6" placeholder="What did you do, what got in the way, and what is your next honest move?">${entry.note}</textarea>
+      </div>`:""}
+    </div>`;
+  }).join("");
+}
+
+function setTrackerMetric(i,k,v){
+  const ag=activeGoal();
+  if(ag&&ag.trackerEntries[i]) ag.trackerEntries[i][k]=v;
+}
+
+function toggleTracker(i){
+  if(state.openTracker===i){
+    const el=document.getElementById("tnote-"+i);
+    const _ag1=activeGoal(); if(el&&_ag1&&_ag1.trackerEntries[i]) _ag1.trackerEntries[i].note=el.value;
+    state.openTracker=-1;
+  } else {
+    if(state.openTracker>=0){
+      const el=document.getElementById("tnote-"+state.openTracker);
+      const _ag2=activeGoal(); if(el&&_ag2&&_ag2.trackerEntries[state.openTracker]) _ag2.trackerEntries[state.openTracker].note=el.value;
+    }
+    state.openTracker=i;
+  }
+  renderTrackerRows();
+  // Refresh progress stats after toggling
+  const pg=document.getElementById("tracker-page");
+  if(pg){
+    const {done,logged,streak,avg,metricTotal}=getProgressStats();
+    // update stat cards inline without full re-render
+    const scCards=pg.querySelectorAll(".stat-grid:first-of-type .sc");
+    if(scCards.length>=6){
+      scCards[0].querySelector(".sc-v").innerHTML=Math.min(logged+1,30)+'<span style="font-size:12px;color:var(--text3);font-weight:400"> / 30</span>';
+      scCards[1].querySelector(".sc-v").textContent=done;
+      scCards[2].querySelector(".sc-v").innerHTML=streak+'<span style="font-size:12px;color:var(--text3);font-weight:400"> days</span>';
+    }
+  }
+}
+
+function setTracker(i,k,v){
+  const _ag3=activeGoal(); if(_ag3&&_ag3.trackerEntries[i]) _ag3.trackerEntries[i][k]=v;
+  renderTrackerRows();
+}
+
+/* ═══ REVIEW ═══ */
+function renderReview(){
+  const total=state.areas.reduce((s,a)=>s+(a.score||0),0);
+  const _rg=activeGoal()||{};
+  const _rt=_rg.trackerEntries||[];
+  const logged=_rt.filter(t=>t.completed!==null).length;
+  const done=_rt.filter(t=>t.completed===true).length;
+  const top3=[...state.areas].sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,3);
+  const bot3=[...state.areas].sort((a,b)=>(a.score||0)-(b.score||0)).slice(0,3);
+  const g=_rg;
+
+  document.getElementById("review-page").innerHTML=`
+    <div class="eyebrow"><span class="eydot"></span>Aligned Journey Summary</div>
+    <h2>Your Aligned <span class="acc">Journey Summary</span></h2>
+    <p class="lead" style="max-width:560px">This is your starting point. You now have a clearer picture of where you are, what needs your attention, and what your first aligned move looks like. Progress starts here.</p>
+    <div class="stat-grid">
+      <div class="sc"><div class="sc-l">Alignment Score</div><div class="sc-v">${total}/100</div></div>
+      <div class="sc"><div class="sc-l">Focus Area</div><div class="sc-v" style="font-size:${(g.focusArea||state.focusArea||"—").length>10?13:20}px">${g.focusArea||state.focusArea||"—"}</div></div>
+      <div class="sc"><div class="sc-l">Days Logged</div><div class="sc-v">${logged}</div></div>
+      <div class="sc"><div class="sc-l">Actions Done</div><div class="sc-v">${done}</div></div>
+    </div>
+    ${(g.outcome||g.action)?`<div class="card-gold" style="margin-bottom:1.25rem;max-width:580px">
+      <div style="font-size:10px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem">Your First Aligned Goal</div>
+      ${g.action?`<div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:600;margin-bottom:.25rem">${g.action}</div>`:""}
+      ${g.outcome?`<div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:.5rem">→ ${g.outcome}</div>`:""}
+      ${g.why?`<div style="font-size:13px;color:var(--text2);line-height:1.65">${g.why.replace(/\n/g,"<br>")}</div>`:""}
+      ${g.freq?`<div style="font-size:12px;color:var(--gold);margin-top:.6rem">Rhythm: ${g.freq}</div>`:""}
+      ${g.metrics&&g.metrics.length>0?`<div style="font-size:12px;color:var(--text3);margin-top:4px">Tracking: ${g.metrics.filter(m=>m!=="Custom").join(", ")}</div>`:""}
+      ${g.start?`<div style="font-size:12px;color:var(--text3);margin-top:4px">Starts: ${g.start}${g.review?" · Review: "+g.review:""}</div>`:""}
+    </div>`:""}
+    <div class="div"></div>
+    <div class="g2" style="margin-bottom:1.5rem">
+      <div>
+        <div style="font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Key Strengths</div>
+        ${top3.map(a=>`<div class="list-row"><span style="font-size:13px">${a.name}</span><span style="color:#50a870;font-weight:600">${a.score}/10</span></div>`).join("")}
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Key Growth Areas</div>
+        ${bot3.map(a=>`<div class="list-row"><span style="font-size:13px">${a.name}</span><span style="color:var(--gold);font-weight:600">${a.score||0}/10</span></div>`).join("")}
+      </div>
+    </div>
+    <div class="div"></div>
+    <div class="card-gold" style="margin-bottom:1.5rem;max-width:560px">
+      <div style="font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem">What happens next</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.75">Continue logging your daily check-ins. Revisit your CLEAR plan weekly. When you reach your review date, return and re-run The Aligned Audit to see how your scores have shifted.</div>
+    </div>
+    <div style="text-align:center;padding:1.5rem 0 1rem">
+      <div style="font-size:15px;color:var(--text2);line-height:1.8;font-style:italic;max-width:400px;margin:0 auto 1.5rem">Every day you show up is a vote for the person you are becoming.</div>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-p" onclick="go('goalDash')">← My Goals</button>
+        <button class="btn btn-g" onclick="go('overview')">Back to Dashboard</button>
+      </div>
+    </div>`;
+}
+
+/* ═══ INIT ═══ */
+renderOverview();
+</script>
+</body>
+</html>
