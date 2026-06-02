@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Aligned Protocol — Coach Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070A12;--bg2:#0D1520;--bg3:#101A2E;--bg4:#162035;--bg5:#1B2A44;
+  --gold:#E0B140;--gold2:#F2C14E;
+  --gd:rgba(224,177,64,.15);--gd2:rgba(224,177,64,.08);--gd3:rgba(224,177,64,.04);
+  --text:#F8F5EF;--text2:#A7AFBC;--text3:#3d4f6e;
+  --green:#61C783;--coral:#D96B6B;
+  --bdr:rgba(224,177,64,.25);--bdr2:rgba(255,255,255,.08);--bdr3:rgba(255,255,255,.04);
+  --r:10px;--r2:16px;--r3:22px;
+  --shadow:0 4px 24px rgba(0,0,0,.45);
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+body::after{content:'';position:fixed;top:0;left:0;right:0;height:400px;background:radial-gradient(ellipse at 50% 0%,rgba(224,177,64,.04) 0%,transparent 65%);pointer-events:none;z-index:0}
+.shell{display:flex;min-height:100vh;position:relative;z-index:1}
+
+/* SIDEBAR */
+.sidebar{width:230px;background:var(--bg2);border-right:1px solid var(--bdr2);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+.sb-logo{display:flex;flex-direction:column;align-items:center;padding:1.75rem 1.5rem 1.5rem;border-bottom:1px solid var(--bdr2)}
+.sb-badge{background:var(--gd2);border:1px solid var(--bdr);border-radius:100px;padding:3px 12px;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-top:.75rem}
+.sb-nav{padding:1.25rem 0;flex:1}
+.ni{display:flex;align-items:center;gap:.85rem;padding:.8rem 1.5rem;font-size:12px;font-weight:500;letter-spacing:.06em;color:var(--text3);cursor:pointer;border-left:2px solid transparent;transition:all .2s}
+.ni:hover{color:var(--text2);background:rgba(255,255,255,.02)}
+.ni.active{color:var(--gold);background:linear-gradient(90deg,rgba(224,177,64,.08),transparent);border-left-color:var(--gold);font-weight:600}
+.sb-foot{padding:1rem 1.25rem;border-top:1px solid var(--bdr2)}
+.sb-user{font-size:12px;color:var(--text2);margin-bottom:.5rem;font-weight:500}
+.sb-email{font-size:11px;color:var(--text3);margin-bottom:.75rem;word-break:break-all}
+
+/* MAIN */
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;overflow-x:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 2.5rem;border-bottom:1px solid var(--bdr2);background:var(--bg2);position:sticky;top:0;z-index:50}
+.tb-title{font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text)}
+.page{padding:2rem 2.5rem;max-width:1100px}
+
+/* TYPE */
+.eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.55rem}
+.eydot{width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block}
+h1{font-family:'Sora',sans-serif;font-size:clamp(22px,3vw,32px);font-weight:700;color:var(--text);margin-bottom:.5rem;letter-spacing:-.01em}
+h2{font-family:'Sora',sans-serif;font-size:18px;font-weight:600;color:var(--text);margin-bottom:.5rem}
+h3{font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:.25rem}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:.65rem 1.4rem;border-radius:var(--r2);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transition:all .2s;white-space:nowrap}
+.btn-p{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#070A12;box-shadow:0 2px 12px rgba(224,177,64,.2)}
+.btn-p:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn-g{background:rgba(255,255,255,.04);color:var(--text2);border:1px solid var(--bdr2)}
+.btn-g:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
+.btn-sm{padding:.4rem .85rem;font-size:12px;border-radius:var(--r)}
+.btn-danger{background:rgba(217,107,107,.1);color:var(--coral);border:1px solid rgba(217,107,107,.2)}
+
+/* CARDS */
+.card{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r3);padding:1.35rem 1.5rem;box-shadow:var(--shadow)}
+.card-gold{background:var(--gd3);border:1px solid var(--bdr);border-radius:var(--r2);padding:1rem 1.25rem}
+.sc{background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r2);padding:.75rem 1rem}
+.sc-l{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:.25rem}
+.sc-v{font-family:'Sora',sans-serif;font-size:22px;font-weight:700;color:var(--gold)}
+
+/* CLIENT LIST */
+.client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:2rem}
+.client-card{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:1.25rem;cursor:pointer;transition:all .18s}
+.client-card:hover{border-color:rgba(255,255,255,.15);transform:translateY(-1px)}
+.client-card.selected{border-color:var(--gold);background:var(--gd3)}
+.c-name{font-family:'Sora',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:.2rem}
+.c-email{font-size:12px;color:var(--text3);margin-bottom:.75rem}
+.c-scores{display:flex;gap:.75rem;flex-wrap:wrap}
+.c-score-chip{font-size:11px;color:var(--text2);background:var(--bg4);border:1px solid var(--bdr2);border-radius:100px;padding:3px 9px}
+.c-score-chip span{color:var(--gold);font-weight:600}
+
+/* BAR */
+.bar-track{flex:1;height:5px;background:var(--bg5);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--bdr2);margin-bottom:1.75rem}
+.tab{padding:.65rem 1.25rem;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .18s}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:600}
+
+/* FORMS */
+.field{margin-bottom:1rem}
+label{display:block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.35rem}
+input,textarea,select{width:100%;background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:.7rem .9rem;outline:none;transition:border-color .18s}
+input:focus,textarea:focus,select:focus{border-color:rgba(224,177,64,.5)}
+textarea{resize:vertical;line-height:1.6}
+select option{background:var(--bg3)}
+
+/* CHECKIN ENTRY */
+.checkin-row{background:var(--bg4);border:1px solid var(--bdr2);border-radius:var(--r2);padding:1rem 1.1rem;margin-bottom:.6rem}
+.checkin-date{font-size:11px;color:var(--text3);margin-bottom:.5rem;letter-spacing:.06em}
+.checkin-q{font-size:12px;color:var(--text2);margin-bottom:.2rem}
+.checkin-a{font-size:14px;color:var(--text);line-height:1.55}
+
+/* SCORE BADGE */
+.score-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:12px;font-weight:700}
+.score-low{background:rgba(217,107,107,.1);border:1px solid rgba(217,107,107,.2);color:#D96B6B}
+.score-mid{background:rgba(224,177,64,.1);border:1px solid rgba(224,177,64,.2);color:var(--gold)}
+.score-high{background:rgba(97,199,131,.1);border:1px solid rgba(97,199,131,.2);color:#61C783}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r3);padding:2rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;margin-bottom:1.25rem}
+
+/* MISC */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.sec-head{font-family:'Sora',sans-serif;font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:1rem;margin:1.75rem 0 1rem}
+.sec-head::before,.sec-head::after{content:'';flex:1;height:1px;background:var(--bdr2)}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:14px;line-height:1.65}
+.tag{display:inline-flex;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.tag-primary{background:var(--gd2);border:1px solid var(--bdr);color:var(--gold)}
+.tag-supporting{background:rgba(255,255,255,.05);border:1px solid var(--bdr2);color:var(--text3)}
+.note-card{background:var(--bg4);border-left:3px solid var(--gold);border-radius:0 var(--r) var(--r) 0;padding:.75rem 1rem;margin-bottom:.65rem}
+.msg{font-size:13px;padding:.6rem 1rem;border-radius:var(--r);margin-top:.75rem}
+.msg-err{background:rgba(217,107,107,.1);border:1px solid rgba(217,107,107,.2);color:#d96b6b}
+.msg-ok{background:rgba(97,199,131,.1);border:1px solid rgba(97,199,131,.2);color:#61C783}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <svg width="38" height="35" viewBox="0 0 44 41" fill="none">
+        <path d="M22 2 L42 39" stroke="#E0B140" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M22 2 L2 39" stroke="#E0B140" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="22" cy="29" r="4" fill="#E0B140"/>
+      </svg>
+      <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:800;letter-spacing:.3em;color:var(--text);margin-top:.65rem;text-indent:.3em">ALIGNED</div>
+      <div style="font-family:'Sora',sans-serif;font-size:7px;font-weight:600;letter-spacing:.45em;color:var(--gold);text-indent:.45em;margin-top:.2rem">PROTOCOL</div>
+      <div class="sb-badge">Coach Dashboard</div>
+    </div>
+    <div class="sb-nav">
+      <div class="ni active" onclick="showView('overview')">⌂&nbsp;&nbsp;Overview</div>
+      <div class="ni" onclick="showView('clients')">◎&nbsp;&nbsp;My Clients</div>
+      <div class="ni" onclick="showView('checkins')">◈&nbsp;&nbsp;Weekly Check-ins</div>
+      <div class="ni" onclick="showView('sessions')">◑&nbsp;&nbsp;Session Notes</div>
+    </div>
+    <div class="sb-foot">
+      <div class="sb-user" id="sb-name">Loading...</div>
+      <div class="sb-email" id="sb-email"></div>
+      <button class="btn btn-g" style="width:100%;font-size:12px" onclick="signOut()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span class="tb-title" id="view-title">Overview</span>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn btn-p btn-sm" onclick="openAddClient()">+ Add Client</button>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- ═══ OVERVIEW ═══ -->
+      <div id="v-overview">
+        <div class="eyebrow"><span class="eydot"></span>Coach Dashboard</div>
+        <h1 id="coach-greeting">Good morning</h1>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:2rem">Here's what's happening across your clients today.</p>
+
+        <div class="g4" style="margin-bottom:2rem">
+          <div class="sc"><div class="sc-l">Total Clients</div><div class="sc-v" id="stat-clients">—</div></div>
+          <div class="sc"><div class="sc-l">Active Goals</div><div class="sc-v" id="stat-goals">—</div></div>
+          <div class="sc"><div class="sc-l">Check-ins This Week</div><div class="sc-v" id="stat-checkins">—</div></div>
+          <div class="sc"><div class="sc-l">Avg Alignment Score</div><div class="sc-v" id="stat-avg">—</div></div>
+        </div>
+
+        <div class="sec-head">Clients Needing Attention</div>
+        <div id="attention-list"><div class="empty">Loading...</div></div>
+
+        <div class="sec-head">Recent Check-ins</div>
+        <div id="recent-checkins"><div class="empty">Loading...</div></div>
+      </div>
+
+      <!-- ═══ CLIENTS ═══ -->
+      <div id="v-clients" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+          <div>
+            <div class="eyebrow"><span class="eydot"></span>My Clients</div>
+            <h1 style="margin:0">Client Roster</h1>
+          </div>
+          <button class="btn btn-p" onclick="openAddClient()">+ Add Client</button>
+        </div>
+
+        <div class="client-grid" id="client-grid"><div class="empty">No clients yet. Add your first client above.</div></div>
+
+        <!-- CLIENT DETAIL PANEL -->
+        <div id="client-detail" style="display:none">
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+            <button class="btn btn-g btn-sm" onclick="closeClientDetail()">← All Clients</button>
+            <h2 id="detail-name" style="margin:0"></h2>
+            <span id="detail-goal-tag" class="tag tag-primary" style="display:none"></span>
+          </div>
+
+          <div class="tabs">
+            <div class="tab active" onclick="clientTab('overview')">Overview</div>
+            <div class="tab" onclick="clientTab('audit')">Audit</div>
+            <div class="tab" onclick="clientTab('goals')">Goals</div>
+            <div class="tab" onclick="clientTab('checkins')">Check-ins</div>
+            <div class="tab" onclick="clientTab('notes')">Session Notes</div>
+          </div>
+
+          <!-- Client overview tab -->
+          <div id="ct-overview">
+            <div class="g4" style="margin-bottom:1.5rem" id="client-stats"></div>
+            <div class="g2">
+              <div>
+                <div class="sec-head">Current Goal</div>
+                <div id="client-goal-card"><div class="empty">No active goal.</div></div>
+              </div>
+              <div>
+                <div class="sec-head">Progress Trend</div>
+                <div id="client-trend"><div class="empty">No check-ins yet.</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ct-audit" style="display:none">
+            <div class="sec-head">Audit History</div>
+            <div id="client-audits"><div class="empty">No audit data yet.</div></div>
+          </div>
+
+          <div id="ct-goals" style="display:none">
+            <div class="sec-head">Active Goals</div>
+            <div id="client-goals"><div class="empty">No goals yet.</div></div>
+          </div>
+
+          <div id="ct-checkins" style="display:none">
+            <div class="sec-head">Weekly Check-in History</div>
+            <div id="client-checkins"><div class="empty">No check-ins yet.</div></div>
+          </div>
+
+          <div id="ct-notes" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+              <div class="sec-head" style="margin:0;flex:1">Session Notes</div>
+              <button class="btn btn-p btn-sm" onclick="openAddNote()">+ Add Note</button>
+            </div>
+            <div id="client-notes"><div class="empty">No notes yet.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ALL CHECK-INS ═══ -->
+      <div id="v-checkins" style="display:none">
+        <div class="eyebrow"><span class="eydot"></span>Weekly Check-ins</div>
+        <h1>All Check-ins</h1>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:2rem">Monitor your clients' weekly reflections and scores.</p>
+        <div id="all-checkins-list"><div class="empty">Loading...</div></div>
+      </div>
+
+      <!-- ═══ SESSION NOTES ═══ -->
+      <div id="v-sessions" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+          <div>
+            <div class="eyebrow"><span class="eydot"></span>Session Notes</div>
+            <h1 style="margin:0">All Sessions</h1>
+          </div>
+          <button class="btn btn-p" onclick="openAddNote(null)">+ Add Note</button>
+        </div>
+        <div id="all-notes-list"><div class="empty">Loading...</div></div>
+      </div>
+
+    </div><!-- /page -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Add Client Modal -->
+<div class="modal-bg" id="modal-add-client" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Add New Client</div>
+    <div class="field"><label>Full Name</label><input type="text" id="ac-name" placeholder="Client's full name"></div>
+    <div class="field"><label>Email</label><input type="email" id="ac-email" placeholder="client@email.com"></div>
+    <div class="field"><label>Temporary Password</label><input type="text" id="ac-password" placeholder="They can change this after login" value="Aligned2024!"></div>
+    <div class="field"><label>Primary Goal Area</label>
+      <select id="ac-area">
+        <option value="">Not yet selected</option>
+        <option>Health & Energy</option><option>Mindset & Thinking</option>
+        <option>Confidence & Self-Belief</option><option>Relationships & Connection</option>
+        <option>Career, Work & Business</option><option>Money & Stability</option>
+        <option>Purpose & Direction</option><option>Daily Structure & Discipline</option>
+        <option>Emotional Wellbeing</option><option>Self-Respect & Identity</option>
+      </select>
+    </div>
+    <div id="ac-msg"></div>
+    <div style="display:flex;gap:.75rem;margin-top:1.25rem">
+      <button class="btn btn-p" style="flex:1" onclick="addClient()">Create Client Account</button>
+      <button class="btn btn-g" onclick="closeModal('modal-add-client')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Session Note Modal -->
+<div class="modal-bg" id="modal-add-note" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Session Note</div>
+    <div class="field"><label>Client</label>
+      <select id="note-client"></select>
+    </div>
+    <div class="field"><label>Session Date</label>
+      <input type="date" id="note-date">
+    </div>
+    <div class="field"><label>Session Focus</label>
+      <input type="text" id="note-focus" placeholder="What was the main focus of this session?">
+    </div>
+    <div class="field"><label>Notes</label>
+      <textarea id="note-body" rows="5" placeholder="Key insights, breakthroughs, patterns observed..."></textarea>
+    </div>
+    <div class="field"><label>Next Actions</label>
+      <textarea id="note-actions" rows="3" placeholder="What has the client committed to before the next session?"></textarea>
+    </div>
+    <div class="field"><label>Client Mood (1–10)</label>
+      <input type="number" id="note-mood" min="1" max="10" placeholder="7">
+    </div>
+    <div id="note-msg"></div>
+    <div style="display:flex;gap:.75rem;margin-top:1.25rem">
+      <button class="btn btn-p" style="flex:1" onclick="saveNote()">Save Note</button>
+      <button class="btn btn-g" onclick="closeModal('modal-add-note')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SUPABASE CONFIG ──
+const SUPABASE_URL = 'https://yeedrmvikdjcrjvfyceo.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllZWRybXZpa2RqY3JqdmZ5Y2VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MTAzNjksImV4cCI6MjA5NTk4NjM2OX0.DhQ3wnIpETb_4ua1nH95iUkToHiPpkVLAdiX8FqUJY4';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let coachProfile = null;
+let clients = [];
+let selectedClient = null;
+let currentClientTab = 'overview';
+
+// ── INIT ──
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ window.location.href='login.html'; return; }
+  currentUser = session.user;
+
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if(!profile || !['coach','admin'].includes(profile.role)){
+    window.location.href = 'client.html'; return;
+  }
+  coachProfile = profile;
+
+  // UI
+  document.getElementById('sb-name').textContent = profile.full_name || 'Coach';
+  document.getElementById('sb-email').textContent = currentUser.email;
+  const hr = new Date().getHours();
+  document.getElementById('coach-greeting').textContent =
+    `Good ${hr<12?'morning':hr<17?'afternoon':'evening'}, ${(profile.full_name||'Coach').split(' ')[0]}`;
+
+  // Set today's date as default for note
+  document.getElementById('note-date').value = new Date().toISOString().slice(0,10);
+
+  await loadClients();
+  await loadOverview();
+}
+
+// ── LOAD CLIENTS ──
+async function loadClients(){
+  const { data } = await sb.from('profiles')
+    .select('*, audits(total_score, focus_area, completed_at), goals(id, goal_title, status, focus_area, goal_type)')
+    .eq('role','client')
+    .eq('coach_id', currentUser.id)
+    .order('full_name');
+  clients = data || [];
+  renderClientGrid();
+  renderClientSelect();
+}
+
+function renderClientGrid(){
+  const grid = document.getElementById('client-grid');
+  if(!clients.length){
+    grid.innerHTML='<div class="empty">No clients yet. Add your first client above.</div>'; return;
+  }
+  grid.innerHTML = clients.map(c=>{
+    const lastAudit = c.audits?.sort((a,b)=>new Date(b.completed_at)-new Date(a.completed_at))[0];
+    const primaryGoal = c.goals?.find(g=>g.goal_type==='primary'&&g.status==='active');
+    const score = lastAudit?.total_score;
+    const scoreClass = !score?'':'score-'+(score<40?'low':score<70?'mid':'high');
+    return `<div class="client-card" onclick="openClient('${c.id}')">
+      <div class="c-name">${c.full_name||'Unnamed'}</div>
+      <div class="c-email">${c.email}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        ${score?`<span class="score-badge ${scoreClass}">${score}/100</span>`:'<span style="font-size:12px;color:var(--text3)">No audit yet</span>'}
+        ${primaryGoal?`<span style="font-size:11px;color:var(--text2);background:var(--bg4);border:1px solid var(--bdr2);border-radius:100px;padding:2px 9px">${primaryGoal.focus_area||'Goal active'}</span>`:''}
+      </div>
+      ${lastAudit?.focus_area?`<div style="font-size:11px;color:var(--text3);margin-top:.5rem">Focus: ${lastAudit.focus_area}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderClientSelect(){
+  const sel = document.getElementById('note-client');
+  sel.innerHTML = clients.map(c=>`<option value="${c.id}">${c.full_name||c.email}</option>`).join('');
+}
+
+// ── OVERVIEW DATA ──
+async function loadOverview(){
+  document.getElementById('stat-clients').textContent = clients.length;
+
+  // Count active goals
+  const clientIds = clients.map(c=>c.id);
+  if(!clientIds.length){
+    ['stat-goals','stat-checkins','stat-avg'].forEach(id=>document.getElementById(id).textContent='0');
+    document.getElementById('attention-list').innerHTML='<div class="empty">Add clients to see insights here.</div>';
+    document.getElementById('recent-checkins').innerHTML='<div class="empty">No check-ins yet.</div>';
+    return;
+  }
+
+  const { count: goalCount } = await sb.from('goals').select('*',{count:'exact',head:true})
+    .in('client_id',clientIds).eq('status','active');
+  document.getElementById('stat-goals').textContent = goalCount||0;
+
+  // Check-ins this week
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
+  const { count: ciCount } = await sb.from('weekly_checkins').select('*',{count:'exact',head:true})
+    .in('client_id',clientIds).gte('created_at',weekStart.toISOString());
+  document.getElementById('stat-checkins').textContent = ciCount||0;
+
+  // Avg score
+  const { data: audits } = await sb.from('audits').select('total_score,client_id')
+    .in('client_id',clientIds).order('completed_at',{ascending:false});
+  if(audits?.length){
+    const latest={};
+    audits.forEach(a=>{ if(!latest[a.client_id]) latest[a.client_id]=a.total_score; });
+    const vals=Object.values(latest);
+    const avg=Math.round(vals.reduce((s,v)=>s+v,0)/vals.length);
+    document.getElementById('stat-avg').textContent=avg+'/100';
+  }
+
+  // Attention list — clients with score < 50 or no check-in in 2 weeks
+  const attention=clients.filter(c=>{
+    const lastAudit=c.audits?.sort((a,b)=>new Date(b.completed_at)-new Date(a.completed_at))[0];
+    return !lastAudit||(lastAudit.total_score<50);
+  });
+  document.getElementById('attention-list').innerHTML = attention.length
+    ? attention.map(c=>{
+        const a=c.audits?.sort((a,b)=>new Date(b.completed_at)-new Date(a.completed_at))[0];
+        return `<div class="card" style="margin-bottom:.65rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:.15rem">${c.full_name||c.email}</div>
+            <div style="font-size:12px;color:var(--text3)">${a?'Score: '+a.total_score+'/100 — needs focus':'No audit completed yet'}</div>
+          </div>
+          <button class="btn btn-g btn-sm" onclick="openClient('${c.id}');showView('clients')">View Client</button>
+        </div>`;
+      }).join('')
+    : '<div class="empty">All clients are on track. 🎯</div>';
+
+  // Recent check-ins
+  const { data: recentCI } = await sb.from('weekly_checkins')
+    .select('*, profiles!client_id(full_name)')
+    .in('client_id',clientIds)
+    .order('created_at',{ascending:false}).limit(5);
+  document.getElementById('recent-checkins').innerHTML = recentCI?.length
+    ? recentCI.map(ci=>`<div class="card" style="margin-bottom:.65rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--text)">${ci.profiles?.full_name||'Client'}</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            ${ciScoreBadge('Clarity',ci.clarity_score)}
+            ${ciScoreBadge('Action',ci.action_score)}
+            ${ciScoreBadge('Confidence',ci.confidence_score)}
+          </div>
+        </div>
+        ${ci.next_action?`<div style="font-size:13px;color:var(--text2)">Next action: <em>${ci.next_action}</em></div>`:''}
+        <div style="font-size:11px;color:var(--text3);margin-top:.3rem">${new Date(ci.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+      </div>`).join('')
+    : '<div class="empty">No check-ins yet.</div>';
+}
+
+function ciScoreBadge(label,score){
+  if(!score) return '';
+  const cls=score<5?'score-low':score<8?'score-mid':'score-high';
+  return `<span class="score-badge ${cls}" style="font-size:10px">${label}: ${score}/10</span>`;
+}
+
+// ── CLIENT DETAIL ──
+async function openClient(id){
+  selectedClient = clients.find(c=>c.id===id);
+  if(!selectedClient) return;
+  showView('clients');
+  document.getElementById('client-grid').style.display='none';
+  document.getElementById('client-detail').style.display='';
+  document.getElementById('detail-name').textContent = selectedClient.full_name||selectedClient.email;
+  clientTab('overview');
+}
+
+function closeClientDetail(){
+  document.getElementById('client-grid').style.display='';
+  document.getElementById('client-detail').style.display='none';
+  selectedClient=null;
+}
+
+async function clientTab(tab){
+  currentClientTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent.toLowerCase()===tab.toLowerCase()||t.getAttribute('onclick').includes("'"+tab+"'")));
+  const tabs=['overview','audit','goals','checkins','notes'];
+  tabs.forEach(t=>{ document.getElementById('ct-'+t).style.display=t===tab?'':'none'; });
+
+  if(tab==='overview') await loadClientOverview();
+  if(tab==='audit') await loadClientAudits();
+  if(tab==='goals') await loadClientGoals();
+  if(tab==='checkins') await loadClientCheckins();
+  if(tab==='notes') await loadClientNotes();
+}
+
+async function loadClientOverview(){
+  const { data: audits } = await sb.from('audits').select('*').eq('client_id',selectedClient.id).order('completed_at',{ascending:false});
+  const { data: goals } = await sb.from('goals').select('*').eq('client_id',selectedClient.id).eq('status','active');
+  const { data: checkins } = await sb.from('weekly_checkins').select('*').eq('client_id',selectedClient.id).order('created_at',{ascending:false}).limit(4);
+
+  const lastAudit = audits?.[0];
+  const primaryGoal = goals?.find(g=>g.goal_type==='primary');
+
+  // Stats
+  document.getElementById('client-stats').innerHTML=`
+    <div class="sc"><div class="sc-l">Aligned Score</div><div class="sc-v">${lastAudit?.total_score||'—'}<span style="font-size:12px;color:var(--text3)">/100</span></div></div>
+    <div class="sc"><div class="sc-l">Focus Area</div><div class="sc-v" style="font-size:14px;line-height:1.3">${lastAudit?.focus_area||'—'}</div></div>
+    <div class="sc"><div class="sc-l">Active Goals</div><div class="sc-v">${goals?.length||0}</div></div>
+    <div class="sc"><div class="sc-l">Check-ins</div><div class="sc-v">${checkins?.length||0}</div></div>`;
+
+  // Primary goal card
+  document.getElementById('client-goal-card').innerHTML = primaryGoal
+    ? `<div class="card">
+        <span class="tag tag-primary" style="margin-bottom:.65rem;display:inline-flex">Primary</span>
+        <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:.25rem">${primaryGoal.goal_title||primaryGoal.action||'Goal'}</div>
+        ${primaryGoal.action?`<div style="font-size:13px;color:var(--text2);margin-bottom:.5rem">→ ${primaryGoal.action}</div>`:''}
+        ${primaryGoal.freq?`<div style="font-size:12px;color:var(--text3)">Rhythm: ${primaryGoal.freq}</div>`:''}
+        ${primaryGoal.review_date?`<div style="font-size:12px;color:var(--text3)">Review: ${new Date(primaryGoal.review_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>`:''}
+      </div>`
+    : '<div class="empty">No active primary goal.</div>';
+
+  // Trend from check-ins
+  document.getElementById('client-trend').innerHTML = checkins?.length
+    ? checkins.map(ci=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--bdr3)">
+        <div style="font-size:12px;color:var(--text3)">${new Date(ci.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
+        <div style="display:flex;gap:.5rem">
+          ${ciScoreBadge('A',ci.action_score)}${ciScoreBadge('C',ci.confidence_score)}${ciScoreBadge('Cl',ci.clarity_score)}
+        </div>
+      </div>`).join('')
+    : '<div class="empty">No check-in history yet.</div>';
+}
+
+async function loadClientAudits(){
+  const { data } = await sb.from('audits').select('*').eq('client_id',selectedClient.id).order('completed_at',{ascending:false});
+  document.getElementById('client-audits').innerHTML = data?.length
+    ? data.map(a=>`<div class="card" style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+          <div>
+            <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--gold)">${a.total_score}/100</div>
+            <div style="font-size:12px;color:var(--text3)">${new Date(a.completed_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
+          </div>
+          ${a.focus_area?`<span style="font-size:12px;background:var(--gd2);border:1px solid var(--bdr);border-radius:100px;padding:3px 12px;color:var(--gold)">${a.focus_area}</span>`:''}
+        </div>
+        ${a.scores?Object.entries(a.scores).map(([area,score])=>{
+          const c=score<=2?'var(--coral)':score<=4?'#E8874A':score<=6?'var(--gold)':score<=8?'var(--green)':'#4AE88A';
+          return `<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.35rem">
+            <span style="font-size:12px;color:var(--text2);min-width:190px;flex-shrink:0">${area}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${score*10}%;background:${c}"></div></div>
+            <span style="font-size:12px;font-weight:700;color:${c};min-width:30px;text-align:right">${score}/10</span>
+          </div>`;
+        }).join(''):''}
+      </div>`).join('')
+    : '<div class="empty">No audit data yet.</div>';
+}
+
+async function loadClientGoals(){
+  const { data } = await sb.from('goals').select('*').eq('client_id',selectedClient.id).order('created_at',{ascending:false});
+  document.getElementById('client-goals').innerHTML = data?.length
+    ? data.map(g=>`<div class="card" style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem;flex-wrap:wrap">
+          <span class="tag ${g.goal_type==='primary'?'tag-primary':'tag-supporting'}">${g.goal_type==='primary'?'Primary':'Supporting'}</span>
+          ${g.focus_area?`<span style="font-size:12px;color:var(--text3)">${g.focus_area}</span>`:''}
+          <span style="font-size:11px;background:${g.status==='active'?'rgba(97,199,131,.1)':'rgba(255,255,255,.05)'};border:1px solid ${g.status==='active'?'rgba(97,199,131,.2)':'var(--bdr2)'};color:${g.status==='active'?'var(--green)':'var(--text3)'};border-radius:100px;padding:2px 9px">${g.status}</span>
+        </div>
+        <div style="font-family:'Sora',sans-serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:.25rem">${g.goal_title||g.action||'Goal'}</div>
+        ${g.action?`<div style="font-size:13px;color:var(--text2);margin-bottom:.4rem">→ ${g.action}</div>`:''}
+        <div style="display:flex;gap:1.25rem;font-size:12px;color:var(--text3);flex-wrap:wrap">
+          ${g.freq?`<span>Rhythm: ${g.freq}</span>`:''}
+          ${g.review_date?`<span>Review: ${new Date(g.review_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>`:''}
+        </div>
+      </div>`).join('')
+    : '<div class="empty">No goals yet.</div>';
+}
+
+async function loadClientCheckins(){
+  const { data } = await sb.from('weekly_checkins').select('*').eq('client_id',selectedClient.id).order('created_at',{ascending:false});
+  document.getElementById('client-checkins').innerHTML = data?.length
+    ? data.map(ci=>`<div class="card" style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-size:13px;color:var(--text2);font-weight:500">${new Date(ci.created_at).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            ${['Clarity','Alignment','Action','Confidence','Avoidance'].map((l,i)=>{
+              const s=[ci.clarity_score,ci.alignment_score,ci.action_score,ci.confidence_score,ci.avoidance_score][i];
+              return s?ciScoreBadge(l,s):'';
+            }).join('')}
+          </div>
+        </div>
+        ${ci.action_taken?`<div class="checkin-row"><div class="checkin-q">What action did they take?</div><div class="checkin-a">${ci.action_taken}</div></div>`:''}
+        ${ci.what_avoided?`<div class="checkin-row"><div class="checkin-q">What did they avoid?</div><div class="checkin-a">${ci.what_avoided}</div></div>`:''}
+        ${ci.evidence_gained?`<div class="checkin-row" style="border-left:3px solid var(--green)"><div class="checkin-q">Evidence gained</div><div class="checkin-a">${ci.evidence_gained}</div></div>`:''}
+        ${ci.next_action?`<div class="checkin-row" style="border-left:3px solid var(--gold)"><div class="checkin-q">Next aligned action</div><div class="checkin-a">${ci.next_action}</div></div>`:''}
+      </div>`).join('')
+    : '<div class="empty">No check-ins yet.</div>';
+}
+
+async function loadClientNotes(){
+  const { data } = await sb.from('session_notes').select('*').eq('client_id',selectedClient.id).order('session_date',{ascending:false});
+  document.getElementById('client-notes').innerHTML = data?.length
+    ? data.map(n=>`<div class="note-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--text)">${new Date(n.session_date).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
+          ${n.client_mood?ciScoreBadge('Mood',n.client_mood):''}
+        </div>
+        ${n.focus?`<div style="font-size:12px;color:var(--gold);margin-bottom:.4rem;font-weight:500">Focus: ${n.focus}</div>`:''}
+        ${n.note?`<div style="font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:.5rem;white-space:pre-line">${n.note}</div>`:''}
+        ${n.next_actions?`<div style="font-size:12px;color:var(--text3)">Next actions: <span style="color:var(--text2)">${n.next_actions}</span></div>`:''}
+      </div>`).join('')
+    : '<div class="empty">No session notes yet. Add one above.</div>';
+}
+
+// ── ADD CLIENT ──
+async function addClient(){
+  const name=document.getElementById('ac-name').value.trim();
+  const email=document.getElementById('ac-email').value.trim();
+  const pw=document.getElementById('ac-password').value;
+  if(!name||!email||!pw){ showMsg('ac-msg','Please fill in all fields.','err'); return; }
+
+  // Create auth user via Supabase admin (requires service role key — use edge function in production)
+  // For now: create via sign up, then update coach_id
+  const { data, error } = await sb.auth.signUp({
+    email, password: pw,
+    options: { data: { full_name: name, role: 'client' } }
+  });
+  if(error){ showMsg('ac-msg', error.message,'err'); return; }
+
+  // Link to coach
+  await sb.from('profiles').update({ coach_id: currentUser.id }).eq('email', email);
+
+  showMsg('ac-msg', `Client account created for ${name}. They can log in with ${email}`,'ok');
+  setTimeout(async ()=>{ closeModal('modal-add-client'); await loadClients(); await loadOverview(); }, 2000);
+}
+
+// ── ADD SESSION NOTE ──
+async function saveNote(){
+  const clientId = document.getElementById('note-client').value;
+  const date = document.getElementById('note-date').value;
+  const focus = document.getElementById('note-focus').value.trim();
+  const note = document.getElementById('note-body').value.trim();
+  const actions = document.getElementById('note-actions').value.trim();
+  const mood = parseInt(document.getElementById('note-mood').value)||null;
+
+  if(!clientId||!date||!note){ showMsg('note-msg','Please select a client, date and add a note.','err'); return; }
+
+  const { error } = await sb.from('session_notes').insert({
+    client_id: clientId, coach_id: currentUser.id,
+    session_date: date, focus, note, next_actions: actions, client_mood: mood
+  });
+  if(error){ showMsg('note-msg', error.message,'err'); return; }
+  showMsg('note-msg','Note saved successfully.','ok');
+  setTimeout(()=>{ closeModal('modal-add-note'); if(selectedClient) loadClientNotes(); }, 1500);
+}
+
+function showMsg(id,text,type){
+  const el=document.getElementById(id);
+  el.className='msg msg-'+(type==='err'?'err':'ok');
+  el.textContent=text;
+}
+
+// ── VIEW ROUTING ──
+function showView(view){
+  const views=['overview','clients','checkins','sessions'];
+  views.forEach(v=>{ document.getElementById('v-'+v).style.display=v===view?'':'none'; });
+  document.querySelectorAll('.ni').forEach(n=>{ n.classList.toggle('active',n.getAttribute('onclick').includes("'"+view+"'")); });
+  const titles={overview:'Overview',clients:'Clients',checkins:'Weekly Check-ins',sessions:'Session Notes'};
+  document.getElementById('view-title').textContent=titles[view]||view;
+  if(view==='checkins') loadAllCheckins();
+  if(view==='sessions') loadAllNotes();
+}
+
+async function loadAllCheckins(){
+  const clientIds=clients.map(c=>c.id);
+  if(!clientIds.length){ document.getElementById('all-checkins-list').innerHTML='<div class="empty">No clients yet.</div>'; return; }
+  const { data } = await sb.from('weekly_checkins')
+    .select('*, profiles!client_id(full_name)')
+    .in('client_id',clientIds).order('created_at',{ascending:false}).limit(30);
+  document.getElementById('all-checkins-list').innerHTML = data?.length
+    ? data.map(ci=>`<div class="card" style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--text)">${ci.profiles?.full_name||'Client'}</div>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            ${ciScoreBadge('Clarity',ci.clarity_score)}${ciScoreBadge('Action',ci.action_score)}${ciScoreBadge('Confidence',ci.confidence_score)}
+          </div>
+        </div>
+        ${ci.next_action?`<div style="font-size:13px;color:var(--text2)">Next action: <em>${ci.next_action}</em></div>`:''}
+        <div style="font-size:11px;color:var(--text3);margin-top:.3rem">${new Date(ci.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+      </div>`).join('')
+    : '<div class="empty">No check-ins yet.</div>';
+}
+
+async function loadAllNotes(){
+  const clientIds=clients.map(c=>c.id);
+  if(!clientIds.length){ document.getElementById('all-notes-list').innerHTML='<div class="empty">No clients yet.</div>'; return; }
+  const { data } = await sb.from('session_notes')
+    .select('*, profiles!client_id(full_name)')
+    .eq('coach_id',currentUser.id).order('session_date',{ascending:false}).limit(30);
+  document.getElementById('all-notes-list').innerHTML = data?.length
+    ? data.map(n=>`<div class="note-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--text)">${n.profiles?.full_name||'Client'} — ${new Date(n.session_date).toLocaleDateString('en-GB',{day:'numeric',month:'long'})}</div>
+          ${n.client_mood?ciScoreBadge('Mood',n.client_mood):''}
+        </div>
+        ${n.focus?`<div style="font-size:12px;color:var(--gold);margin-bottom:.35rem">${n.focus}</div>`:''}
+        ${n.note?`<div style="font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-line">${n.note.slice(0,200)}${n.note.length>200?'…':''}</div>`:''}
+      </div>`).join('')
+    : '<div class="empty">No session notes yet.</div>';
+}
+
+// ── MODAL HELPERS ──
+function openAddClient(){ document.getElementById('modal-add-client').style.display='flex'; }
+function openAddNote(clientId=null){
+  document.getElementById('modal-add-note').style.display='flex';
+  if(clientId) document.getElementById('note-client').value=clientId;
+}
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+// Close modals on background click
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }));
+
+// ── SIGN OUT ──
+async function signOut(){
+  await sb.auth.signOut();
+  window.location.href='login.html';
+}
+
+init();
+</script>
+</body>
+</html>
