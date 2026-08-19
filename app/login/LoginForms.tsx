@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { signIn, signUp, requestPasswordReset } from "@/lib/actions/auth";
 import { Notice } from "@/components/ui/Notice";
 
 type Tab = "signin" | "signup" | "reset";
 
 export function LoginForms() {
-  const [tab, setTab] = useState<Tab>("signin");
+  const searchParams = useSearchParams();
+  // Arriving here from "Create a free account to save this" on the audit
+  // results page — jump straight to the signup tab instead of sign-in.
+  const fromAudit = searchParams.get("signup") === "1";
+  const [tab, setTab] = useState<Tab>(fromAudit ? "signup" : "signin");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [pending, startTransition] = useTransition();
@@ -29,9 +34,11 @@ export function LoginForms() {
 
   function handleSignUp(formData: FormData) {
     setError("");
+    setOk("");
     startTransition(async () => {
       const res = await signUp(formData);
       if (!res.ok) setError(res.message);
+      else setOk(res.message || "Check your email to confirm your account.");
     });
   }
 
@@ -87,7 +94,11 @@ export function LoginForms() {
       {tab === "signup" && (
         <div className="card auth-card">
           <div className="auth-card-title">Create your account</div>
-          <p className="auth-card-sub">Join The Aligned Protocol and start your journey.</p>
+          <p className="auth-card-sub">
+            {fromAudit
+              ? "Save your Aligned Audit results and continue your journey."
+              : "Join The Aligned Protocol and start your journey."}
+          </p>
           <form action={handleSignUp}>
             <div className="field">
               <label className="lbl" htmlFor="name">Full Name</label>
@@ -106,6 +117,7 @@ export function LoginForms() {
             </button>
           </form>
           <Notice type="err">{error}</Notice>
+          <Notice type="ok">{ok}</Notice>
           <div className="div" />
           <div className="auth-footer">
             Already have an account? <button type="button" className="auth-link" onClick={() => go("signin")}>Sign in</button>

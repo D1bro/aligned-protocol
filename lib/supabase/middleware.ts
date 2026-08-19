@@ -4,6 +4,15 @@ import { env } from "@/lib/env";
 
 const PUBLIC_PATHS = ["/login", "/reset-password"];
 
+// Anyone can start and finish the audit without an account. A real (but
+// temporary, nameless) account is created behind the scenes via Supabase's
+// anonymous sign-in, so the answers still live in the real database under
+// the same security rules as everyone else — nothing is faked or stored
+// client-side. It only becomes a permanent, findable account if the person
+// chooses to save it (see lib/actions/auth.ts's signUp, which converts this
+// same account in place rather than starting a second one).
+const GUEST_PATHS = ["/audit"];
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -28,8 +37,32 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
+  if (isPublic) return response;
 
-  if (!user && !isPublic) {
+  const isGuestPath = GUEST_PATHS.some((p) => path === p || path.startsWith(p + "/"));
+
+  if (isGuestPath) {
+    if (!user) {
+      // First visit to the audit with no session at all — mint a temporary
+      // anonymous account so the answers have somewhere real to save. The
+      // setAll callback above writes this new session's cookies onto
+      // `response` automatically, same as it does for normal token refresh.
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        return NextResponse.redirect(url);
+      }
+    }
+    // A session already exists (anonymous or real) — let them through either way.
+    return response;
+  }
+
+  // Every other page needs a real, permanent account — not just any session.
+  // A guest mid-audit who wanders to, say, the dashboard gets sent to sign
+  // in/up rather than seeing a half-built page for an account that isn't
+  // really theirs yet.
+  if (!user || user.is_anonymous) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
