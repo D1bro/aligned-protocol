@@ -143,3 +143,18 @@ export async function getLatestCompletedAudit() {
     .maybeSingle();
   return data;
 }
+
+// Latest first. Used to show a "+8 vs last audit" style delta on the
+// dashboard — recent[0] is the current audit, recent[1] the one before it.
+export async function getRecentCompletedAudits(limit = 2) {
+  const clientId = await requireUserId();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("audits")
+    .select("*")
+    .eq("client_id", clientId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
