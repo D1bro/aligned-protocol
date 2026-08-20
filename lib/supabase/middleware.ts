@@ -64,7 +64,13 @@ export async function updateSession(request: NextRequest) {
   // really theirs yet.
   if (!user || user.is_anonymous) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    // The plain homepage is the front door for anyone without a real
+    // account yet — send them straight into the audit (the actual point of
+    // entry for a new visitor) instead of a sign-in form they have no use
+    // for. Every other protected page still sends them to sign in, since by
+    // then they're looking for something specific that only an existing
+    // account has.
+    url.pathname = path === "/" ? "/audit" : "/login";
     return NextResponse.redirect(url);
   }
 
