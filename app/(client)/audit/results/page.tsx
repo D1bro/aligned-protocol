@@ -27,7 +27,7 @@ export default async function ResultsPage() {
     <div className="page" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: "4rem" }}>
       <div className="eyebrow"><span className="eydot" /> Your results</div>
 
-      <div style={{ margin: "1.5rem 0" }}>
+      <div className="card-pop" style={{ margin: "1.5rem 0" }}>
         <ScoreRing score={audit.total_score ?? 0} size={220} strokeWidth={14} labelSize={64} denomLabel="out of 100" />
       </div>
 
@@ -35,8 +35,8 @@ export default async function ResultsPage() {
 
       {isGuest ? (
         <p className="lead" style={{ margin: "0 auto 1.5rem" }}>
-          Here&apos;s exactly where you stand, honestly, across all ten areas. This is saved for now, but only
-          on this device — create a free account to keep it permanently and start the next step.
+          Here&apos;s exactly where you stand, honestly, across all ten areas. This is saved to your current
+          session for now — create a free account to keep it permanently and pick up from here on any device.
         </p>
       ) : (
         <p className="lead" style={{ margin: "0 auto 1.5rem" }}>

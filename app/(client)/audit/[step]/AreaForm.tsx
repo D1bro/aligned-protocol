@@ -82,15 +82,14 @@ export function AreaForm({
 
         <div className="qbox">
           <div className="qlabel">How much does this area matter to you?</div>
-          <div>
+          <div className="score-grid" style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
             {IMPORTANCE_SCALE.map((n) => (
               <button
                 key={n}
                 type="button"
-                className={`chip ${importance === n ? "picked" : ""}`}
+                className={`sbn ${importance === n ? "picked" : ""}`}
                 onClick={() => setImportance(n)}
                 aria-pressed={importance === n}
-                style={{ minWidth: "3.5rem", justifyContent: "center", fontSize: "15px", padding: "10px 0" }}
               >
                 {n}
               </button>

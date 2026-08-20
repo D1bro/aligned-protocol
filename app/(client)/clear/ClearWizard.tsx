@@ -92,7 +92,7 @@ export function ClearWizard({
           You&apos;ve turned the audit into an actual plan. This is now your active goal — it&apos;ll show up
           on your dashboard and under My Goals.
         </p>
-        <div className="card" style={{ maxWidth: 480, margin: "0 auto", textAlign: "left" }}>
+        <div className="card card-pop" style={{ maxWidth: 480, margin: "0 auto", textAlign: "left" }}>
           <div className="hbox">
             <div className="hbox-l">Goal</div>
             <div className="hbox-v">{goalTitle}</div>

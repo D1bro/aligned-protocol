@@ -25,7 +25,10 @@ export default async function CoachPage() {
 
       <div className="sec-head">Client roster</div>
       {clients.length === 0 ? (
-        <div className="empty">No clients yet — add one above.</div>
+        <div className="empty">
+          <span className="empty-icon" aria-hidden="true">◇</span>
+          No clients yet — add one above.
+        </div>
       ) : (
         <div className="area-grid">
           {clients.map((c) => (

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn, signUp, requestPasswordReset } from "@/lib/actions/auth";
 import { Notice } from "@/components/ui/Notice";
+import { PasswordStrength } from "@/components/ui/PasswordStrength";
 
 type Tab = "signin" | "signup" | "reset";
 
@@ -15,6 +16,7 @@ export function LoginForms() {
   const [tab, setTab] = useState<Tab>(fromAudit ? "signup" : "signin");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   const [pending, startTransition] = useTransition();
 
   function go(t: Tab) {
@@ -110,7 +112,17 @@ export function LoginForms() {
             </div>
             <div className="field">
               <label className="lbl" htmlFor="su-password">Password</label>
-              <input type="password" id="su-password" name="password" placeholder="Choose a strong password" required minLength={8} />
+              <input
+                type="password"
+                id="su-password"
+                name="password"
+                placeholder="Choose a strong password"
+                required
+                minLength={8}
+                value={signupPassword}
+                onChange={(e) => setSignupPassword(e.target.value)}
+              />
+              <PasswordStrength password={signupPassword} />
             </div>
             <button className="btn btn-p btn-block auth-submit" disabled={pending}>
               {pending ? "Creating account…" : "Create Account"}

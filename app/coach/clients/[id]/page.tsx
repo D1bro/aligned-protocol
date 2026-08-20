@@ -55,7 +55,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       <SessionNoteForm clientId={client.id} />
 
       {notes.length === 0 ? (
-        <div className="empty">No session notes yet.</div>
+        <div className="empty">
+          <span className="empty-icon" aria-hidden="true">◇</span>
+          No session notes yet.
+        </div>
       ) : (
         notes.map((n) => (
           <div key={n.id} className="track-row" style={{ marginTop: ".75rem" }}>

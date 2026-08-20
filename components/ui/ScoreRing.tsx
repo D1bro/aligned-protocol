@@ -1,7 +1,11 @@
-// The gold ring around a score. Previously this was hardcoded as a full
-// circle no matter what the score was — the "progress" circle had no
-// stroke-dasharray, so it always rendered 100% full. This version actually
-// computes how much of the ring to fill based on score/100.
+"use client";
+
+import { useEffect, useState } from "react";
+
+// The gold ring around a score. Animates in on mount — the ring sweeps from
+// empty to the actual percentage and the number counts up alongside it —
+// rather than just snapping to its final state. Respects prefers-reduced-motion
+// (skips straight to the final state for anyone who's asked for less motion).
 export function ScoreRing({
   score,
   size = 140,
@@ -18,8 +22,39 @@ export function ScoreRing({
   const pct = Math.max(0, Math.min(100, score));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - pct / 100);
   const center = size / 2;
+  const target = Math.round(score);
+
+  const [filledPct, setFilledPct] = useState(0);
+  const [displayNum, setDisplayNum] = useState(0);
+
+  useEffect(() => {
+    const reduceMotion =
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      setFilledPct(pct);
+      setDisplayNum(target);
+      return;
+    }
+
+    let raf: number;
+    const duration = 900;
+    const start = performance.now();
+
+    function tick(now: number) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setFilledPct(eased * pct);
+      setDisplayNum(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pct, target]);
+
+  const offset = circumference * (1 - filledPct / 100);
 
   return (
     <div className="ring-wrap">
@@ -36,10 +71,11 @@ export function ScoreRing({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           transform={`rotate(-90 ${center} ${center})`}
+          style={{ transition: "stroke-dashoffset .1s linear" }}
         />
       </svg>
       <div className="ring-inner">
-        <div className="ring-num" style={{ fontSize: labelSize }}>{Math.round(score)}</div>
+        <div className="ring-num" style={{ fontSize: labelSize }}>{displayNum}</div>
         <div className="ring-den">{denomLabel}</div>
       </div>
     </div>

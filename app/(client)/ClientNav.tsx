@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
 
-const LINKS = [
+export const CLIENT_LINKS = [
   { href: "/", label: "Dashboard", icon: "▦", match: (p: string) => p === "/" },
   { href: "/audit", label: "The Aligned Audit", icon: "◎", match: (p: string) => p.startsWith("/audit") },
   { href: "/clear", label: "CLEAR Process", icon: "◈", match: (p: string) => p.startsWith("/clear") },
@@ -17,7 +17,7 @@ export function ClientNav({ fullName }: { fullName: string | null }) {
 
   return (
     <nav className="sb-nav">
-      {LINKS.map((l) => (
+      {CLIENT_LINKS.map((l) => (
         <Link key={l.href} href={l.href} className={`ni ${l.match(pathname) ? "active" : ""}`}>
           <span aria-hidden="true">{l.icon}</span>
           {l.label}

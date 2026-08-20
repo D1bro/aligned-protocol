@@ -6,6 +6,7 @@ export type Profile = {
   full_name: string | null;
   role: "client" | "coach" | "admin";
   coach_id: string | null;
+  isAnonymous: boolean;
 };
 
 // Small helper every protected Server Component reaches for: who is this,
@@ -24,5 +25,6 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     .eq("id", user.id)
     .single();
 
-  return (profile as Profile) ?? null;
+  if (!profile) return null;
+  return { ...(profile as Omit<Profile, "isAnonymous">), isAnonymous: user.is_anonymous ?? false };
 }
