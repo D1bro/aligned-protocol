@@ -21,7 +21,7 @@ export default async function AuditEntryPage() {
   return (
     <div
       className="page"
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: "4rem", maxWidth: 560 }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: "4rem", maxWidth: 560, margin: "0 auto" }}
     >
       <div className="auth-logo" style={{ marginBottom: "1.5rem" }}>
         <svg width="44" height="41" viewBox="0 0 44 41" fill="none" aria-hidden="true">
