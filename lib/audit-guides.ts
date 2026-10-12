@@ -1,6 +1,6 @@
 // Duane's video guidance for the audit — the single media manifest.
 //
-// Mirrors media-manifest.json from the v6 clips package (12 clips: an
+// Mirrors media-manifest.json from the v7 clips package (12 clips: an
 // introduction, one per area, and a closing "snapshot and next step").
 //
 // Posters and caption tracks are small and live in public/media/audit/.
@@ -32,7 +32,7 @@ export type AreaGuide = GuideClip & {
 
 // Bump when a new export replaces the clips, so browsers never serve a cached
 // older video, poster or caption file under the same URL.
-const MEDIA_VERSION = "v6";
+const MEDIA_VERSION = "v7";
 
 function clip(id: string, name: string, title: string, label: string, durationSeconds: number, withVideo = true): GuideClip {
   const slug = `${name}-${MEDIA_VERSION}`;
@@ -49,7 +49,7 @@ function clip(id: string, name: string, title: string, label: string, durationSe
 
 export const INTRO_GUIDE: GuideClip = clip("introduction", "00-introduction", "Introduction and scoring guide", "How the audit works", 36.3);
 
-export const CLOSING_GUIDE: GuideClip = clip("closing", "11-snapshot-and-next-step", "Your snapshot and next step", "Your snapshot and next step", 14.1);
+export const CLOSING_GUIDE: GuideClip = clip("closing", "11-snapshot-and-next-step", "Your snapshot and next step", "Your snapshot and next step", 14.13);
 
 // Keyed by life_areas.sort_order (1–10), the same order as the audit and the video.
 export const AREA_GUIDES: Record<number, AreaGuide> = {
