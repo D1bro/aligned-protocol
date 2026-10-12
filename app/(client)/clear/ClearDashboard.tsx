@@ -23,12 +23,14 @@ export function ClearDashboard({
 }) {
   const target = Math.min(10, plan.step_up_target ?? score + 1);
   const days = daysUntil(nextAuditDue);
+  const ifThen = plan.if_obstacle?.trim() && plan.if_response?.trim() ? `If ${plan.if_obstacle.trim()}, then I’ll ${plan.if_response.trim()}.` : null;
+  const when = goal.action_when?.trim() || goal.frequency?.trim() || null;
   const answers = [
     plan.current_reality,
-    plan.life_vision,
-    plan.emotional_blocks,
+    [plan.life_vision, plan.step_up_answer ? `Next step: ${plan.step_up_answer}` : null].filter(Boolean).join("\n"),
+    [plan.blocks?.length ? plan.blocks.join(", ") : null, plan.emotional_blocks].filter(Boolean).join("\n"),
     goal.goal_title,
-    [goal.frequency, goal.success_criteria].filter(Boolean).join(" · "),
+    [goal.success_criteria, ifThen].filter(Boolean).join("\n"),
   ];
   const closed = goal.status !== "active";
 
@@ -51,13 +53,19 @@ export function ClearDashboard({
             </div>
           ) : null}
           <div className="clear-goal-row">
-            <span>How often</span>
-            <p className="clear-freq">{goal.frequency}</p>
+            <span>When</span>
+            <p className="clear-freq">{when}</p>
           </div>
           <div className="clear-goal-row">
             <span>Success looks like</span>
             <p>{goal.success_criteria}</p>
           </div>
+          {ifThen ? (
+            <div className="clear-goal-row">
+              <span>If it gets hard</span>
+              <p>{ifThen}</p>
+            </div>
+          ) : null}
           {goal.motivation_text ? (
             <blockquote className="au-quote">
               <cite>Why it matters</cite>
@@ -77,7 +85,7 @@ export function ClearDashboard({
             <h3>What happens now</h3>
             <ol className="clear-now">
               <li>
-                <b>Do the action</b> — {goal.frequency?.trim().toLowerCase() || "as planned"}.
+                <b>Do the action</b> — {when ? when.charAt(0).toLowerCase() + when.slice(1) : "as planned"}.
               </li>
               <li>
                 <b>Notice what changes.</b> Small shifts count.

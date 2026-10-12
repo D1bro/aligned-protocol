@@ -82,5 +82,19 @@ export default async function ClearPage({
   if (!started && !goal && start !== "1") {
     return <ClearIntro area={area} score={score} plan={plan} nextAuditDue={due} />;
   }
-  return <ClearWizard area={area} plan={plan} goal={goal} startAtBeginning={edit === "1"} />;
+  const note = (responses.find((r) => r.life_area_id === area.id)?.note as string | null | undefined)?.trim() || null;
+  const wellbeing = areas.find((a) => a.name === "Emotional Wellbeing");
+  const lowWellbeing = wellbeing ? (scoreByArea.get(wellbeing.id) ?? 10) <= 3 : false;
+  return (
+    <ClearWizard
+      area={area}
+      plan={plan}
+      goal={goal}
+      score={score}
+      auditNote={note}
+      lowWellbeing={lowWellbeing}
+      nextAuditDue={due.toISOString()}
+      startAtBeginning={edit === "1"}
+    />
+  );
 }

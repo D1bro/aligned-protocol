@@ -23,7 +23,29 @@ export type ClearPlan = {
   emotional_blocks: string | null;
   step_up_target: number | null;
   step_up_answer: string | null;
+  // CLEAR v2 (migration 0005)
+  blocks?: string[] | null;
+  block_answers?: Record<string, string> | null;
+  tried_before?: string | null;
+  if_obstacle?: string | null;
+  if_response?: string | null;
 };
+
+export type ClearPlanFields = Partial<
+  Pick<
+    ClearPlan,
+    | "current_reality"
+    | "life_vision"
+    | "emotional_blocks"
+    | "step_up_answer"
+    | "step_up_target"
+    | "blocks"
+    | "block_answers"
+    | "tried_before"
+    | "if_obstacle"
+    | "if_response"
+  >
+>;
 
 export type Goal = {
   id: string;
@@ -34,6 +56,7 @@ export type Goal = {
   focus_area: string | null;
   action_text: string | null;
   frequency: string | null;
+  action_when?: string | null;
   success_criteria: string | null;
   motivation_text: string | null;
   start_date: string;
@@ -162,10 +185,7 @@ export async function chooseClearArea(auditId: string, lifeAreaId: string) {
 export type SaveResult = { ok: true } | { ok: false; message: string };
 const SAVE_FAILED = "Couldn’t save — check your connection and try again.";
 
-export async function saveClearReflection(
-  planId: string,
-  fields: Partial<Pick<ClearPlan, "current_reality" | "life_vision" | "emotional_blocks">>
-): Promise<SaveResult> {
+export async function saveClearReflection(planId: string, fields: ClearPlanFields): Promise<SaveResult> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("clear_plans").update(fields).eq("id", planId).select("id");
   if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
@@ -188,6 +208,8 @@ export async function createGoalFromClear(input: {
   goalTitle: string;
   actionText: string;
   motivationText: string;
+  frequency?: string;
+  actionWhen?: string;
 }): Promise<{ ok: true; goal: Goal } | { ok: false; message: string }> {
   const clientId = await requireUserId();
   const supabase = await createClient();
@@ -201,6 +223,8 @@ export async function createGoalFromClear(input: {
       goal_title: input.goalTitle,
       action_text: input.actionText,
       motivation_text: input.motivationText,
+      frequency: input.frequency ?? null,
+      action_when: input.actionWhen ?? null,
     })
     .select("*")
     .single();
@@ -212,12 +236,18 @@ export async function createGoalFromClear(input: {
 
 export async function updateGoalCore(
   goalId: string,
-  fields: { goalTitle: string; actionText: string; motivationText: string }
+  fields: { goalTitle: string; actionText: string; motivationText: string; frequency?: string; actionWhen?: string }
 ): Promise<SaveResult> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("goals")
-    .update({ goal_title: fields.goalTitle, action_text: fields.actionText, motivation_text: fields.motivationText })
+    .update({
+      goal_title: fields.goalTitle,
+      action_text: fields.actionText,
+      motivation_text: fields.motivationText,
+      ...(fields.frequency !== undefined ? { frequency: fields.frequency } : {}),
+      ...(fields.actionWhen !== undefined ? { action_when: fields.actionWhen } : {}),
+    })
     .eq("id", goalId)
     .select("id");
   if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
@@ -230,12 +260,15 @@ export async function updateGoalCore(
 // CLEAR plan as fully finished (see dashboard's clearStatus logic).
 export async function saveGoalRoadmap(
   goalId: string,
-  fields: { frequency: string; successCriteria: string }
+  fields: { frequency?: string; successCriteria: string }
 ): Promise<SaveResult> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("goals")
-    .update({ frequency: fields.frequency, success_criteria: fields.successCriteria })
+    .update({
+      success_criteria: fields.successCriteria,
+      ...(fields.frequency !== undefined ? { frequency: fields.frequency } : {}),
+    })
     .eq("id", goalId)
     .select("id");
   if (error || !data?.length) return { ok: false, message: SAVE_FAILED };

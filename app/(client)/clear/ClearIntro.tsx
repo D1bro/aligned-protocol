@@ -5,11 +5,11 @@ import { formatDate } from "@/lib/audit-schedule";
 import { ScoreTrack } from "@/components/audit/ScoreTrack";
 
 export const CLEAR_STEPS = [
-  { letter: "C", name: "Current reality", line: "Where things honestly are right now." },
-  { letter: "L", name: "Life vision", line: "What better would actually look like." },
-  { letter: "E", name: "Emotional blocks", line: "What’s really been in the way." },
-  { letter: "A", name: "Aligned goal", line: "One goal, and the one action behind it." },
-  { letter: "R", name: "Roadmap & review", line: "How often, and how you’ll know it’s working." },
+  { letter: "C", name: "Current reality", line: "Where things honestly are, starting from your audit." },
+  { letter: "L", name: "Life vision", line: "Where you’re heading, and your next step up." },
+  { letter: "E", name: "Emotional blocks", line: "What’s been in the way, and why." },
+  { letter: "A", name: "Aligned goal", line: "One action: what, when, and how often." },
+  { letter: "R", name: "Roadmap and review", line: "How you’ll know, and what you’ll do if it gets hard." },
 ];
 
 // Shown before step 1: what CLEAR is, how it uses the snapshot, and the area

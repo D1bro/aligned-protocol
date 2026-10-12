@@ -127,7 +127,7 @@ h3 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 15px; font-we
 
 /* FORM */
 .lbl { display: block; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin: .9rem 0 .35rem; }
-textarea, input[type=text], input[type=email], input[type=password], input[type=date], select {
+textarea, input[type=text], input[type=email], input[type=password], input[type=date], input[type=time], select {
   width: 100%; background: var(--bg3); border: 1px solid var(--bdr2); border-radius: var(--r); color: var(--text);
   font-family: var(--font-dm-sans), 'DM Sans', sans-serif; font-size: 14px; padding: .75rem 1rem; resize: vertical;
   outline: none; transition: border-color .18s; line-height: 1.6;
@@ -532,3 +532,26 @@ select option { background: var(--bg3); color: var(--text); }
 .home-next h2 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: clamp(22px,2.6vw,28px); font-weight: 600; letter-spacing: -.02em; line-height: 1.25; }
 .home-next p { font-size: 14px; color: var(--text2); line-height: 1.7; overflow-wrap: anywhere; }
 .home-side { display: grid; gap: 1rem; }
+
+/* CLEAR v2 steps */
+.clear-step { max-width: 760px; }
+.clear-h { display: flex; align-items: center; gap: 14px; font-size: clamp(24px,3vw,32px); font-weight: 600; letter-spacing: -.02em; margin: .4rem 0 1rem; }
+.clear-from { margin-bottom: .5rem; }
+.clear-note { font-size: 14px !important; color: var(--text) !important; border-left: 3px solid var(--gold); padding-left: 10px; }
+.clear-step textarea, .clear-step input[type=text] { background: var(--bg); }
+.clear-step .au-chips { margin-bottom: .7rem; }
+.clear-step .au-chips button[aria-pressed=true] { background: var(--gd); border-color: var(--gold); color: var(--gold); }
+.clear-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 100px; border: 1px solid var(--bdr); color: var(--gold); font: 600 10px var(--font-dm-sans), 'DM Sans', sans-serif; letter-spacing: .1em; text-transform: uppercase; vertical-align: 3px; }
+.clear-track-wrap { margin-top: 1rem; max-width: 420px; }
+.clear-followup { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 12px; padding: .8rem 1rem; margin-top: .6rem; }
+.clear-followup label { display: block; font-family: var(--font-sora), 'Sora', sans-serif; font-size: 14px; font-weight: 600; margin: .15rem 0 .5rem; }
+.clear-q-sm { font-size: 15px !important; color: var(--text) !important; }
+.clear-support { margin-top: 1rem; border-color: var(--bdr); }
+.clear-nudge { font-size: 12px; color: var(--gold); margin-top: .4rem; }
+.clear-time { max-width: 180px; color-scheme: dark; }
+.clear-goal-draft { margin-top: 1.2rem; border-color: var(--bdr); background: var(--gd3); }
+.clear-goal-draft textarea { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; background: transparent; border-color: transparent; padding-left: 0; }
+.clear-ifthen { display: grid; grid-template-columns: auto 1fr; gap: .6rem .8rem; align-items: center; }
+.clear-ifthen label { font-family: var(--font-sora), 'Sora', sans-serif; font-weight: 600; color: var(--gold); font-size: 14px; }
+.clear-dates span { border: 1px solid var(--bdr); color: var(--gold); border-radius: 100px; padding: .4rem .9rem; font-size: 12px; }
+.clear-dates span.audit { border-color: var(--bdr2); color: var(--text2); }
