@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveClearReflection,
@@ -57,13 +57,15 @@ export function ClearWizard({
   area,
   plan,
   goal: initialGoal,
+  startAtBeginning = false,
 }: {
   area: LifeArea;
   plan: ClearPlan;
   goal: Goal | null;
+  // Reviewing a finished plan: open on step 1 instead of the summary.
+  startAtBeginning?: boolean;
 }) {
-  const router = useRouter();
-  const [step, setStep] = useState(() => computeInitialStep(plan, initialGoal));
+  const [step, setStep] = useState(() => (startAtBeginning ? 1 : computeInitialStep(plan, initialGoal)));
   const [currentReality, setCurrentReality] = useState(plan.current_reality ?? "");
   const [lifeVision, setLifeVision] = useState(plan.life_vision ?? "");
   const [emotionalBlocks, setEmotionalBlocks] = useState(plan.emotional_blocks ?? "");
@@ -194,38 +196,9 @@ export function ClearWizard({
   else if (stepDirty(step)) statusText = "Not saved yet";
   else statusText = "Saved";
 
+  // Finished: the plan dashboard at /clear takes over from here.
   if (step === 6) {
-    return (
-      <div className="page" style={{ textAlign: "center", paddingTop: "4rem" }}>
-        <div className="eyebrow"><span className="eydot" /> CLEAR complete</div>
-        <h1>Your plan for {area.name} is set.</h1>
-        <p className="lead" style={{ margin: "0 auto 1.5rem" }}>
-          You&apos;ve turned the audit into an actual plan. This is now your active goal — it&apos;ll show up
-          on your dashboard and under My Goals.
-        </p>
-        <div className="card card-pop" style={{ maxWidth: 480, margin: "0 auto", textAlign: "left" }}>
-          <div className="hbox">
-            <div className="hbox-l">Goal</div>
-            <div className="hbox-v">{goalTitle}</div>
-          </div>
-          {actionText ? (
-            <div className="hbox">
-              <div className="hbox-l">The one action</div>
-              <div className="hbox-v">{actionText}</div>
-            </div>
-          ) : null}
-          {frequency ? (
-            <div className="hbox">
-              <div className="hbox-l">Frequency</div>
-              <div className="hbox-v">{frequency}</div>
-            </div>
-          ) : null}
-        </div>
-        <div style={{ marginTop: "2rem" }}>
-          <button className="btn btn-p" onClick={() => router.push("/")}>Go to my dashboard</button>
-        </div>
-      </div>
-    );
+    return <FinishRedirect />;
   }
 
   return (
@@ -365,5 +338,20 @@ export function ClearWizard({
         </button>
       </div>
     </>
+  );
+}
+
+function FinishRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/clear");
+    router.refresh();
+  }, [router]);
+  return (
+    <div className="page" style={{ textAlign: "center", paddingTop: "4rem" }}>
+      <div className="eyebrow"><span className="eydot" /> CLEAR complete</div>
+      <h1>Your plan is set.</h1>
+      <p className="lead" style={{ margin: "0 auto" }}>Opening your plan…</p>
+    </div>
   );
 }

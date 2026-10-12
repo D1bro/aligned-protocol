@@ -1,0 +1,94 @@
+import Link from "next/link";
+import type { LifeArea } from "@/lib/actions/audit";
+import type { ClearPlan } from "@/lib/actions/clear";
+import { formatDate } from "@/lib/audit-schedule";
+
+export const CLEAR_STEPS = [
+  { letter: "C", name: "Current reality", line: "Where things honestly are right now." },
+  { letter: "L", name: "Life vision", line: "What better would actually look like." },
+  { letter: "E", name: "Emotional blocks", line: "What’s really been in the way." },
+  { letter: "A", name: "Aligned goal", line: "One goal, and the one action behind it." },
+  { letter: "R", name: "Roadmap & review", line: "How often, and how you’ll know it’s working." },
+];
+
+// Shown before step 1: what CLEAR is, how it uses the snapshot, and the area
+// they chose — echoed back before they begin, with the option to change it.
+export function ClearIntro({
+  area,
+  score,
+  plan,
+  nextAuditDue,
+}: {
+  area: LifeArea;
+  score: number;
+  plan: ClearPlan;
+  nextAuditDue: Date;
+}) {
+  const target = Math.min(10, score + 1);
+  return (
+    <div className="page au-page">
+      <div className="eyebrow"><span className="eydot" /> CLEAR — your plan</div>
+      <h1 className="au-latest-h">Turn your snapshot into one clear step.</h1>
+      <p className="lead">
+        CLEAR is a short guided plan — five questions, about ten minutes. It takes the area you chose from your
+        snapshot and turns it into one goal you can act on this week.
+      </p>
+
+      <div className="clear-intro">
+        <section className="clear-start" aria-label="Your starting point">
+          <div className="eyebrow"><span className="eydot" /> Your starting point</div>
+          <h2>{area.name}</h2>
+          <ScoreTrack score={score} target={target} />
+          {plan.step_up_answer ? (
+            <blockquote className="au-quote">
+              <cite>You said a {plan.step_up_target ?? target} would look like</cite>
+              <p>&ldquo;{plan.step_up_answer}&rdquo;</p>
+            </blockquote>
+          ) : (
+            <p className="au-start-help">
+              As you go, keep one question in mind: what would a {target} look like in this area?
+            </p>
+          )}
+          <Link href="/clear?choose=1" className="au-text-link">Choose a different area</Link>
+        </section>
+
+        <ol className="clear-letters">
+          {CLEAR_STEPS.map((s) => (
+            <li key={s.letter}>
+              <span className="clear-letter">{s.letter}</span>
+              <div>
+                <h3>{s.name}</h3>
+                <p>{s.line}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <p className="clear-after">
+        When you finish, your plan lives on your profile with your goal. Your next audit, around{" "}
+        {formatDate(nextAuditDue)}, shows whether {area.name} has moved.
+      </p>
+      <div className="au-latest-actions">
+        <Link href="/clear?start=1" className="btn btn-p">Begin CLEAR →</Link>
+        <span className="au-small">Your answers save as you go — you can stop and come back.</span>
+      </div>
+    </div>
+  );
+}
+
+// A 1–10 track: where they are now, and the next step up.
+export function ScoreTrack({ score, target }: { score: number; target: number }) {
+  return (
+    <div className="clear-track" role="img" aria-label={`Now ${score} out of 10; next step ${target}`}>
+      <div className="clear-track-bar">
+        <span className="clear-track-fill" style={{ width: `${score * 10}%` }} />
+        <span className="clear-track-next" style={{ left: `${target * 10}%` }} />
+      </div>
+      <div className="clear-track-labels">
+        <span>Now <b>{score}</b>/10</span>
+        <span className="next">Next step <b>{target}</b></span>
+      </div>
+    </div>
+  );
+}

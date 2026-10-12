@@ -67,6 +67,25 @@ export async function startOrResumeAudit(): Promise<string> {
   return created.id;
 }
 
+// The current unfinished audit, if any, with its answers — without creating
+// one (unlike startOrResumeAudit). Used where just looking shouldn't start
+// a new audit.
+export async function getInProgressAudit() {
+  const clientId = await requireUserId();
+  const supabase = await createClient();
+  const { data: audit } = await supabase
+    .from("audits")
+    .select("*")
+    .eq("client_id", clientId)
+    .eq("status", "in_progress")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!audit) return null;
+  const { data: responses } = await supabase.from("audit_responses").select("*").eq("audit_id", audit.id);
+  return { audit, responses: responses ?? [] };
+}
+
 export async function getAuditWithResponses(auditId: string) {
   const supabase = await createClient();
   const { data: audit, error } = await supabase.from("audits").select("*").eq("id", auditId).single();

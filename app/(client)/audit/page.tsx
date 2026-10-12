@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { startOrResumeAudit, getAuditWithResponses, getLifeAreas } from "@/lib/actions/audit";
+import { getInProgressAudit, getAuditWithResponses, getLifeAreas, getRecentCompletedAudits } from "@/lib/actions/audit";
+import { getClearPlanForAudit } from "@/lib/actions/clear";
+import { createClient } from "@/lib/supabase/server";
+import { AUDIT_EVERY_LABEL, daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
 import { INTRO_GUIDE, AREA_SHORT_NAMES } from "@/lib/audit-guides";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { GuideVideo } from "@/components/audit/GuideVideo";
@@ -9,15 +12,18 @@ import { LifeMap } from "@/components/audit/LifeMap";
 // Demonstration values for the labelled example — never a real person's answers.
 const EXAMPLE_SCORES = [8, 8, 8, 4, 8, 5, 8, 5, 6, 8];
 
-// Entry point. Someone already mid-audit (or resuming/retaking) is sent
-// straight back to their first unanswered area, same as before. Someone
-// brand new — most guests, since this is now the front door for anyone
-// without an account — sees a short intro first instead of being dropped
-// straight into a wall of rating buttons with no context for what this is.
+// Entry point. Someone mid-audit is sent back to their first unanswered
+// area. Someone who has already finished an audit sees their latest one and
+// when the next is due (looking never starts a new audit — "Retake" does).
+// Someone brand new sees the welcome and intro video.
 export default async function AuditEntryPage({ searchParams }: { searchParams: Promise<{ intro?: string }> }) {
   const { intro } = await searchParams;
-  const auditId = await startOrResumeAudit();
-  const [{ responses }, areas] = await Promise.all([getAuditWithResponses(auditId), getLifeAreas()]);
+  const [inProgress, recent, areas] = await Promise.all([
+    getInProgressAudit(),
+    getRecentCompletedAudits(2),
+    getLifeAreas(),
+  ]);
+  const responses = inProgress?.responses ?? [];
 
   const answeredIds = new Set(responses.map((r) => r.life_area_id));
   const firstUnanswered = areas.find((a) => !answeredIds.has(a.id));
@@ -26,6 +32,11 @@ export default async function AuditEntryPage({ searchParams }: { searchParams: P
   // ?intro=1 is how Back from the first area returns here without being
   // bounced straight into the audit again.
   if (responses.length > 0 && intro !== "1") redirect(`/audit/${resumeStep}`);
+
+  const latest = recent[0];
+  if (latest && responses.length === 0 && intro !== "1") {
+    return <LatestAudit audit={latest} previous={recent[1] ?? null} areas={areas} />;
+  }
 
   return (
     <div className="page au-page">
@@ -86,6 +97,92 @@ export default async function AuditEntryPage({ searchParams }: { searchParams: P
           />
         </div>
       </section>
+    </div>
+  );
+}
+
+type Audit = { id: string; total_score: number | null; completed_at: string; focus_area_id: string | null };
+
+// Returning person: their latest audit at a glance, and when to take the next.
+async function LatestAudit({
+  audit,
+  previous,
+  areas,
+}: {
+  audit: Audit;
+  previous: Audit | null;
+  areas: Awaited<ReturnType<typeof getLifeAreas>>;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isGuest = user?.is_anonymous ?? false;
+  const [{ responses }, plan] = await Promise.all([getAuditWithResponses(audit.id), getClearPlanForAudit(audit.id)]);
+
+  const scoreBy = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
+  const scores = areas.map((a) => scoreBy.get(a.id) ?? 0);
+  const startId = plan?.life_area_id ?? audit.focus_area_id;
+  const startIdx = startId ? areas.findIndex((a) => a.id === startId) : -1;
+  const total = audit.total_score ?? scores.reduce((x, y) => x + y, 0);
+  const change = previous?.total_score != null ? total - previous.total_score : null;
+
+  const due = nextAuditDue(audit.completed_at);
+  const days = daysUntil(due);
+
+  return (
+    <div className="page au-page">
+      <div className="eyebrow"><span className="eydot" /> Your Aligned audit</div>
+      <h1 className="au-latest-h">Your latest snapshot</h1>
+      <p className="lead">
+        Taken {formatDate(audit.completed_at)} · Overall {total} / 100
+        {change !== null ? ` · ${change >= 0 ? "+" : ""}${change} since your previous audit` : ""}
+      </p>
+
+      <div className="au-latest">
+        <div className="au-chart">
+          <LifeMap
+            scores={scores}
+            names={areas.map((a) => a.name)}
+            labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+            highlightIndex={startIdx === -1 ? null : startIdx}
+          />
+        </div>
+
+        <div className="au-latest-side">
+          {startIdx !== -1 ? (
+            <div className="au-sum-card">
+              <h3>Where you&rsquo;re starting</h3>
+              <p className="au-latest-big">
+                {areas[startIdx].name} <span>{scores[startIdx]}/10</span>
+              </p>
+              {plan?.step_up_answer ? <p>&ldquo;{plan.step_up_answer}&rdquo;</p> : null}
+            </div>
+          ) : null}
+
+          <div className={`au-sum-card${days <= 0 ? " due" : ""}`}>
+            <h3>{days <= 0 ? "Your next audit is due" : "Your next audit"}</h3>
+            <p className="au-latest-big">{days <= 0 ? "Now" : formatDate(due)}</p>
+            <p>
+              {days <= 0
+                ? "It’s been around three months. Take it again to see what’s moved."
+                : `In ${days} day${days === 1 ? "" : "s"}. We suggest retaking the audit ${AUDIT_EVERY_LABEL} — long enough for real change to show.`}
+            </p>
+          </div>
+
+          <div className="au-latest-actions">
+            <Link href="/audit/results" className="btn btn-p">View my full snapshot</Link>
+            {isGuest ? (
+              <Link href="/login?signup=1" className="btn btn-o">Save it to a free profile</Link>
+            ) : (
+              <Link href="/clear" className="btn btn-o">Go to CLEAR</Link>
+            )}
+            <Link href="/audit/1" className="au-text-link">
+              {days <= 0 ? "Retake the audit" : "Retake early"}
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -118,6 +118,28 @@ export async function saveStartingPoint(input: {
   return { ok: true };
 }
 
+// Choose (or change) the area CLEAR works on, from CLEAR's intro. Only
+// before CLEAR has started — after that the plan's area is fixed.
+export async function chooseClearArea(auditId: string, lifeAreaId: string) {
+  const clientId = await requireUserId();
+  const supabase = await createClient();
+  const existing = await getClearPlanForAudit(auditId);
+  if (existing) {
+    const started = Boolean(existing.current_reality || existing.life_vision || existing.emotional_blocks);
+    if (!started && existing.life_area_id !== lifeAreaId) {
+      // A "what would a 5 look like" answer belongs to the area it was written for.
+      await supabase
+        .from("clear_plans")
+        .update({ life_area_id: lifeAreaId, step_up_target: null, step_up_answer: null })
+        .eq("id", existing.id);
+    }
+  } else {
+    await supabase.from("clear_plans").insert({ client_id: clientId, audit_id: auditId, life_area_id: lifeAreaId });
+  }
+  revalidatePath("/clear");
+  redirect("/clear");
+}
+
 // CLEAR saves return a result instead of throwing, so a failed save shows a
 // message and keeps what the person typed rather than ending on an error page.
 // Each update also checks a row was actually changed: a missing row or a
