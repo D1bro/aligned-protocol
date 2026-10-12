@@ -10,7 +10,8 @@ import { getCurrentProfile } from "@/lib/session";
 import { SnapshotView } from "@/components/audit/SnapshotView";
 import { PlanCard } from "@/components/audit/PlanCard";
 import { AREA_GUIDES, AREA_SHORT_NAMES } from "@/lib/audit-guides";
-import { AUDIT_EVERY_LABEL, daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
+import { AUDIT_EVERY_LABEL, daysUntil, formatDate, nextAuditDue, nextCheckInDue } from "@/lib/audit-schedule";
+import { getCheckIns } from "@/lib/actions/checkins";
 
 // Home: what's next for this person, their plan, and their life map — the
 // one place that always reflects where they are in the loop
@@ -63,12 +64,24 @@ export default async function HomePage() {
   const due = nextAuditDue(audit.completed_at);
   const days = daysUntil(due);
 
+  // Monthly check-in on an active goal.
+  const activeGoal = stage === "done" && goal?.status === "active" ? goal : null;
+  const checkIns = activeGoal ? await getCheckIns(activeGoal.id) : [];
+  const lastCheckIn = checkIns[checkIns.length - 1];
+  const checkInDue = activeGoal ? nextCheckInDue(lastCheckIn?.created_at ?? activeGoal.created_at ?? audit.completed_at) : null;
+  const checkInDays = checkInDue ? daysUntil(checkInDue) : null;
+  const currentScore = lastCheckIn?.area_score ?? areaScore;
+
   // The single most useful thing to do next.
   const next =
     days <= 0
       ? { title: "Your next audit is due", body: "It’s been around three months. Take the audit again to see what’s moved.", href: "/audit/1", cta: "Retake the audit →" }
+      : checkInDays !== null && checkInDays <= 0
+        ? { title: "Your monthly check-in is due", body: `Two minutes on ${area?.name ?? "your goal"}: did you do it, where it is now, and what next.`, href: "/clear/check-in", cta: "Check in now →" }
       : !area
         ? { title: "Choose where to start", body: "Pick one area from your snapshot to develop with CLEAR.", href: "/clear", cta: "Choose an area →" }
+        : stage === "done" && goal?.status !== "active"
+          ? { title: "Set your next goal", body: `Your last goal for ${area.name} is closed. Keep the momentum — choose the next step.`, href: "/clear?new=1", cta: "Set my next goal →" }
         : stage === "done"
           ? {
               title: "Keep going with your action",
@@ -97,13 +110,14 @@ export default async function HomePage() {
           {area ? (
             <PlanCard
               areaName={area.name}
-              score={areaScore}
+              score={currentScore}
               target={target}
               stage={stage}
               step={step}
               goalTitle={goal?.goal_title ?? null}
               frequency={goal?.frequency ?? null}
               nextAuditDue={due.toISOString()}
+              nextCheckIn={checkInDue?.toISOString() ?? null}
               hideAction
             />
           ) : null}

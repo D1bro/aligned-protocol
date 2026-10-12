@@ -1,30 +1,57 @@
 import Link from "next/link";
 import type { LifeArea } from "@/lib/actions/audit";
 import type { ClearPlan, Goal } from "@/lib/actions/clear";
-import { daysUntil, formatDate } from "@/lib/audit-schedule";
-import { GoalActions } from "../goals/GoalActions";
-import { CLEAR_STEPS } from "./ClearIntro";
+import type { CheckIn } from "@/lib/actions/checkins";
+import { DID_IT_LABELS } from "@/lib/checkin-labels";
+import { daysUntil, formatDate, nextCheckInDue } from "@/lib/audit-schedule";
+import { ProgressLine } from "@/components/audit/ProgressLine";
 import { ScoreTrack } from "@/components/audit/ScoreTrack";
+import { GoalActions } from "./GoalActions";
+import { CLEAR_STEPS } from "./ClearIntro";
 
-// After CLEAR: their plan at a glance — where they are, the one thing they're
-// doing, what success looks like, and what happens next.
+type PastGoal = { id: string; goal_title: string; focus_area: string | null; status: string; created_at: string };
+
+const NEXT_STEP_LABELS: Record<CheckIn["next_step"], string> = {
+  keep: "Kept going",
+  adjust: "Adjusted the action",
+  done: "Marked done",
+};
+
+const shortDate = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+// My plan: the goal, how it's going (progress line + monthly check-ins), what
+// happens next, their CLEAR answers, and past goals.
 export function ClearDashboard({
   area,
   score,
   plan,
   goal,
   nextAuditDue,
+  auditDate,
+  checkIns,
+  pastGoals,
 }: {
   area: LifeArea;
   score: number;
   plan: ClearPlan;
   goal: Goal;
   nextAuditDue: Date;
+  auditDate: string;
+  checkIns: CheckIn[];
+  pastGoals: PastGoal[];
 }) {
   const target = Math.min(10, plan.step_up_target ?? score + 1);
-  const days = daysUntil(nextAuditDue);
+  const latestScore = checkIns.length ? checkIns[checkIns.length - 1].area_score : score;
+  const closed = goal.status !== "active";
   const ifThen = plan.if_obstacle?.trim() && plan.if_response?.trim() ? `If ${plan.if_obstacle.trim()}, then I’ll ${plan.if_response.trim()}.` : null;
   const when = goal.action_when?.trim() || goal.frequency?.trim() || null;
+
+  const lastCheckIn = checkIns[checkIns.length - 1];
+  const checkInDue = nextCheckInDue(lastCheckIn?.created_at ?? goal.created_at ?? auditDate);
+  const checkInDays = daysUntil(checkInDue);
+  const auditDays = daysUntil(nextAuditDue);
+  const points = [{ label: `Audit ${shortDate(auditDate)}`, score }, ...checkIns.map((c) => ({ label: shortDate(c.created_at), score: c.area_score }))];
+
   const answers = [
     plan.current_reality,
     [plan.life_vision, plan.step_up_answer ? `Next step: ${plan.step_up_answer}` : null].filter(Boolean).join("\n"),
@@ -32,20 +59,29 @@ export function ClearDashboard({
     goal.goal_title,
     [goal.success_criteria, ifThen].filter(Boolean).join("\n"),
   ];
-  const closed = goal.status !== "active";
 
   return (
     <div className="page au-page">
-      <div className="eyebrow"><span className="eydot" /> Your CLEAR plan</div>
+      <div className="eyebrow"><span className="eydot" /> My plan</div>
       <h1 className="au-latest-h">
-        {area.name}: from {score} towards {target}.
+        {closed && goal.status === "completed"
+          ? `${area.name}: goal done.`
+          : latestScore >= target
+            ? `${area.name}: you’ve reached ${target}.`
+            : `${area.name}: from ${latestScore} towards ${target}.`}
       </h1>
-      <p className="lead">One action, done consistently, is how a score moves. Here&rsquo;s your plan.</p>
+      <p className="lead">
+        {closed
+          ? "Nice work. Set your next goal for this area, or wait for your next audit to choose a new one."
+          : "One action, done consistently, is how a score moves. Here’s your plan and how it’s going."}
+      </p>
 
       <div className="clear-dash">
         <section className="clear-goal" aria-label="Your goal">
-          <div className="eyebrow"><span className="eydot" /> {closed ? (goal.status === "completed" ? "Goal done" : "Goal let go") : "Your goal"}</div>
-          <h2>{goal.goal_title}</h2>
+          <div className="eyebrow">
+            <span className="eydot" /> {closed ? (goal.status === "completed" ? "Goal done" : "Goal let go") : "Your goal"}
+          </div>
+          <h2>{goal.goal_title?.trim()}</h2>
           {goal.action_text ? (
             <div className="clear-goal-row">
               <span>The one action</span>
@@ -72,15 +108,32 @@ export function ClearDashboard({
               <p>&ldquo;{goal.motivation_text}&rdquo;</p>
             </blockquote>
           ) : null}
-          {closed ? null : <GoalActions goalId={goal.id} />}
+          {closed ? (
+            <div className="goal-actions">
+              <Link href="/clear?new=1" className="btn btn-p">Set my next goal →</Link>
+            </div>
+          ) : (
+            <GoalActions goalId={goal.id} />
+          )}
         </section>
 
         <div className="clear-side">
-          <section className="au-sum-card" aria-label="Progress">
+          {closed ? null : (
+            <section className={`au-sum-card${checkInDays <= 0 ? " due" : ""}`} aria-label="Monthly check-in">
+              <h3>{checkInDays <= 0 ? "Your monthly check-in is due" : "Next check-in"}</h3>
+              <p className="au-latest-big">{checkInDays <= 0 ? "Now" : formatDate(checkInDue)}</p>
+              <p>Two minutes: did you do it, where the area is now, and what next.</p>
+              <div className="goal-actions" style={{ borderTop: 0, paddingTop: 0 }}>
+                <Link href="/clear/check-in" className={checkInDays <= 0 ? "btn btn-p" : "btn btn-o"}>
+                  {checkInDays <= 0 ? "Check in now" : "Check in early"}
+                </Link>
+              </div>
+            </section>
+          )}
+          <section className="au-sum-card" aria-label="Where this area is">
             <h3>Where this area is</h3>
-            <ScoreTrack score={score} target={target} />
+            <ScoreTrack score={latestScore} target={target} />
           </section>
-
           <section className="au-sum-card" aria-label="What happens now">
             <h3>What happens now</h3>
             <ol className="clear-now">
@@ -88,15 +141,39 @@ export function ClearDashboard({
                 <b>Do the action</b> — {when ? when.charAt(0).toLowerCase() + when.slice(1) : "as planned"}.
               </li>
               <li>
-                <b>Notice what changes.</b> Small shifts count.
+                <b>Check in monthly</b> — next {checkInDays <= 0 ? "now" : formatDate(checkInDue)}.
               </li>
               <li>
-                <b>Retake the audit</b> {days <= 0 ? "now" : `around ${formatDate(nextAuditDue)}`} to see if {area.name} has moved.
+                <b>Retake the audit</b> {auditDays <= 0 ? "now" : `around ${formatDate(nextAuditDue)}`} to see the whole picture.
               </li>
             </ol>
           </section>
         </div>
       </div>
+
+      <section className="clear-review" aria-labelledby="clear-progress-h">
+        <h2 id="clear-progress-h" className="sec-head">How it&rsquo;s going</h2>
+        <div className="au-chart clear-progress">
+          <ProgressLine points={points} target={target} />
+          {checkIns.length === 0 ? (
+            <p className="au-chart-caption">Your first check-in adds the next point. Each one shows whether {area.name} is moving.</p>
+          ) : null}
+        </div>
+        {checkIns.length ? (
+          <ol className="checkin-list">
+            {[...checkIns].reverse().map((c) => (
+              <li key={c.id}>
+                <div className="checkin-head">
+                  <b>{formatDate(c.created_at)}</b>
+                  <span>{DID_IT_LABELS[c.did_it]} · {c.area_score}/10 · {NEXT_STEP_LABELS[c.next_step]}</span>
+                </div>
+                {c.helped ? <p><span>Helped:</span> {c.helped}</p> : null}
+                {c.got_in_way ? <p><span>Got in the way:</span> {c.got_in_way}</p> : null}
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </section>
 
       <section className="clear-review" aria-labelledby="clear-review-h">
         <h2 id="clear-review-h" className="sec-head">Your CLEAR answers</h2>
@@ -111,12 +188,29 @@ export function ClearDashboard({
             </li>
           ))}
         </ol>
+        <div className="au-latest-actions" style={{ marginTop: "1rem" }}>
+          <Link href="/clear?edit=1" className="btn btn-o">Review or edit my answers</Link>
+        </div>
       </section>
 
-      <div className="au-latest-actions">
-        <Link href="/clear?edit=1" className="btn btn-o">Review or edit my answers</Link>
-        <Link href="/" className="au-text-link">Go to my profile</Link>
-      </div>
+      {pastGoals.length ? (
+        <section className="clear-review" aria-labelledby="past-goals-h">
+          <h2 id="past-goals-h" className="sec-head">Past goals</h2>
+          <ul className="past-goals">
+            {pastGoals.map((g) => (
+              <li key={g.id}>
+                <span className={`past-status ${g.status}`}>
+                  {g.status === "completed" ? "Done" : g.status === "abandoned" ? "Let go" : "Active"}
+                </span>
+                <div>
+                  <p>{g.goal_title?.trim()}</p>
+                  <span>{[g.focus_area, formatDate(g.created_at)].filter(Boolean).join(" · ")}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

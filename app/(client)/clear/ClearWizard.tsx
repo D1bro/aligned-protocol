@@ -158,7 +158,7 @@ export function ClearWizard({
   auditNote,
   lowWellbeing,
   nextAuditDue,
-  startAtBeginning = false,
+  startAtStep = null,
 }: {
   area: LifeArea;
   plan: ClearPlan;
@@ -168,11 +168,11 @@ export function ClearWizard({
   // Emotional Wellbeing scored very low: soften step 3 and point to support.
   lowWellbeing: boolean;
   nextAuditDue: string;
-  // Reviewing a finished plan: open on step 1 instead of the summary.
-  startAtBeginning?: boolean;
+  // Reviewing or adjusting: open on this step instead of where they left off.
+  startAtStep?: number | null;
 }) {
   const target = Math.min(10, score + 1);
-  const [step, setStep] = useState(() => (startAtBeginning ? 1 : computeInitialStep(plan, initialGoal)));
+  const [step, setStep] = useState(() => startAtStep ?? computeInitialStep(plan, initialGoal));
   const [form, setForm] = useState<Form>(() => initialForm(plan, initialGoal));
   // What's actually in the database — pre-filled suggestions (like success
   // from their "5") aren't saved until they continue.

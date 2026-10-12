@@ -18,3 +18,10 @@ export function daysUntil(date: Date): number {
 export function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
+
+// Goal check-ins: monthly, between quarterly audits.
+export function nextCheckInDue(from: string | Date): Date {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + 1);
+  return d;
+}

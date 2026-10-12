@@ -12,13 +12,15 @@ export type PlanCardProps = {
   goalTitle: string | null;
   frequency: string | null;
   nextAuditDue: string; // ISO date
+  // Once the plan is set: the next monthly check-in (ISO date).
+  nextCheckIn?: string | null;
   // Hide the button where the page already offers the same action.
   hideAction?: boolean;
 };
 
 // The person's plan at a glance — the same card on Home, the snapshot and
 // the audit page, so every page agrees on where they are.
-export function PlanCard({ areaName, score, target, stage, step, goalTitle, frequency, nextAuditDue, hideAction }: PlanCardProps) {
+export function PlanCard({ areaName, score, target, stage, step, goalTitle, frequency, nextAuditDue, nextCheckIn, hideAction }: PlanCardProps) {
   const cta =
     stage === "done"
       ? { href: "/clear", label: "Open my plan" }
@@ -45,7 +47,7 @@ export function PlanCard({ areaName, score, target, stage, step, goalTitle, freq
         {hideAction ? null : (
           <Link href={cta.href} className={stage === "done" ? "btn btn-o" : "btn btn-p"}>{cta.label}</Link>
         )}
-        <span>Next audit {formatDate(nextAuditDue)}</span>
+        <span>{nextCheckIn ? `Next check-in ${formatDate(nextCheckIn)}` : `Next audit ${formatDate(nextAuditDue)}`}</span>
       </div>
     </section>
   );

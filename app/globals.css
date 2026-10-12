@@ -555,3 +555,38 @@ select option { background: var(--bg3); color: var(--text); }
 .clear-ifthen label { font-family: var(--font-sora), 'Sora', sans-serif; font-weight: 600; color: var(--gold); font-size: 14px; }
 .clear-dates span { border: 1px solid var(--bdr); color: var(--gold); border-radius: 100px; padding: .4rem .9rem; font-size: 12px; }
 .clear-dates span.audit { border-color: var(--bdr2); color: var(--text2); }
+
+/* progress line */
+.progress-line { width: 100%; display: block; }
+.pl-grid { stroke: var(--bg5); stroke-width: 1; }
+.pl-axis, .pl-label { fill: var(--text2); font: 12px var(--font-dm-sans), 'DM Sans', sans-serif; }
+.pl-target { stroke: var(--hi); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.pl-target-label { fill: var(--hi); font: 600 12px var(--font-dm-sans), 'DM Sans', sans-serif; }
+.pl-path { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-linejoin: round; }
+.pl-dot { fill: var(--gold); }
+.pl-dot.last { stroke: var(--text); stroke-width: 2.5; }
+.pl-score { fill: var(--text); font: 600 13px var(--font-sora), 'Sora', sans-serif; }
+
+/* check-ins and My plan extras */
+.clear-step .au-scores { max-width: 460px; }
+.checkin-next { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .6rem; }
+@media (max-width: 640px) { .checkin-next { grid-template-columns: 1fr; } }
+.checkin-next button { text-align: left; border: 1px solid var(--bdr2); background: var(--bg2); color: var(--text); border-radius: 12px; padding: .8rem 1rem; cursor: pointer; display: grid; gap: .2rem; font: 400 13px var(--font-dm-sans), 'DM Sans', sans-serif; }
+.checkin-next button b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 14px; }
+.checkin-next button span { color: var(--text2); font-size: 12px; }
+.checkin-next button[aria-pressed=true] { border-color: var(--gold); background: var(--gd); }
+.checkin-next button[aria-pressed=true] b { color: var(--gold); }
+.clear-progress { max-width: none; margin: 0; }
+.checkin-list { list-style: none; display: grid; gap: .6rem; margin-top: 1rem; }
+.checkin-list li { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 12px; padding: .8rem 1rem; }
+.checkin-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: 13px; }
+.checkin-head span { color: var(--text2); }
+.checkin-list p { font-size: 13px; color: var(--text); margin-top: .35rem; line-height: 1.6; }
+.checkin-list p span { color: var(--text3); }
+.past-goals { list-style: none; display: grid; gap: .5rem; }
+.past-goals li { display: grid; grid-template-columns: 70px 1fr; gap: .8rem; align-items: start; border-bottom: 1px solid var(--bdr2); padding: .6rem 0; }
+.past-goals p { font-size: 14px; color: var(--text); }
+.past-goals li div > span { font-size: 12px; color: var(--text3); }
+.past-status { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; border-radius: 100px; padding: 2px 8px; text-align: center; border: 1px solid var(--bdr2); color: var(--text2); }
+.past-status.completed { border-color: rgba(74,222,128,.4); color: var(--hi); }
+.clear-progress .progress-line { max-width: 760px; margin: 0 auto; }

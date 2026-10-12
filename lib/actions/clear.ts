@@ -61,6 +61,7 @@ export type Goal = {
   motivation_text: string | null;
   start_date: string;
   status: "active" | "completed" | "abandoned";
+  created_at?: string;
 };
 
 // Read-only lookup — used by the dashboard to show the right CTA state
@@ -195,7 +196,15 @@ export async function saveClearReflection(planId: string, fields: ClearPlanField
 
 export async function getGoalForPlan(planId: string): Promise<Goal | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from("goals").select("*").eq("clear_plan_id", planId).maybeSingle();
+  // A plan can hold more than one goal over time (a finished goal followed by
+  // a new one) — the latest is the current one.
+  const { data } = await supabase
+    .from("goals")
+    .select("*")
+    .eq("clear_plan_id", planId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   return (data as Goal) ?? null;
 }
 

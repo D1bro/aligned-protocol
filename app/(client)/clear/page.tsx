@@ -5,6 +5,7 @@ import { nextAuditDue } from "@/lib/audit-schedule";
 import { ClearWizard } from "./ClearWizard";
 import { ClearIntro } from "./ClearIntro";
 import { ClearDashboard } from "./ClearDashboard";
+import { getCheckIns, getAllGoals } from "@/lib/actions/checkins";
 
 const filled = (v: string | null | undefined) => !!v?.trim();
 
@@ -18,9 +19,12 @@ const filled = (v: string | null | undefined) => !!v?.trim();
 export default async function ClearPage({
   searchParams,
 }: {
-  searchParams: Promise<{ choose?: string; start?: string; edit?: string }>;
+  searchParams: Promise<{ choose?: string; start?: string; edit?: string; new?: string }>;
 }) {
-  const { choose, start, edit } = await searchParams;
+  // ?edit=N opens CLEAR at step N (review / adjust); ?new=1 starts a fresh
+  // goal on the same plan once the last one is done.
+  const { choose, start, edit, new: newGoal } = await searchParams;
+  const editStep = edit ? Math.min(5, Math.max(1, Number(edit) || 1)) : null;
   const audit = await getLatestCompletedAudit();
   if (!audit) redirect("/audit");
 
@@ -71,13 +75,27 @@ export default async function ClearPage({
   }
 
   const plan = await getOrCreateClearPlan(audit.id, area.id);
-  const goal = await getGoalForPlan(plan.id);
+  const latestGoal = await getGoalForPlan(plan.id);
+  const goal = newGoal === "1" && latestGoal?.status !== "active" ? null : latestGoal;
   const score = scoreByArea.get(area.id) ?? 0;
   const due = nextAuditDue(audit.completed_at);
   const finished = Boolean(goal && filled(goal.frequency) && filled(goal.success_criteria));
 
-  if (finished && goal && edit !== "1") {
-    return <ClearDashboard area={area} score={score} plan={plan} goal={goal} nextAuditDue={due} />;
+  if (finished && goal && !editStep) {
+    const checkIns = await getCheckIns(goal.id);
+    const pastGoals = (await getAllGoals()).filter((g) => g.id !== goal.id);
+    return (
+      <ClearDashboard
+        area={area}
+        score={score}
+        plan={plan}
+        goal={goal}
+        nextAuditDue={due}
+        auditDate={audit.completed_at}
+        checkIns={checkIns}
+        pastGoals={pastGoals}
+      />
+    );
   }
   if (!started && !goal && start !== "1") {
     return <ClearIntro area={area} score={score} plan={plan} nextAuditDue={due} />;
@@ -94,7 +112,7 @@ export default async function ClearPage({
       auditNote={note}
       lowWellbeing={lowWellbeing}
       nextAuditDue={due.toISOString()}
-      startAtBeginning={edit === "1"}
+      startAtStep={editStep}
     />
   );
 }

@@ -5,10 +5,9 @@ import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
 
 export const CLIENT_LINKS = [
-  { href: "/", label: "Dashboard", icon: "▦", match: (p: string) => p === "/" },
+  { href: "/", label: "Home", icon: "▦", match: (p: string) => p === "/" },
   { href: "/audit", label: "The Aligned Audit", icon: "◎", match: (p: string) => p.startsWith("/audit") },
-  { href: "/clear", label: "CLEAR Process", icon: "◈", match: (p: string) => p.startsWith("/clear") },
-  { href: "/goals", label: "My Goals", icon: "★", match: (p: string) => p.startsWith("/goals") },
+  { href: "/clear", label: "My plan", icon: "◈", match: (p: string) => p.startsWith("/clear") || p.startsWith("/goals") },
   { href: "/summary", label: "My Summary", icon: "◑", match: (p: string) => p.startsWith("/summary") },
 ];
 
