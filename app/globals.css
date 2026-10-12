@@ -515,3 +515,20 @@ select option { background: var(--bg3); color: var(--text); }
 .au-pick button:hover { border-color: var(--gold); background: var(--gd3); }
 .au-pick button[aria-current=true] { border-color: var(--gold); }
 .au-sum-card .clear-now li { display: list-item; color: var(--text2); }
+
+/* plan card (Home, snapshot, audit page) */
+.plan-card { border: 1px solid var(--bdr); background: linear-gradient(180deg, rgba(211,167,88,.08), rgba(211,167,88,.02)); border-radius: 16px; padding: 1.4rem 1.5rem; display: grid; gap: .6rem; }
+.plan-card h3 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.plan-card-goal { font-size: 15px; color: var(--text); line-height: 1.6; overflow-wrap: anywhere; }
+.plan-card-goal span { color: var(--gold); }
+.plan-card-status { font-size: 14px; color: var(--text2); }
+.plan-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: .3rem; font-size: 12px; color: var(--text2); }
+@media (max-width: 480px) { .plan-card-foot .btn { width: 100%; } }
+
+/* home */
+.home-top { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.25rem; align-items: start; margin: 1.25rem 0 2rem; }
+@media (max-width: 900px) { .home-top { grid-template-columns: 1fr; } }
+.home-next { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 16px; padding: 1.6rem; display: grid; gap: .7rem; justify-items: start; }
+.home-next h2 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: clamp(22px,2.6vw,28px); font-weight: 600; letter-spacing: -.02em; line-height: 1.25; }
+.home-next p { font-size: 14px; color: var(--text2); line-height: 1.7; overflow-wrap: anywhere; }
+.home-side { display: grid; gap: 1rem; }

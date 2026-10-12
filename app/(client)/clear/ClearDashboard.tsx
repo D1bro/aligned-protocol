@@ -3,7 +3,8 @@ import type { LifeArea } from "@/lib/actions/audit";
 import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import { daysUntil, formatDate } from "@/lib/audit-schedule";
 import { GoalActions } from "../goals/GoalActions";
-import { CLEAR_STEPS, ScoreTrack } from "./ClearIntro";
+import { CLEAR_STEPS } from "./ClearIntro";
+import { ScoreTrack } from "@/components/audit/ScoreTrack";
 
 // After CLEAR: their plan at a glance — where they are, the one thing they're
 // doing, what success looks like, and what happens next.

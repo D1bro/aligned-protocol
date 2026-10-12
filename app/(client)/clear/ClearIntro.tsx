@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LifeArea } from "@/lib/actions/audit";
 import type { ClearPlan } from "@/lib/actions/clear";
 import { formatDate } from "@/lib/audit-schedule";
+import { ScoreTrack } from "@/components/audit/ScoreTrack";
 
 export const CLEAR_STEPS = [
   { letter: "C", name: "Current reality", line: "Where things honestly are right now." },
@@ -72,22 +73,6 @@ export function ClearIntro({
       <div className="au-latest-actions">
         <Link href="/clear?start=1" className="btn btn-p">Begin CLEAR →</Link>
         <span className="au-small">Your answers save as you go — you can stop and come back.</span>
-      </div>
-    </div>
-  );
-}
-
-// A 1–10 track: where they are now, and the next step up.
-export function ScoreTrack({ score, target }: { score: number; target: number }) {
-  return (
-    <div className="clear-track" role="img" aria-label={`Now ${score} out of 10; next step ${target}`}>
-      <div className="clear-track-bar">
-        <span className="clear-track-fill" style={{ width: `${score * 10}%` }} />
-        <span className="clear-track-next" style={{ left: `${target * 10}%` }} />
-      </div>
-      <div className="clear-track-labels">
-        <span>Now <b>{score}</b>/10</span>
-        <span className="next">Next step <b>{target}</b></span>
       </div>
     </div>
   );

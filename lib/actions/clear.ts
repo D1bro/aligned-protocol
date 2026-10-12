@@ -55,6 +55,21 @@ export async function getClearPlanForAudit(auditId: string): Promise<ClearPlan |
   return (data as ClearPlan) ?? null;
 }
 
+// Where someone is in CLEAR for an audit — read-only, so any page can show
+// the same picture of their plan without creating anything.
+export type PlanStage = "none" | "chosen" | "in_progress" | "done";
+
+export async function getPlanState(auditId: string) {
+  const plan = await getClearPlanForAudit(auditId);
+  const goal = plan ? await getGoalForPlan(plan.id) : null;
+  const f = (v: string | null | undefined) => !!v?.trim();
+  const done = !!goal && f(goal.frequency) && f(goal.success_criteria);
+  const started = (!!plan && (f(plan.current_reality) || f(plan.life_vision) || f(plan.emotional_blocks))) || !!goal;
+  const stage: PlanStage = done ? "done" : started ? "in_progress" : plan ? "chosen" : "none";
+  const step = !plan ? 0 : !f(plan.current_reality) ? 1 : !f(plan.life_vision) ? 2 : !f(plan.emotional_blocks) ? 3 : !goal ? 4 : 5;
+  return { plan, goal, stage, step };
+}
+
 // One CLEAR plan per audit — resuming /clear always finds (or creates) the
 // same row rather than starting a second one, same idempotent pattern as
 // startOrResumeAudit for the audit itself. Only called from the /clear page

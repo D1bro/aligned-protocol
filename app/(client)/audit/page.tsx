@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getInProgressAudit, getAuditWithResponses, getLifeAreas, getRecentCompletedAudits } from "@/lib/actions/audit";
-import { getClearPlanForAudit } from "@/lib/actions/clear";
+import { getPlanState } from "@/lib/actions/clear";
+import { PlanCard } from "@/components/audit/PlanCard";
 import { createClient } from "@/lib/supabase/server";
 import { AUDIT_EVERY_LABEL, daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
 import { INTRO_GUIDE, AREA_SHORT_NAMES } from "@/lib/audit-guides";
@@ -118,7 +119,8 @@ async function LatestAudit({
     data: { user },
   } = await supabase.auth.getUser();
   const isGuest = user?.is_anonymous ?? false;
-  const [{ responses }, plan] = await Promise.all([getAuditWithResponses(audit.id), getClearPlanForAudit(audit.id)]);
+  const [{ responses }, planState] = await Promise.all([getAuditWithResponses(audit.id), getPlanState(audit.id)]);
+  const { plan, goal, stage, step } = planState;
 
   const scoreBy = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
   const scores = areas.map((a) => scoreBy.get(a.id) ?? 0);
@@ -150,7 +152,18 @@ async function LatestAudit({
         </div>
 
         <div className="au-latest-side">
-          {startIdx !== -1 ? (
+          {startIdx !== -1 && (stage === "in_progress" || stage === "done") ? (
+            <PlanCard
+              areaName={areas[startIdx].name}
+              score={scores[startIdx]}
+              target={Math.min(10, plan?.step_up_target ?? scores[startIdx] + 1)}
+              stage={stage}
+              step={step}
+              goalTitle={goal?.goal_title ?? null}
+              frequency={goal?.frequency ?? null}
+              nextAuditDue={due.toISOString()}
+            />
+          ) : startIdx !== -1 ? (
             <div className="au-sum-card">
               <h3>Where you&rsquo;re starting</h3>
               <p className="au-latest-big">
