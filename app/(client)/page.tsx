@@ -6,7 +6,7 @@ import {
   getLifeAreas,
 } from "@/lib/actions/audit";
 import { getPlanState } from "@/lib/actions/clear";
-import { getCheckIns } from "@/lib/actions/checkins";
+import { getCheckIns, getAllGoals } from "@/lib/actions/checkins";
 import { getCurrentProfile } from "@/lib/session";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { ScoreTrack } from "@/components/audit/ScoreTrack";
@@ -63,6 +63,8 @@ export default async function ProfilePage() {
   const checkInDue = activeGoal ? nextCheckInDue(lastCheckIn?.created_at ?? activeGoal.created_at ?? audit.completed_at) : null;
   const checkInDays = checkInDue ? daysUntil(checkInDue) : null;
   const when = activeGoal?.action_when?.trim() || activeGoal?.frequency?.trim() || null;
+
+  const allGoals = await getAllGoals();
 
   const strongest = areas
     .map((a, i) => ({ name: AREA_SHORT_NAMES[a.sort_order] ?? a.name, score: scores[i] }))
@@ -152,6 +154,33 @@ export default async function ProfilePage() {
           )
         ) : null}
       </section>
+
+      {allGoals.length ? (
+        <section className="profile-goals" aria-labelledby="profile-goals-h">
+          <div className="profile-goals-head">
+            <h2 id="profile-goals-h">My goals</h2>
+            <span>One goal at a time — finish it, then set the next.</span>
+          </div>
+          <ul>
+            {allGoals.slice(0, 5).map((g) => (
+              <li key={g.id}>
+                <span className={`past-status ${g.status}`}>
+                  {g.status === "active" ? "Now" : g.status === "completed" ? "Done" : "Let go"}
+                </span>
+                <div>
+                  <p>{g.goal_title?.trim()}</p>
+                  <em>
+                    {[g.focus_area, g.status === "active" && checkInDue ? `next check-in ${formatDate(checkInDue)}` : `set ${formatDate(g.created_at)}`]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </em>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <Link href="/clear" className="au-text-link">Open my plan</Link>
+        </section>
+      ) : null}
 
       <div className="profile-tiles">
         <div>
