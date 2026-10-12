@@ -658,3 +658,7 @@ select option { background: var(--bg3); color: var(--text); }
   .pp-line { stroke-width: 5; }
   .pp-ahead, .pp-target { stroke-width: 3; }
 }
+.profile-next { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; border-top: 1px solid var(--bdr2); padding-top: 1rem; }
+.profile-next span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.profile-next b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 22px; font-weight: 600; color: var(--gold); }
+.profile-next.due b { color: var(--hi); }

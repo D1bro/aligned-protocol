@@ -10,7 +10,6 @@ import { getCheckIns } from "@/lib/actions/checkins";
 import { getCurrentProfile } from "@/lib/session";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { ScoreTrack } from "@/components/audit/ScoreTrack";
-import { ProgressPath, buildMilestones } from "@/components/audit/ProgressPath";
 import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
 import { daysUntil, formatDate, nextAuditDue, nextCheckInDue } from "@/lib/audit-schedule";
 
@@ -143,12 +142,11 @@ export default async function ProfilePage() {
           </div>
         </div>
         {area ? (
-          activeGoal ? (
-            <ProgressPath
-              compact
-              target={target}
-              milestones={buildMilestones({ auditDate: audit.completed_at, auditScore, checkIns, nextAuditDue: auditDue })}
-            />
+          activeGoal && checkInDue ? (
+            <div className={`profile-next${checkInDays !== null && checkInDays <= 0 ? " due" : ""}`}>
+              <span>Next check-in</span>
+              <b>{checkInDays !== null && checkInDays <= 0 ? "Due now" : formatDate(checkInDue)}</b>
+            </div>
           ) : (
             <div className="profile-track"><ScoreTrack score={auditScore} target={target} /></div>
           )
