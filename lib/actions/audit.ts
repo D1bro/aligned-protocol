@@ -78,26 +78,32 @@ export async function getAuditWithResponses(auditId: string) {
   return { audit, responses: responses ?? [] };
 }
 
+// One honest 1–10 score per area plus optional notes. The old importance
+// score is no longer asked; existing answers keep theirs (the upsert below
+// doesn't touch that column). Returns a result rather than throwing so the
+// page can show "Saved" only once the write has actually succeeded.
 export async function saveResponse(input: {
   auditId: string;
   lifeAreaId: string;
   satisfaction: number;
-  importance: number;
   note?: string;
-}) {
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (!Number.isInteger(input.satisfaction) || input.satisfaction < 1 || input.satisfaction > 10) {
+    return { ok: false, message: "Choose a score from 1 to 10." };
+  }
   const supabase = await createClient();
   const { error } = await supabase.from("audit_responses").upsert(
     {
       audit_id: input.auditId,
       life_area_id: input.lifeAreaId,
       satisfaction_score: input.satisfaction,
-      importance_score: input.importance,
-      note: input.note || null,
+      note: input.note?.trim() ? input.note : null,
     },
     { onConflict: "audit_id,life_area_id" }
   );
-  if (error) throw error;
+  if (error) return { ok: false, message: "Couldn’t save — check your connection and try again." };
   revalidatePath("/audit");
+  return { ok: true };
 }
 
 export async function setFocusArea(auditId: string, lifeAreaId: string, lifeAreaName: string) {

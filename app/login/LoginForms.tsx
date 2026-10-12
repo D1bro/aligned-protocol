@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { signIn, signUp, requestPasswordReset } from "@/lib/actions/auth";
 import { Notice } from "@/components/ui/Notice";
 import { PasswordStrength } from "@/components/ui/PasswordStrength";
+import { BrandMark } from "@/components/ui/BrandMark";
 
 type Tab = "signin" | "signup" | "reset";
 
@@ -57,11 +58,7 @@ export function LoginForms() {
   return (
     <div className="wrap">
       <div className="auth-logo">
-        <svg width="44" height="41" viewBox="0 0 44 41" fill="none" aria-hidden="true">
-          <path d="M22 2 L42 39" stroke="#E0B140" strokeWidth="3.5" strokeLinecap="round" />
-          <path d="M22 2 L2 39" stroke="#E0B140" strokeWidth="3.5" strokeLinecap="round" />
-          <circle cx="22" cy="29" r="4.5" fill="#E0B140" />
-        </svg>
+        <BrandMark width={46} />
         <div className="auth-logo-brand">ALIGNED</div>
         <div className="auth-logo-sub">PROTOCOL</div>
       </div>

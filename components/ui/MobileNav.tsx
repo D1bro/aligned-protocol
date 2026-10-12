@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
+import { BrandMark } from "@/components/ui/BrandMark";
 
 export type MobileNavLink = { href: string; label: string; icon: string; match: (p: string) => boolean };
 
@@ -19,10 +20,7 @@ export function MobileNav({ links, fullName }: { links: MobileNavLink[]; fullNam
     <>
       <div className="mob-bar">
         <div className="mob-brand">
-          <svg width="22" height="20" viewBox="0 0 30 27" fill="none" aria-hidden="true">
-            <path d="M15 1 L29 25 L1 25 Z" stroke="#E0B140" strokeWidth="2.2" fill="none" />
-            <circle cx="15" cy="18" r="2.5" fill="#E0B140" />
-          </svg>
+          <BrandMark width={22} />
           <span className="mob-brand-text">ALIGNED</span>
         </div>
         <button

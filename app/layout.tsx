@@ -19,13 +19,13 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Aligned",
   description:
-    "Ten honest questions about where your life actually stands right now. A human coach — not an algorithm — reads every response.",
+    "Ten honest questions about where your life stands right now — and a clear snapshot of where to focus first.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#050818",
+  themeColor: "#100F18",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

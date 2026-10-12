@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getLifeAreas, getAuditWithResponses, startOrResumeAudit } from "@/lib/actions/audit";
+import { AREA_GUIDES } from "@/lib/audit-guides";
 import { AreaForm } from "./AreaForm";
 
 export default async function AuditAreaPage({ params }: { params: Promise<{ step: string }> }) {
@@ -16,12 +17,13 @@ export default async function AuditAreaPage({ params }: { params: Promise<{ step
 
   return (
     <AreaForm
+      key={area.id}
       auditId={auditId}
       area={area}
       step={stepNum}
       totalSteps={areas.length}
+      guide={AREA_GUIDES[area.sort_order]}
       initialSatisfaction={existing?.satisfaction_score ?? null}
-      initialImportance={existing?.importance_score ?? null}
       initialNote={existing?.note ?? ""}
     />
   );

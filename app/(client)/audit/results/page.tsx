@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLatestCompletedAudit, getAuditWithResponses, getLifeAreas } from "@/lib/actions/audit";
 import { createClient } from "@/lib/supabase/server";
-import { ScoreRing } from "@/components/ui/ScoreRing";
+import { AREA_GUIDES } from "@/lib/audit-guides";
+import { SnapshotView, type SnapshotArea } from "@/components/audit/SnapshotView";
 
 export default async function ResultsPage() {
   const audit = await getLatestCompletedAudit();
@@ -17,62 +18,61 @@ export default async function ResultsPage() {
   } = await supabase.auth.getUser();
   const isGuest = user?.is_anonymous ?? false;
 
-  const [{ responses }, areas] = await Promise.all([
-    getAuditWithResponses(audit.id),
-    getLifeAreas(),
-  ]);
-  const scoreByArea = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
+  const [{ responses }, areas] = await Promise.all([getAuditWithResponses(audit.id), getLifeAreas()]);
+  const byArea = new Map(responses.map((r) => [r.life_area_id, r]));
+
+  // Built from the person's actual saved answers, in audit order.
+  const snapshot: SnapshotArea[] = areas.map((a) => {
+    const r = byArea.get(a.id);
+    return {
+      name: a.name,
+      score: (r?.satisfaction_score as number | undefined) ?? 0,
+      note: (r?.note as string | null | undefined) ?? null,
+      prompt: AREA_GUIDES[a.sort_order]?.prompt ?? null,
+    };
+  });
+  const focusIdx = areas.findIndex((a) => a.id === audit.focus_area_id);
+  const focusIndex = focusIdx === -1 ? null : focusIdx;
+  const total = snapshot.reduce((sum, a) => sum + a.score, 0);
 
   return (
-    <div className="page" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: "4rem" }}>
-      <div className="eyebrow"><span className="eydot" /> Your results</div>
-
-      <div className="card-pop" style={{ margin: "1.5rem 0" }}>
-        <ScoreRing score={audit.total_score ?? 0} size={220} strokeWidth={14} labelSize={64} denomLabel="out of 100" />
+    <div className="page au-results">
+      <div className="au-results-head">
+        <div>
+          <div className="eyebrow"><span className="eydot" /> Your Aligned snapshot</div>
+          <h1>Here&rsquo;s where you stand.</h1>
+          <p className="lead">
+            Ten areas. One honest picture. A clear place to start.{" "}
+            {isGuest
+              ? "Create a free account to save your snapshot to your profile and come back to it any time."
+              : "It’s saved to your profile so you can come back to it, reflect on it and track how it changes."}
+          </p>
+        </div>
+        <div className="au-total" aria-label={`Overall ${total} out of 100`}>
+          <b>{total}</b>
+          <span>overall, out of 100</span>
+        </div>
       </div>
 
-      <h1>You&apos;ve just done the hard part.</h1>
+      <SnapshotView areas={snapshot} focusIndex={focusIndex} />
 
-      {isGuest ? (
-        <p className="lead" style={{ margin: "0 auto 1.5rem" }}>
-          Here&apos;s exactly where you stand, honestly, across all ten areas. This is saved to your current
-          session for now — create a free account to keep it permanently and pick up from here on any device.
+      <div className="au-result-actions">
+        <p className="au-focus-line">
+          {focusIndex !== null ? (
+            <>
+              Your first focus: <strong>{snapshot[focusIndex].name}</strong>
+            </>
+          ) : (
+            "No first focus chosen for this audit."
+          )}
         </p>
-      ) : (
-        <p className="lead" style={{ margin: "0 auto 1.5rem" }}>
-          Your Aligned profile is saved. Duane personally reads every completed audit and will be in touch
-          about what happens next.
-        </p>
-      )}
-
-      {audit.focus_area ? <div className="focus-badge">Focus area: {audit.focus_area}</div> : null}
-
-      <div className="sec-head" style={{ width: "100%" }}>Your ten areas</div>
-      <div className="area-grid" style={{ width: "100%", textAlign: "left" }}>
-        {areas.map((a, i) => {
-          const s = scoreByArea.get(a.id) ?? 0;
-          return (
-            <div key={a.id} className="area-card" style={{ cursor: "default" }}>
-              <span className="area-num">{String(i + 1).padStart(2, "0")}</span>
-              <span className="area-info">
-                <span className="area-name">{a.name}</span>
-                <div className="area-btrack">
-                  <div className="area-bfill" style={{ width: `${s * 10}%` }} />
-                </div>
-              </span>
-              <span aria-hidden="true" style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, flexShrink: 0 }}>
-                {s}/10
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{ marginTop: "2rem" }}>
         {isGuest ? (
-          <Link href="/login?signup=1" className="btn btn-p">Create a free account to save this</Link>
+          <div className="au-save">
+            <span>Right now this snapshot is only saved in this browser.</span>
+            <Link href="/login?signup=1" className="btn btn-p">Create a free account to save it</Link>
+          </div>
         ) : (
-          <Link href="/" className="btn btn-p">Go to my dashboard</Link>
+          <Link href="/" className="btn btn-p">Go to my profile</Link>
         )}
       </div>
     </div>

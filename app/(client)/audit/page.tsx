@@ -7,11 +7,14 @@ import { startOrResumeAudit, getAuditWithResponses, getLifeAreas } from "@/lib/a
 // brand new — most guests, since this is now the front door for anyone
 // without an account — sees a short intro first instead of being dropped
 // straight into a wall of rating buttons with no context for what this is.
-export default async function AuditEntryPage() {
+export default async function AuditEntryPage({ searchParams }: { searchParams: Promise<{ intro?: string }> }) {
+  const { intro } = await searchParams;
   const auditId = await startOrResumeAudit();
   const [{ responses }, areas] = await Promise.all([getAuditWithResponses(auditId), getLifeAreas()]);
 
-  if (responses.length > 0) {
+  // ?intro=1 is how Back from the first area returns here without being
+  // bounced straight into the audit again.
+  if (responses.length > 0 && intro !== "1") {
     const answeredIds = new Set(responses.map((r) => r.life_area_id));
     const firstUnanswered = areas.find((a) => !answeredIds.has(a.id));
     const targetStep = firstUnanswered ? firstUnanswered.sort_order : areas.length; // all answered -> land on last
@@ -25,9 +28,9 @@ export default async function AuditEntryPage() {
     >
       <div className="auth-logo" style={{ marginBottom: "1.5rem" }}>
         <svg width="44" height="41" viewBox="0 0 44 41" fill="none" aria-hidden="true">
-          <path d="M22 2 L42 39" stroke="#E0B140" strokeWidth="3.5" strokeLinecap="round" />
-          <path d="M22 2 L2 39" stroke="#E0B140" strokeWidth="3.5" strokeLinecap="round" />
-          <circle cx="22" cy="29" r="4.5" fill="#E0B140" />
+          <path d="M22 2 L42 39" stroke="#D3A758" strokeWidth="3.5" strokeLinecap="round" />
+          <path d="M22 2 L2 39" stroke="#D3A758" strokeWidth="3.5" strokeLinecap="round" />
+          <circle cx="22" cy="29" r="4.5" fill="#D3A758" />
         </svg>
         <div className="auth-logo-brand">ALIGNED</div>
         <div className="auth-logo-sub">PROTOCOL</div>
