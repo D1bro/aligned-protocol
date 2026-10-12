@@ -1,15 +1,15 @@
 // Duane's video guidance for the audit — the single media manifest.
 //
-// Mirrors media-manifest.json from the v5 clips package (12 clips: an
+// Mirrors media-manifest.json from the v6 clips package (12 clips: an
 // introduction, one per area, and a closing "snapshot and next step").
 //
 // Posters and caption tracks are small and live in public/media/audit/.
 // The MP4s (~110 MB) are hosted outside the repo: set
 // NEXT_PUBLIC_AUDIT_VIDEO_BASE_URL to the folder that holds them (e.g. a public
 // Supabase Storage bucket). Locally it falls back to public/media/audit/clips/,
-// which is git-ignored. To replace a clip, upload a new file with the same name
-// or change `file` below. Set `file` to null to show the poster with a
-// "video coming soon" label instead.
+// which is git-ignored. Files are named <clip>-<MEDIA_VERSION>.mp4; for a new export
+// upload the new versioned files and bump MEDIA_VERSION. Pass withVideo = false to show the
+// poster with a "video coming soon" label instead.
 
 const VIDEO_BASE = (process.env.NEXT_PUBLIC_AUDIT_VIDEO_BASE_URL || "/media/audit/clips").replace(/\/$/, "");
 const MEDIA = "/media/audit";
@@ -20,7 +20,7 @@ export type GuideClip = {
   label: string;
   src: string | null;
   poster: string | null;
-  // Captions are burned into the videos; this track is optional and off by default.
+  // English speech captions, switchable from the player's CC control (off by default).
   captions: string | null;
   durationSeconds: number;
 };
@@ -30,12 +30,17 @@ export type AreaGuide = GuideClip & {
   prompt: string;
 };
 
-function clip(id: string, slug: string, title: string, label: string, durationSeconds: number, file: string | null = `${slug}.mp4`): GuideClip {
+// Bump when a new export replaces the clips, so browsers never serve a cached
+// older video, poster or caption file under the same URL.
+const MEDIA_VERSION = "v6";
+
+function clip(id: string, name: string, title: string, label: string, durationSeconds: number, withVideo = true): GuideClip {
+  const slug = `${name}-${MEDIA_VERSION}`;
   return {
     id,
     title,
     label,
-    src: file ? `${VIDEO_BASE}/${file}` : null,
+    src: withVideo ? `${VIDEO_BASE}/${slug}.mp4` : null,
     poster: `${MEDIA}/posters/${slug}.jpg`,
     captions: `${MEDIA}/captions/${slug}.vtt`,
     durationSeconds,

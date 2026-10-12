@@ -3,6 +3,7 @@ import type { GuideClip } from "@/lib/audit-guides";
 // A video slot for Duane's guidance (media comes from lib/audit-guides.ts).
 // Never autoplays; controls stay visible so people can pause or replay.
 // preload="none" means nothing downloads until someone presses play.
+// Captions are a separate English track, switchable with the CC control.
 export function GuideVideo({ clip, caption }: { clip: GuideClip; caption?: string }) {
   return (
     <figure className="au-video">
