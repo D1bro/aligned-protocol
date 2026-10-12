@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/reset-password"];
+// /api/cron and /api/reminders check their own secret or token.
+const PUBLIC_PATHS = ["/login", "/reset-password", "/api/cron", "/api/reminders"];
 
 // Anyone can start and finish the audit without an account. A real (but
 // temporary, nameless) account is created behind the scenes via Supabase's

@@ -7,6 +7,8 @@ import {
 } from "@/lib/actions/audit";
 import { getPlanState } from "@/lib/actions/clear";
 import { getCheckIns, getAllGoals } from "@/lib/actions/checkins";
+import { getReminderPreference } from "@/lib/actions/preferences";
+import { ReminderToggle } from "@/components/ui/ReminderToggle";
 import { getCurrentProfile } from "@/lib/session";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { ScoreTrack } from "@/components/audit/ScoreTrack";
@@ -64,7 +66,7 @@ export default async function ProfilePage() {
   const checkInDays = checkInDue ? daysUntil(checkInDue) : null;
   const when = activeGoal?.action_when?.trim() || activeGoal?.frequency?.trim() || null;
 
-  const allGoals = await getAllGoals();
+  const [allGoals, remindersOn] = await Promise.all([getAllGoals(), getReminderPreference()]);
 
   const strongest = areas
     .map((a, i) => ({ name: AREA_SHORT_NAMES[a.sort_order] ?? a.name, score: scores[i] }))
@@ -179,6 +181,7 @@ export default async function ProfilePage() {
             ))}
           </ul>
           <Link href="/clear" className="au-text-link">Open my plan</Link>
+          {remindersOn !== null ? <ReminderToggle initial={remindersOn} /> : null}
         </section>
       ) : null}
 
