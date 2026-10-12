@@ -73,7 +73,7 @@ export default async function JourneyPage() {
       </h1>
       <p className="lead">
         {audits.length > 1
-          ? `${audits.length} audits since ${formatDate(first.completed_at)}. Every point of change below came from something you did.`
+          ? `${audits.length} audits since ${formatDate(first.completed_at)}. Here’s how each area has changed between them.`
           : `This is your first snapshot. After your next audit, around ${formatDate(nextAuditDue(latest.completed_at))}, you’ll see what’s moved.`}
       </p>
 

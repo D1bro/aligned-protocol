@@ -38,6 +38,7 @@ export function CheckInForm({
   const [next, setNext] = useState<CheckIn["next_step"] | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedAlready, setSavedAlready] = useState(false);
 
   const ready = didIt && score && next;
 
@@ -48,7 +49,9 @@ export function CheckInForm({
     const result = await saveCheckIn({ goalId, didIt, areaScore: score, helped, gotInWay, nextStep: next });
     if (result && !result.ok) {
       setError(result.message);
-      setPending(false);
+      // Already saved: keep the button locked so it isn't recorded twice.
+      if (!result.saved) setPending(false);
+      else setSavedAlready(true);
     }
   }
 
@@ -105,9 +108,13 @@ export function CheckInForm({
         <span className={`tb-label${error ? " clear-err" : ""}`} aria-live="polite">
           {error ?? (ready ? "Ready to save" : "Answer the three questions to save")}
         </span>
-        <button className="btn btn-p" disabled={!ready || pending} onClick={submit}>
-          {pending ? "Saving…" : "Save my check-in"}
-        </button>
+        {savedAlready ? (
+          <Link href="/clear" className="btn btn-p">Go to My plan</Link>
+        ) : (
+          <button className="btn btn-p" disabled={!ready || pending} onClick={submit}>
+            {pending ? "Saving…" : "Save my check-in"}
+          </button>
+        )}
       </div>
     </>
   );

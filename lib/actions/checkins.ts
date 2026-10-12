@@ -49,7 +49,7 @@ export async function saveCheckIn(input: {
   helped: string;
   gotInWay: string;
   nextStep: CheckIn["next_step"];
-}): Promise<{ ok: false; message: string } | void> {
+}): Promise<{ ok: false; message: string; saved?: boolean } | void> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -70,7 +70,21 @@ export async function saveCheckIn(input: {
   if (error) return { ok: false, message: "Couldn’t save your check-in — check your connection and try again." };
 
   if (input.nextStep === "done") {
-    await supabase.from("goals").update({ status: "completed" }).eq("id", input.goalId);
+    // The check-in is already saved, so on failure say so plainly rather than
+    // inviting a resubmit that would record a duplicate check-in.
+    const { data: closed, error: closeErr } = await supabase
+      .from("goals")
+      .update({ status: "completed" })
+      .eq("id", input.goalId)
+      .select("id");
+    if (closeErr || !closed?.length) {
+      revalidatePath("/clear");
+      return {
+        ok: false,
+        saved: true,
+        message: "Your check-in is saved, but the goal couldn’t be marked done. Use “Mark as done” on My plan.",
+      };
+    }
   }
   revalidatePath("/clear");
   revalidatePath("/");
