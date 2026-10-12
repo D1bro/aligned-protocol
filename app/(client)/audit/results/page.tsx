@@ -71,17 +71,17 @@ export default async function ResultsPage() {
         isGuest={isGuest}
         total={total}
         video={CLOSING_GUIDE}
-      />
-
-      <p className="au-strengths">
-        <span>Already working for you:</span>{" "}
-        {strongest.map((a, i) => (
-          <span key={a.name}>
-            <b>{a.name}</b> {a.score}/10{i < strongest.length - 1 ? " · " : ""}
-          </span>
-        ))}
-        <span className="au-strengths-tail"> — strengths you can lean on while you work on your starting point.</span>
-      </p>
+      >
+        <p className="au-strengths">
+          <span>Already working for you:</span>{" "}
+          {strongest.map((a, i) => (
+            <span key={a.name}>
+              <b>{a.name}</b> {a.score}/10{i < strongest.length - 1 ? " · " : ""}
+            </span>
+          ))}
+          <span className="au-strengths-tail"> — strengths you can lean on while you work on your starting point.</span>
+        </p>
+      </ResultsBody>
 
       <section className="au-next" aria-labelledby="au-next-h">
         <h2 id="au-next-h" className="sec-head">What comes next</h2>

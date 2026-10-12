@@ -33,7 +33,6 @@ export function LifeMap({
 
   return (
     <svg className="au-map" viewBox="-80 -6 640 492" role="img" aria-label={title}>
-      <title>{title}</title>
       {[2, 4, 6, 8, 10].map((ring) => (
         <polygon
           key={ring}

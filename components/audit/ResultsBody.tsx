@@ -6,7 +6,7 @@ import { GuideVideo } from "./GuideVideo";
 import { StartingPoint, type StartArea } from "./StartingPoint";
 import { SnapshotView, type SnapshotArea } from "./SnapshotView";
 
-// Keeps the starting point and the snapshot in step: whichever area the
+// Snapshot first, then the starting point. Keeps the two in step: whichever area the
 // person chooses to start with is the one highlighted on the map and list.
 export function ResultsBody({
   auditId,
@@ -17,6 +17,7 @@ export function ResultsBody({
   isGuest,
   total,
   video,
+  children,
 }: {
   auditId: string;
   startAreas: StartArea[];
@@ -26,12 +27,21 @@ export function ResultsBody({
   isGuest: boolean;
   total: number;
   video: GuideClip;
+  // Rendered between the snapshot and the starting point.
+  children?: React.ReactNode;
 }) {
   const [chosenId, setChosenId] = useState(initialAreaId);
   const highlightIndex = startAreas.findIndex((a) => a.id === chosenId);
 
   return (
     <>
+      <section className="au-snap" aria-labelledby="au-snap-h">
+        <h2 id="au-snap-h" className="sec-head">Your snapshot</h2>
+        <SnapshotView key={highlightIndex} areas={snapshot} highlightIndex={highlightIndex} total={total} />
+      </section>
+
+      {children}
+
       <section className="au-start-grid" aria-label="Your starting point">
         <StartingPoint
           auditId={auditId}
@@ -42,11 +52,6 @@ export function ResultsBody({
           isGuest={isGuest}
         />
         <GuideVideo clip={video} caption="A word from Duane on what to do with your snapshot." />
-      </section>
-
-      <section className="au-snap" aria-labelledby="au-snap-h">
-        <h2 id="au-snap-h" className="sec-head">Your snapshot</h2>
-        <SnapshotView key={highlightIndex} areas={snapshot} highlightIndex={highlightIndex} total={total} />
       </section>
     </>
   );
