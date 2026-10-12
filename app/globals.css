@@ -416,7 +416,7 @@ select option { background: var(--bg3); color: var(--text); }
 .au-example h2 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 18px; font-weight: 600; margin: .6rem 0 .5rem; }
 .au-example p { font-size: 13px; color: var(--text2); line-height: 1.75; max-width: 460px; }
 .au-example-tag { display: inline-block; padding: 2px 10px; border-radius: 100px; border: 1px solid var(--bdr); color: var(--gold); font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
-.au-example-map { max-width: 300px; width: 100%; justify-self: center; opacity: .9; }
+.au-example-map { max-width: 400px; width: 100%; justify-self: center; opacity: .9; }
 @media (max-width: 480px) { .au-hero-actions .btn { width: 100%; } }
 
 /* snapshot v2: starting point ("aha"), combined map + bars, next steps */

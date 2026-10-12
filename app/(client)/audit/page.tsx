@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { startOrResumeAudit, getAuditWithResponses, getLifeAreas } from "@/lib/actions/audit";
-import { INTRO_GUIDE } from "@/lib/audit-guides";
+import { INTRO_GUIDE, AREA_SHORT_NAMES } from "@/lib/audit-guides";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { GuideVideo } from "@/components/audit/GuideVideo";
 import { LifeMap } from "@/components/audit/LifeMap";
@@ -73,14 +73,15 @@ export default async function AuditEntryPage({ searchParams }: { searchParams: P
           <span className="au-example-tag">Example</span>
           <h2 id="au-example-h">Your ten answers become a picture of where you stand.</h2>
           <p>
-            This is a sample snapshot, not your results. Each numbered spoke is one area, scored from the centre out to 10
-            at the edge. Yours is built from your own answers when you finish.
+            This is a sample snapshot, not your results. Each spoke is one area, scored from the centre out to 10 at the
+            edge. Yours is built from your own answers when you finish.
           </p>
         </div>
         <div className="au-example-map">
           <LifeMap
             scores={EXAMPLE_SCORES}
             names={areas.map((a) => a.name)}
+            labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
             title="Example life map with sample scores"
           />
         </div>
