@@ -1,12 +1,24 @@
 import Link from "next/link";
 import { getClientDetail } from "@/lib/actions/coach";
+import { getLifeAreas } from "@/lib/actions/audit";
+import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
+import { LifeMap } from "@/components/audit/LifeMap";
+import { DID_IT_LABELS } from "@/lib/checkin-labels";
+import { cleanReality } from "@/lib/clear-text";
+import type { CheckIn } from "@/lib/actions/checkins";
 import { SessionNoteForm } from "./SessionNoteForm";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { client, audits, goals, notes, startingArea } = await getClientDetail(id);
+  const [{ client, audits, goals, notes, startingArea, latestDetail }, areas] = await Promise.all([getClientDetail(id), getLifeAreas()]);
 
   const latest = audits[0];
+  const byArea = new Map((latestDetail?.responses ?? []).map((r) => [r.life_area_id, r]));
+  const scores = areas.map((a) => byArea.get(a.id)?.satisfaction_score ?? 0);
+  const plan = latestDetail?.plan as Record<string, string | string[] | null> | null;
+  const goal = latestDetail?.goal as Record<string, string | null> | null;
+  const startIdx = plan?.life_area_id ? areas.findIndex((a) => a.id === plan.life_area_id) : -1;
+  const ifThen = plan?.if_obstacle && plan?.if_response ? `If ${plan.if_obstacle}, then I’ll ${plan.if_response}.` : null;
 
   return (
     <div className="page">
@@ -50,6 +62,72 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           ))}
         </>
       )}
+
+      {latestDetail ? (
+        <>
+          <div className="sec-head">Latest audit{latest?.completed_at ? ` · ${new Date(latest.completed_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}` : ""}</div>
+          <div className="coach-audit">
+            <div className="au-chart">
+              <LifeMap
+                scores={scores}
+                names={areas.map((a) => a.name)}
+                labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+                highlightIndex={startIdx === -1 ? null : startIdx}
+              />
+            </div>
+            <ol className="coach-answers">
+              {areas.map((a, i) => (
+                <li key={a.id}>
+                  <div><b>{a.name}</b><span>{scores[i]}/10</span></div>
+                  {byArea.get(a.id)?.note ? <p>{byArea.get(a.id)?.note}</p> : null}
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {plan ? (
+            <>
+              <div className="sec-head">CLEAR plan{startIdx !== -1 ? ` · ${areas[startIdx].name}` : ""}</div>
+              <div className="coach-clear">
+                {[
+                  ["Next step they named", plan.step_up_answer as string | null],
+                  ["C · Current reality", cleanReality(plan.current_reality as string | null)],
+                  ["L · Life vision (a 10)", plan.life_vision as string | null],
+                  ["E · What’s in the way", [Array.isArray(plan.blocks) ? plan.blocks.join(", ") : null, plan.emotional_blocks as string | null].filter(Boolean).join(" — ")],
+                  ["Tried before", plan.tried_before as string | null],
+                  ["A · Goal", goal?.goal_title ?? null],
+                  ["When", goal?.action_when ?? goal?.frequency ?? null],
+                  ["R · Success looks like", goal?.success_criteria ?? null],
+                  ["If it gets hard", ifThen],
+                  ["Why it matters", goal?.motivation_text ?? null],
+                ]
+                  .filter(([, v]) => v)
+                  .map(([k, v]) => (
+                    <div key={k as string}><span>{k}</span><p>{v}</p></div>
+                  ))}
+              </div>
+            </>
+          ) : null}
+
+          {latestDetail.checkIns.length ? (
+            <>
+              <div className="sec-head">Check-ins</div>
+              <ol className="checkin-list">
+                {latestDetail.checkIns.map((c) => (
+                  <li key={c.id}>
+                    <div className="checkin-head">
+                      <b>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</b>
+                      <span>{DID_IT_LABELS[c.did_it as CheckIn["did_it"]]} · {c.area_score}/10 · {c.next_step}</span>
+                    </div>
+                    {c.helped ? <p><span>Helped:</span> {c.helped}</p> : null}
+                    {c.got_in_way ? <p><span>Got in the way:</span> {c.got_in_way}</p> : null}
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : null}
+        </>
+      ) : null}
 
       <div className="sec-head">Session notes</div>
       <SessionNoteForm clientId={client.id} />

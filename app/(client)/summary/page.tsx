@@ -44,6 +44,13 @@ export default async function JourneyPage() {
   const changes = before ? areas.map((a, i) => ({ name: a.name, before: before[i], now: now[i], delta: now[i] - before[i] })) : null;
   const biggestUp = changes ? [...changes].sort((x, y) => y.delta - x.delta)[0] : null;
 
+  // Two audits on the same day are told apart by their time.
+  const sameDay = previous && formatDate(previous.completed_at) === formatDate(latest.completed_at);
+  const when = (d: string) =>
+    sameDay
+      ? `${formatDate(d)}, ${new Date(d).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", timeZone: "Europe/London" })}`
+      : formatDate(d);
+
   const goalsDone = goals.filter((g) => g.status === "completed").length;
   const goalTitle = new Map(goals.map((g) => [g.id, g.goal_title?.trim() ?? "your goal"]));
 
@@ -99,7 +106,7 @@ export default async function JourneyPage() {
           />
           {before && previous ? (
             <p className="au-chart-caption">
-              Gold: now ({formatDate(latest.completed_at)}). Dashed: {formatDate(previous.completed_at)}.
+              Gold: now ({when(latest.completed_at)}). Dashed: your previous audit ({when(previous.completed_at)}).
             </p>
           ) : null}
         </section>

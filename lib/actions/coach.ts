@@ -130,7 +130,30 @@ export async function getClientDetail(clientId: string) {
   const starting = latestAudit ? await startingAreaByAudit(supabase, [latestAudit.id]) : new Map<string, string>();
   const startingArea: string | null = (latestAudit && starting.get(latestAudit.id)) ?? latestAudit?.focus_area ?? null;
 
-  return { client, audits: audits ?? [], goals: goals ?? [], notes: notes ?? [], startingArea };
+  // The full picture for the latest audit: every answer and note, the CLEAR
+  // plan, its current goal and the check-ins on it (all readable by the
+  // assigned coach under the existing access rules).
+  let latestDetail: {
+    responses: { life_area_id: string; satisfaction_score: number; note: string | null }[];
+    plan: Record<string, unknown> | null;
+    goal: Record<string, unknown> | null;
+    checkIns: { id: string; did_it: string; area_score: number; helped: string | null; got_in_way: string | null; next_step: string; created_at: string }[];
+  } | null = null;
+  if (latestAudit) {
+    const [{ data: responses }, { data: plan }] = await Promise.all([
+      supabase.from("audit_responses").select("life_area_id, satisfaction_score, note").eq("audit_id", latestAudit.id),
+      supabase.from("clear_plans").select("*").eq("audit_id", latestAudit.id).maybeSingle(),
+    ]);
+    const { data: goal } = plan
+      ? await supabase.from("goals").select("*").eq("clear_plan_id", plan.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
+      : { data: null };
+    const { data: checkIns } = goal
+      ? await supabase.from("goal_checkins").select("*").eq("goal_id", goal.id).order("created_at", { ascending: false })
+      : { data: null };
+    latestDetail = { responses: responses ?? [], plan: plan ?? null, goal: goal ?? null, checkIns: checkIns ?? [] };
+  }
+
+  return { client, audits: audits ?? [], goals: goals ?? [], notes: notes ?? [], startingArea, latestDetail };
 }
 
 export async function addSessionNote(input: {
