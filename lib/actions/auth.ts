@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { readGuestWork, saveGuestWorkToAccount } from "@/lib/guest-transfer";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -11,6 +12,15 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
   if (!email || !password) return { ok: false, message: "Enter your email and password." };
 
   const supabase = await createClient();
+
+  // Signing in from a guest session (e.g. someone with an account who took
+  // the audit before signing in): gather the guest's work first, while the
+  // guest session can still read it, so it isn't left behind.
+  const {
+    data: { user: current },
+  } = await supabase.auth.getUser();
+  const guestWork = current?.is_anonymous ? await readGuestWork(supabase, current.id) : [];
+
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { ok: false, message: error.message };
 
@@ -19,6 +29,15 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
     .select("role")
     .eq("id", data.user.id)
     .single();
+
+  if (guestWork.length && profile?.role === "client") {
+    try {
+      await saveGuestWorkToAccount(supabase, data.user.id, guestWork);
+    } catch (e) {
+      // Never block sign-in over this; the guest copy is still intact.
+      console.error("Couldn't carry guest audit into account", e);
+    }
+  }
 
   redirect(profile?.role === "coach" || profile?.role === "admin" ? "/coach" : "/");
 }
