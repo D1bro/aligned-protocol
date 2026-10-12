@@ -6,17 +6,17 @@ import {
   getLifeAreas,
 } from "@/lib/actions/audit";
 import { getPlanState } from "@/lib/actions/clear";
-import { getCurrentProfile } from "@/lib/session";
-import { SnapshotView } from "@/components/audit/SnapshotView";
-import { PlanCard } from "@/components/audit/PlanCard";
-import { AREA_GUIDES, AREA_SHORT_NAMES } from "@/lib/audit-guides";
-import { AUDIT_EVERY_LABEL, daysUntil, formatDate, nextAuditDue, nextCheckInDue } from "@/lib/audit-schedule";
 import { getCheckIns } from "@/lib/actions/checkins";
+import { getCurrentProfile } from "@/lib/session";
+import { LifeMap } from "@/components/audit/LifeMap";
+import { ScoreTrack } from "@/components/audit/ScoreTrack";
+import { ProgressPath, buildMilestones } from "@/components/audit/ProgressPath";
+import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
+import { daysUntil, formatDate, nextAuditDue, nextCheckInDue } from "@/lib/audit-schedule";
 
-// Home: what's next for this person, their plan, and their life map — the
-// one place that always reflects where they are in the loop
-// (audit -> snapshot -> CLEAR -> act -> next audit).
-export default async function HomePage() {
+// My profile: their plan front and centre (goal, the road ahead, one clear
+// action), the three dates that matter, and their life map.
+export default async function ProfilePage() {
   const profile = await getCurrentProfile();
   const firstName = profile?.full_name?.split(" ")[0];
   const audit = await getLatestCompletedAudit();
@@ -24,7 +24,7 @@ export default async function HomePage() {
   if (!audit) {
     return (
       <div className="page au-page">
-        <div className="eyebrow"><span className="eydot" /> Home</div>
+        <div className="eyebrow"><span className="eydot" /> My profile</div>
         <h1 className="au-latest-h">{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
         <p className="lead">
           Start with the Aligned audit: ten honest questions about where your life stands right now. It takes about
@@ -46,102 +46,154 @@ export default async function HomePage() {
   const previous = recent[1];
   const delta = previous ? (audit.total_score ?? 0) - (previous.total_score ?? 0) : null;
   const scoreByArea = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
-  const noteByArea = new Map(responses.map((r) => [r.life_area_id, (r.note as string | null) ?? null]));
-  const snapshot = areas.map((a) => ({
-    name: a.name,
-    short: AREA_SHORT_NAMES[a.sort_order] ?? a.name,
-    score: scoreByArea.get(a.id) ?? 0,
-    note: noteByArea.get(a.id) ?? null,
-    prompt: AREA_GUIDES[a.sort_order]?.prompt ?? null,
-  }));
+  const scores = areas.map((a) => scoreByArea.get(a.id) ?? 0);
 
   const areaId = plan?.life_area_id ?? audit.focus_area_id ?? null;
   const areaIdx = areaId ? areas.findIndex((a) => a.id === areaId) : -1;
   const area = areaIdx !== -1 ? areas[areaIdx] : null;
-  const areaScore = area ? (scoreByArea.get(area.id) ?? 0) : 0;
-  const target = Math.min(10, plan?.step_up_target ?? areaScore + 1);
+  const auditScore = areaIdx !== -1 ? scores[areaIdx] : 0;
+  const target = Math.min(10, plan?.step_up_target ?? auditScore + 1);
 
-  const due = nextAuditDue(audit.completed_at);
-  const days = daysUntil(due);
+  const auditDue = nextAuditDue(audit.completed_at);
+  const auditDays = daysUntil(auditDue);
 
-  // Monthly check-in on an active goal.
   const activeGoal = stage === "done" && goal?.status === "active" ? goal : null;
   const checkIns = activeGoal ? await getCheckIns(activeGoal.id) : [];
   const lastCheckIn = checkIns[checkIns.length - 1];
+  const nowScore = lastCheckIn?.area_score ?? auditScore;
   const checkInDue = activeGoal ? nextCheckInDue(lastCheckIn?.created_at ?? activeGoal.created_at ?? audit.completed_at) : null;
   const checkInDays = checkInDue ? daysUntil(checkInDue) : null;
-  const currentScore = lastCheckIn?.area_score ?? areaScore;
+  const when = activeGoal?.action_when?.trim() || activeGoal?.frequency?.trim() || null;
 
-  // The single most useful thing to do next.
-  const next =
-    days <= 0
-      ? { title: "Your next audit is due", body: "It’s been around three months. Take the audit again to see what’s moved.", href: "/audit/1", cta: "Retake the audit →" }
-      : checkInDays !== null && checkInDays <= 0
-        ? { title: "Your monthly check-in is due", body: `Two minutes on ${area?.name ?? "your goal"}: did you do it, where it is now, and what next.`, href: "/clear/check-in", cta: "Check in now →" }
-      : !area
-        ? { title: "Choose where to start", body: "Pick one area from your snapshot to develop with CLEAR.", href: "/clear", cta: "Choose an area →" }
-        : stage === "done" && goal?.status !== "active"
-          ? { title: "Set your next goal", body: `Your last goal for ${area.name} is closed. Keep the momentum — choose the next step.`, href: "/clear?new=1", cta: "Set my next goal →" }
-        : stage === "done"
-          ? {
-              title: "Keep going with your action",
-              body: `${goal?.frequency?.trim() ? `${goal.frequency.trim()}: ` : ""}${goal?.goal_title?.trim() || "your plan"}. Small, steady repetitions are what move a score.`,
-              href: "/clear",
-              cta: "Open my plan",
-            }
-          : stage === "in_progress"
-            ? { title: `Finish your plan for ${area.name}`, body: `You’re on step ${step} of 5 of CLEAR. Your answers are saved.`, href: "/clear", cta: "Continue CLEAR →" }
-            : { title: `Make a plan for ${area.name}`, body: "CLEAR turns your starting point into one goal you can act on this week. About ten minutes.", href: "/clear", cta: "Begin CLEAR →" };
+  const strongest = areas
+    .map((a, i) => ({ name: AREA_SHORT_NAMES[a.sort_order] ?? a.name, score: scores[i] }))
+    .sort((x, y) => y.score - x.score)
+    .slice(0, 3);
+
+  // One clear action for the plan panel.
+  const action = !area
+    ? { href: "/clear", label: "Choose where to start →" }
+    : stage === "none" || stage === "chosen"
+      ? { href: "/clear", label: "Begin CLEAR →" }
+      : stage === "in_progress"
+        ? { href: "/clear", label: `Continue CLEAR — step ${step} of 5 →` }
+        : !activeGoal
+          ? { href: "/clear?new=1", label: "Set my next goal →" }
+          : checkInDays !== null && checkInDays <= 0
+            ? { href: "/clear/check-in", label: "Check in now →" }
+            : { href: "/clear", label: "Open my plan" };
 
   return (
     <div className="page au-page">
-      <div className="eyebrow"><span className="eydot" /> Home</div>
+      <div className="eyebrow"><span className="eydot" /> My profile</div>
       <h1 className="au-latest-h">{firstName ? `Welcome back, ${firstName}` : "Welcome back"}</h1>
+      <p className="lead">
+        {area
+          ? activeGoal
+            ? `You’re working on ${area.name}: from ${nowScore} towards ${target}.`
+            : `Your starting point is ${area.name}, at ${auditScore}/10.`
+          : "Choose one area from your snapshot to start working on."}
+      </p>
 
-      <div className="home-top">
-        <section className="home-next" aria-label="Next up">
-          <div className="eyebrow"><span className="eydot" /> Next up</div>
-          <h2>{next.title}</h2>
-          <p>{next.body}</p>
-          <Link href={next.href} className="btn btn-p">{next.cta}</Link>
-        </section>
+      {auditDays <= 0 ? (
+        <div className="profile-banner">
+          <span>It&rsquo;s been around three months — your next audit is due.</span>
+          <Link href="/audit/1" className="btn btn-p">Retake the audit →</Link>
+        </div>
+      ) : null}
 
-        <div className="home-side">
-          {area ? (
-            <PlanCard
-              areaName={area.name}
-              score={currentScore}
+      <section className="profile-plan" aria-label="Your plan">
+        <div className="profile-plan-head">
+          <div>
+            <div className="eyebrow"><span className="eydot" /> Your plan{area ? ` · ${area.name}` : ""}</div>
+            <h2>
+              {activeGoal
+                ? activeGoal.goal_title?.trim()
+                : !area
+                  ? "Choose where to start"
+                  : stage === "in_progress"
+                    ? `Finish your plan for ${area.name}`
+                    : stage === "done"
+                      ? "Goal done — what’s next?"
+                      : `Turn ${area.name} into one clear goal`}
+            </h2>
+            {activeGoal ? (
+              <dl className="profile-plan-facts">
+                {when ? (<><dt>When</dt><dd>{when}</dd></>) : null}
+                {activeGoal.success_criteria ? (<><dt>Success looks like</dt><dd>{activeGoal.success_criteria}</dd></>) : null}
+              </dl>
+            ) : (
+              <p className="profile-plan-sub">
+                {!area
+                  ? "Pick one area from your snapshot. CLEAR then turns it into a goal you can act on this week."
+                  : stage === "in_progress"
+                    ? "Your answers are saved. Pick up where you left off."
+                    : stage === "done"
+                      ? "Set your next goal for this area, or wait for your next audit to choose a new one."
+                      : "CLEAR is five short questions, about ten minutes. It ends with one action and a monthly check-in."}
+              </p>
+            )}
+          </div>
+          <div className="profile-plan-actions">
+            <Link href={action.href} className="btn btn-p">{action.label}</Link>
+            {activeGoal && action.href !== "/clear" ? <Link href="/clear" className="au-text-link">Open my plan</Link> : null}
+            {activeGoal && checkInDays !== null && checkInDays > 0 ? (
+              <Link href="/clear/check-in" className="au-text-link">Check in early</Link>
+            ) : null}
+          </div>
+        </div>
+        {area ? (
+          activeGoal ? (
+            <ProgressPath
+              compact
               target={target}
-              stage={stage}
-              step={step}
-              goalTitle={goal?.goal_title ?? null}
-              frequency={goal?.frequency ?? null}
-              nextAuditDue={due.toISOString()}
-              nextCheckIn={checkInDue?.toISOString() ?? null}
-              hideAction
+              milestones={buildMilestones({ auditDate: audit.completed_at, auditScore, checkIns, nextAuditDue: auditDue })}
             />
-          ) : null}
-          <section className="au-sum-card" aria-label="Your audit">
-            <h3>Your latest audit</h3>
-            <p className="au-latest-big">
-              {audit.total_score ?? 0} <span>/ 100</span>
-            </p>
-            <p>
-              Taken {formatDate(audit.completed_at)}
-              {delta !== null ? ` · ${delta >= 0 ? "+" : ""}${delta} since the one before` : ""}. Next one{" "}
-              {days <= 0 ? "is due now" : `around ${formatDate(due)}`} — we suggest {AUDIT_EVERY_LABEL}.
-            </p>
-          </section>
+          ) : (
+            <div className="profile-track"><ScoreTrack score={auditScore} target={target} /></div>
+          )
+        ) : null}
+      </section>
+
+      <div className="profile-tiles">
+        <div>
+          <span>Latest audit</span>
+          <b>{audit.total_score ?? 0}<small> / 100</small></b>
+          <em>{formatDate(audit.completed_at)}{delta !== null ? ` · ${delta >= 0 ? "+" : ""}${delta}` : ""}</em>
+        </div>
+        <div className={checkInDays !== null && checkInDays <= 0 ? "due" : undefined}>
+          <span>Next check-in</span>
+          <b>{checkInDue ? (checkInDays! <= 0 ? "Now" : formatDate(checkInDue).replace(/ \d{4}$/, "")) : "—"}</b>
+          <em>{checkInDue ? "Monthly, on your goal" : "Starts once your plan is set"}</em>
+        </div>
+        <div className={auditDays <= 0 ? "due" : undefined}>
+          <span>Next audit</span>
+          <b>{auditDays <= 0 ? "Now" : formatDate(auditDue).replace(/ \d{4}$/, "")}</b>
+          <em>Every 3 months</em>
         </div>
       </div>
 
-      <section className="au-snap" aria-labelledby="home-map-h">
-        <h2 id="home-map-h" className="sec-head">Your life map</h2>
-        <SnapshotView
-          areas={snapshot}
-          highlightIndex={areaIdx === -1 ? null : areaIdx}
-          total={audit.total_score ?? undefined}
-        />
+      <section className="profile-map" aria-labelledby="profile-map-h">
+        <div className="au-chart">
+          <LifeMap
+            scores={scores}
+            names={areas.map((a) => a.name)}
+            labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+            highlightIndex={areaIdx === -1 ? null : areaIdx}
+          />
+        </div>
+        <div className="profile-map-side">
+          <h2 id="profile-map-h">Your life map</h2>
+          <p className="au-small">From your audit on {formatDate(audit.completed_at)}. The highlighted area is the one you&rsquo;re working on.</p>
+          <p className="profile-strengths">
+            <span>Strongest</span>
+            {strongest.map((s) => `${s.name} ${s.score}`).join(" · ")}
+          </p>
+          <div className="profile-links">
+            <Link href="/audit/results" className="btn btn-o">View my full snapshot</Link>
+            <Link href="/summary" className="au-text-link">See my journey</Link>
+          </div>
+        </div>
       </section>
     </div>
   );

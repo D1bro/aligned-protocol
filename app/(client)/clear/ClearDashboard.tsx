@@ -4,10 +4,11 @@ import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import type { CheckIn } from "@/lib/actions/checkins";
 import { DID_IT_LABELS } from "@/lib/checkin-labels";
 import { daysUntil, formatDate, nextCheckInDue } from "@/lib/audit-schedule";
-import { ProgressLine } from "@/components/audit/ProgressLine";
+import { ProgressPath, buildMilestones } from "@/components/audit/ProgressPath";
 import { ScoreTrack } from "@/components/audit/ScoreTrack";
 import { GoalActions } from "./GoalActions";
 import { CLEAR_STEPS } from "./ClearIntro";
+import { cleanReality } from "@/lib/clear-text";
 
 type PastGoal = { id: string; goal_title: string; focus_area: string | null; status: string; created_at: string };
 
@@ -17,7 +18,6 @@ const NEXT_STEP_LABELS: Record<CheckIn["next_step"], string> = {
   done: "Marked done",
 };
 
-const shortDate = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
 // My plan: the goal, how it's going (progress line + monthly check-ins), what
 // happens next, their CLEAR answers, and past goals.
@@ -50,10 +50,10 @@ export function ClearDashboard({
   const checkInDue = nextCheckInDue(lastCheckIn?.created_at ?? goal.created_at ?? auditDate);
   const checkInDays = daysUntil(checkInDue);
   const auditDays = daysUntil(nextAuditDue);
-  const points = [{ label: `Audit ${shortDate(auditDate)}`, score }, ...checkIns.map((c) => ({ label: shortDate(c.created_at), score: c.area_score }))];
+  const milestones = buildMilestones({ auditDate, auditScore: score, checkIns, nextAuditDue });
 
   const answers = [
-    plan.current_reality,
+    cleanReality(plan.current_reality),
     [plan.life_vision, plan.step_up_answer ? `Next step: ${plan.step_up_answer}` : null].filter(Boolean).join("\n"),
     [plan.blocks?.length ? plan.blocks.join(", ") : null, plan.emotional_blocks].filter(Boolean).join("\n"),
     goal.goal_title,
@@ -154,10 +154,12 @@ export function ClearDashboard({
       <section className="clear-review" aria-labelledby="clear-progress-h">
         <h2 id="clear-progress-h" className="sec-head">How it&rsquo;s going</h2>
         <div className="au-chart clear-progress">
-          <ProgressLine points={points} target={target} />
-          {checkIns.length === 0 ? (
-            <p className="au-chart-caption">Your first check-in adds the next point. Each one shows whether {area.name} is moving.</p>
-          ) : null}
+          <ProgressPath milestones={milestones} target={target} />
+          <p className="au-chart-caption">
+            {checkIns.length === 0
+              ? `Your quarter, mapped out. Each monthly check-in adds a point, so you can see whether ${area.name} is moving.`
+              : `Gold is how ${area.name} has moved. The dotted line is the road ahead to your next audit.`}
+          </p>
         </div>
         {checkIns.length ? (
           <ol className="checkin-list">

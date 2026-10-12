@@ -7,6 +7,7 @@ import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import type { LifeArea } from "@/lib/actions/audit";
 import { formatDate } from "@/lib/audit-schedule";
 import { ScoreTrack } from "@/components/audit/ScoreTrack";
+import { REALITY_PROMPTS, withoutStarters } from "@/lib/clear-text";
 
 const STEP_LABELS = ["Current reality", "Life vision", "What's in the way", "One action", "Roadmap and review"];
 const TOTAL_STEPS = 5;
@@ -25,11 +26,8 @@ export const BLOCKS: Record<string, string> = {
   "Something else": "What is it? Name it in your own words.",
 };
 
-// C: tapping a prompt adds a sentence starter, so no one faces an empty box.
-const REALITY_PROMPTS = ["What's working: ", "What isn't working: ", "It's been like this for: "];
 
-// The starters alone don't count as an answer.
-const withoutStarters = (t: string) => REALITY_PROMPTS.reduce((acc, p) => acc.split(p.trim()).join(""), t);
+
 
 const FREQUENCIES = ["Daily", "A few times a week", "Weekly", "Fortnightly", "Monthly"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -140,7 +138,7 @@ function initialForm(plan: ClearPlan, goal: Goal | null): Form {
 
 // Where to resume: the first step that isn't complete.
 function computeInitialStep(plan: ClearPlan, goal: Goal | null): number {
-  if (!filled(plan.current_reality)) return 1;
+  if (!filled(withoutStarters(plan.current_reality ?? ""))) return 1;
   if (!filled(plan.life_vision) || !filled(plan.step_up_answer)) return 2;
   if (!filled(plan.emotional_blocks) || !(plan.blocks?.length ?? 0)) return 3;
   if (!goal || !filled(goal.frequency)) return 4;
