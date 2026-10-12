@@ -40,7 +40,11 @@ export function ClearWizard({
   const [currentReality, setCurrentReality] = useState(plan.current_reality ?? "");
   const [lifeVision, setLifeVision] = useState(plan.life_vision ?? "");
   const [emotionalBlocks, setEmotionalBlocks] = useState(plan.emotional_blocks ?? "");
-  const [goalTitle, setGoalTitle] = useState(initialGoal?.goal_title ?? "");
+  // Their answer to "What would a [score + 1] look like?" from the snapshot.
+  // It's quoted at the top of every step and seeds the goal as a first draft.
+  const stepUp = plan.step_up_answer?.trim() || null;
+  const [goalTitle, setGoalTitle] = useState(initialGoal?.goal_title ?? stepUp ?? "");
+  const goalSeeded = !initialGoal && !!stepUp;
   const [actionText, setActionText] = useState(initialGoal?.action_text ?? "");
   const [motivationText, setMotivationText] = useState(initialGoal?.motivation_text ?? "");
   const [frequency, setFrequency] = useState(initialGoal?.frequency ?? "");
@@ -135,6 +139,15 @@ export function ClearWizard({
         </div>
         <div className="eyebrow"><span className="eydot" /> CLEAR — {area.name}</div>
 
+        {stepUp ? (
+          <blockquote className="au-quote clear-quote">
+            <cite>
+              {plan.step_up_target ? `You said a ${plan.step_up_target} would look like` : "Your starting point"}
+            </cite>
+            <p>&ldquo;{stepUp}&rdquo;</p>
+          </blockquote>
+        ) : null}
+
         {step === 1 && (
           <>
             <h1>Where are things really at, right now?</h1>
@@ -179,7 +192,9 @@ export function ClearWizard({
             <h1>What&apos;s the one goal that moves this forward?</h1>
             <p className="lead">One goal, not five. Small and real beats big and vague.</p>
             <label className="lbl" htmlFor="goal-title">Goal</label>
+            {goalSeeded ? <p className="au-start-help">Starting from what you said — edit it freely.</p> : null}
             <input
+              type="text"
               id="goal-title"
               value={goalTitle}
               onChange={(e) => setGoalTitle(e.target.value)}
@@ -210,6 +225,7 @@ export function ClearWizard({
             <p className="lead">This is what turns a goal into a habit.</p>
             <label className="lbl" htmlFor="goal-freq">Frequency</label>
             <input
+              type="text"
               id="goal-freq"
               value={frequency}
               onChange={(e) => setFrequency(e.target.value)}

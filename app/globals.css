@@ -455,3 +455,7 @@ select option { background: var(--bg3); color: var(--text); }
 .au-next-cards p { font-size: 13px; color: var(--text2); line-height: 1.7; flex: 1; }
 .au-next-cards .btn { margin-top: .3rem; }
 @media (max-width: 480px) { .au-start { padding: 1.2rem 1rem; } .au-start-actions .btn, .au-next-cards .btn { width: 100%; } }
+
+/* CLEAR: their own words from the snapshot, quoted on every step */
+.clear-quote { margin: .25rem 0 1.5rem; max-width: 640px; }
+.clear-quote cite { margin: 0 0 .3rem; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }

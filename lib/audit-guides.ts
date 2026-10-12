@@ -11,7 +11,11 @@
 // upload the new versioned files and bump MEDIA_VERSION. Pass withVideo = false to show the
 // poster with a "video coming soon" label instead.
 
-const VIDEO_BASE = (process.env.NEXT_PUBLIC_AUDIT_VIDEO_BASE_URL || "/media/audit/clips").replace(/\/$/, "");
+// In production the MP4s only exist at the hosted URL; if it isn't set, show
+// posters with "video coming soon" rather than broken players.
+const VIDEO_BASE =
+  process.env.NEXT_PUBLIC_AUDIT_VIDEO_BASE_URL?.replace(/\/$/, "") ||
+  (process.env.NODE_ENV === "production" ? null : "/media/audit/clips");
 const MEDIA = "/media/audit";
 
 export type GuideClip = {
@@ -40,7 +44,7 @@ function clip(id: string, name: string, title: string, label: string, durationSe
     id,
     title,
     label,
-    src: withVideo ? `${VIDEO_BASE}/${slug}.mp4` : null,
+    src: withVideo && VIDEO_BASE ? `${VIDEO_BASE}/${slug}.mp4` : null,
     poster: `${MEDIA}/posters/${slug}.jpg`,
     captions: `${MEDIA}/captions/${slug}.vtt`,
     durationSeconds,
