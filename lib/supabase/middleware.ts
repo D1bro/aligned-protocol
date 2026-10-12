@@ -29,13 +29,31 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
+  const path = request.nextUrl.pathname;
+
+  // Email confirmation links come back as ?code=… (to the Site URL). Swap the
+  // code for a session so the person arrives signed in — before anything
+  // below would mint a fresh guest session instead. The exchange only works
+  // in the browser that created the account; anywhere else the email is
+  // still confirmed, so send them to sign in with a note saying so.
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && !path.startsWith("/reset-password")) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const url = request.nextUrl.clone();
+    url.search = "";
+    url.pathname = error ? "/login" : "/";
+    if (error) url.searchParams.set("confirmed", "1");
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  }
+
   // IMPORTANT: do not remove. Refreshes the auth token if needed — without
   // this, sessions silently expire mid-use.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
   if (isPublic) return response;
 

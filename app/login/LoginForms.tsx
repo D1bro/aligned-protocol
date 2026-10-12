@@ -14,6 +14,9 @@ export function LoginForms() {
   // Arriving here from "Create a free account to save this" on the audit
   // results page — jump straight to the signup tab instead of sign-in.
   const fromAudit = searchParams.get("signup") === "1";
+  // Arrived from an email confirmation link that couldn't sign them in
+  // directly (e.g. opened on another device) — the email is confirmed.
+  const confirmed = searchParams.get("confirmed") === "1";
   const [tab, setTab] = useState<Tab>(fromAudit ? "signup" : "signin");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -67,6 +70,9 @@ export function LoginForms() {
         <div className="card auth-card">
           <div className="auth-card-title">Welcome back</div>
           <p className="auth-card-sub">Sign in to your Aligned Protocol account.</p>
+          {confirmed ? (
+            <Notice type="ok">Your email is confirmed. Sign in to see your snapshot and starting point.</Notice>
+          ) : null}
           <form action={handleSignIn}>
             <div className="field">
               <label className="lbl" htmlFor="email">Email</label>
