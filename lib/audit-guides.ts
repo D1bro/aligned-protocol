@@ -1,17 +1,28 @@
-// Duane's video guidance for the audit, in one place.
+// Duane's video guidance for the audit — the single media manifest.
 //
-// To add a finished clip, set its `src` to the video URL (a file in
-// public/media/audit/, or a hosted URL such as Vercel Blob). Leave `src` as
-// null and the page shows the poster with a "video coming soon" label instead.
-// `poster` is the still shown before playback.
+// Mirrors media-manifest.json from the v5 clips package (12 clips: an
+// introduction, one per area, and a closing "snapshot and next step").
 //
-// Areas are keyed by life_areas.sort_order (1–10), the same order as the
-// audit and the training video.
+// Posters and caption tracks are small and live in public/media/audit/.
+// The MP4s (~110 MB) are hosted outside the repo: set
+// NEXT_PUBLIC_AUDIT_VIDEO_BASE_URL to the folder that holds them (e.g. a public
+// Supabase Storage bucket). Locally it falls back to public/media/audit/clips/,
+// which is git-ignored. To replace a clip, upload a new file with the same name
+// or change `file` below. Set `file` to null to show the poster with a
+// "video coming soon" label instead.
+
+const VIDEO_BASE = (process.env.NEXT_PUBLIC_AUDIT_VIDEO_BASE_URL || "/media/audit/clips").replace(/\/$/, "");
+const MEDIA = "/media/audit";
 
 export type GuideClip = {
+  id: string;
+  title: string;
+  label: string;
   src: string | null;
   poster: string | null;
-  label: string;
+  // Captions are burned into the videos; this track is optional and off by default.
+  captions: string | null;
+  durationSeconds: number;
 };
 
 export type AreaGuide = GuideClip & {
@@ -19,23 +30,32 @@ export type AreaGuide = GuideClip & {
   prompt: string;
 };
 
-const PLACEHOLDER_POSTER = "/media/audit/guide-poster.jpg";
+function clip(id: string, slug: string, title: string, label: string, durationSeconds: number, file: string | null = `${slug}.mp4`): GuideClip {
+  return {
+    id,
+    title,
+    label,
+    src: file ? `${VIDEO_BASE}/${file}` : null,
+    poster: `${MEDIA}/posters/${slug}.jpg`,
+    captions: `${MEDIA}/captions/${slug}.vtt`,
+    durationSeconds,
+  };
+}
 
-export const INTRO_GUIDE: GuideClip = {
-  src: null,
-  poster: PLACEHOLDER_POSTER,
-  label: "How the audit works",
-};
+export const INTRO_GUIDE: GuideClip = clip("introduction", "00-introduction", "Introduction and scoring guide", "How the audit works", 36.3);
 
+export const CLOSING_GUIDE: GuideClip = clip("closing", "11-snapshot-and-next-step", "Your snapshot and next step", "Your snapshot and next step", 14.1);
+
+// Keyed by life_areas.sort_order (1–10), the same order as the audit and the video.
 export const AREA_GUIDES: Record<number, AreaGuide> = {
-  1: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "How well are you looking after your body, and how are you actually feeling?" },
-  2: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "Does your thinking help you move forward, or hold you back?" },
-  3: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "How much do you trust yourself to go after what you want?" },
-  4: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "Do you feel supported, and can you be yourself?" },
-  5: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "Are you moving towards something you actually want to be doing?" },
-  6: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "How clear and stable does your financial situation feel right now?" },
-  7: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "Does the direction you’re taking reflect what matters to you?" },
-  8: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "Do your routines make room for what matters?" },
-  9: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "How do you handle what you feel?" },
-  10: { src: null, poster: PLACEHOLDER_POSTER, label: "Duane’s guide", prompt: "Are your everyday choices aligned with the person you say you are?" },
+  1: { ...clip("area-01", "01-health-energy", "Health & Energy", "Health & Energy · Duane’s guide", 13.8), prompt: "How well are you looking after your body, and how are you actually feeling?" },
+  2: { ...clip("area-02", "02-mindset-thinking", "Mindset & Thinking", "Mindset & Thinking · Duane’s guide", 12.7), prompt: "Does your thinking help you move forward, or hold you back?" },
+  3: { ...clip("area-03", "03-confidence-self-belief", "Confidence & Self-Belief", "Confidence & Self-Belief · Duane’s guide", 13.9), prompt: "How much do you trust yourself to go after what you want?" },
+  4: { ...clip("area-04", "04-relationships-connection", "Relationships & Connection", "Relationships & Connection · Duane’s guide", 15.3), prompt: "Do you feel supported, and can you be yourself?" },
+  5: { ...clip("area-05", "05-career-work-business", "Career, Work & Business", "Career, Work & Business · Duane’s guide", 14.4), prompt: "Are you moving towards something you actually want to be doing?" },
+  6: { ...clip("area-06", "06-money-stability", "Money & Stability", "Money & Stability · Duane’s guide", 13.8), prompt: "How clear and stable does your financial situation feel right now?" },
+  7: { ...clip("area-07", "07-purpose-direction", "Purpose & Direction", "Purpose & Direction · Duane’s guide", 13.3), prompt: "Does the direction you’re taking reflect what matters to you?" },
+  8: { ...clip("area-08", "08-daily-structure-discipline", "Daily Structure & Discipline", "Daily Structure & Discipline · Duane’s guide", 12.3), prompt: "Do your routines make room for what matters?" },
+  9: { ...clip("area-09", "09-emotional-wellbeing", "Emotional Wellbeing", "Emotional Wellbeing · Duane’s guide", 17.9), prompt: "How do you handle what you feel?" },
+  10: { ...clip("area-10", "10-self-respect-identity", "Self-Respect & Identity", "Self-Respect & Identity · Duane’s guide", 10.6), prompt: "Are your everyday choices aligned with the person you say you are?" },
 };

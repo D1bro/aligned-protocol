@@ -106,24 +106,19 @@ export async function saveResponse(input: {
   return { ok: true };
 }
 
-export async function setFocusArea(auditId: string, lifeAreaId: string, lifeAreaName: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("audits")
-    .update({ focus_area_id: lifeAreaId, focus_area: lifeAreaName })
-    .eq("id", auditId);
-  if (error) throw error;
-}
-
 // Sum of the ten satisfaction scores -> total_score out of 100. Marks the
 // audit completed, which the DB then refuses to let anyone edit further.
-export async function completeAudit(auditId: string) {
+// There's no focus choice at the end of the audit any more — choosing where
+// to start happens at the beginning of CLEAR instead (see app/(client)/clear).
+export async function completeAudit(auditId: string): Promise<{ ok: false; message: string } | void> {
   const supabase = await createClient();
-  const { data: responses, error: respErr } = await supabase
-    .from("audit_responses")
-    .select("satisfaction_score")
-    .eq("audit_id", auditId);
-  if (respErr) throw respErr;
+  const [{ data: responses, error: respErr }, areas] = await Promise.all([
+    supabase.from("audit_responses").select("satisfaction_score").eq("audit_id", auditId),
+    getLifeAreas(),
+  ]);
+  if (respErr) return { ok: false, message: "Couldn’t finish — check your connection and try again." };
+  // Never complete (or show a total for) a partly answered audit.
+  if ((responses ?? []).length < areas.length) redirect("/audit");
 
   const total = (responses ?? []).reduce((sum, r) => sum + (r.satisfaction_score ?? 0), 0);
 
@@ -131,7 +126,7 @@ export async function completeAudit(auditId: string) {
     .from("audits")
     .update({ status: "completed", total_score: total, completed_at: new Date().toISOString() })
     .eq("id", auditId);
-  if (error) throw error;
+  if (error) return { ok: false, message: "Couldn’t finish — check your connection and try again." };
 
   redirect("/audit/results");
 }

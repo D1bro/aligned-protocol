@@ -8,3 +8,6 @@
 npm-debug.log*
 next-env.d.ts
 *.tsbuildinfo
+
+# Audit video files are hosted outside the repo (see lib/audit-media.ts)
+/public/media/audit/clips/

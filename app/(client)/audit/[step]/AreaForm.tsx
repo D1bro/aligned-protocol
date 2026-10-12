@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveResponse } from "@/lib/actions/audit";
+import { saveResponse, completeAudit } from "@/lib/actions/audit";
 import type { LifeArea } from "@/lib/actions/audit";
 import type { AreaGuide } from "@/lib/audit-guides";
 import { GuideVideo } from "@/components/audit/GuideVideo";
@@ -74,6 +74,18 @@ export function AreaForm({
     else setNavigating(false);
   }
 
+  // Last area: save, mark the audit complete and go straight to the snapshot.
+  async function finish() {
+    setNavigating(true);
+    const ok = dirty ? await save(score, note) : true;
+    if (!ok) return setNavigating(false);
+    const result = await completeAudit(auditId); // redirects to /audit/results on success
+    if (result && !result.ok) {
+      setStatus({ kind: "error", message: result.message });
+      setNavigating(false);
+    }
+  }
+
   let statusText: string;
   if (status.kind === "saving") statusText = "Saving…";
   else if (status.kind === "error") statusText = status.message;
@@ -82,7 +94,7 @@ export function AreaForm({
   else statusText = "Saved";
 
   const backHref = step > 1 ? `/audit/${step - 1}` : "/audit?intro=1";
-  const nextHref = isLast ? "/audit/leverage" : `/audit/${step + 1}`;
+
 
   return (
     <>
@@ -153,8 +165,8 @@ export function AreaForm({
               <span className={`au-status${status.kind === "error" ? " err" : ""}`} aria-live="polite">
                 {statusText}
               </span>
-              <button type="button" className="btn btn-p" disabled={score === null || navigating} onClick={() => go(nextHref)}>
-                {navigating ? "Saving…" : isLast ? "Choose my focus →" : "Continue →"}
+              <button type="button" className="btn btn-p" disabled={score === null || navigating} onClick={() => (isLast ? finish() : go(`/audit/${step + 1}`))}>
+                {navigating ? "Saving…" : isLast ? "See my snapshot →" : "Continue →"}
               </button>
             </div>
           </section>

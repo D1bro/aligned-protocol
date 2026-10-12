@@ -1,14 +1,23 @@
 import type { GuideClip } from "@/lib/audit-guides";
 
-// A video slot for Duane's guidance. Plays the clip when one is configured in
-// lib/audit-guides.ts; until then shows the poster with a "coming soon" label
-// so the layout is final and only the media reference needs changing.
+// A video slot for Duane's guidance (media comes from lib/audit-guides.ts).
+// Never autoplays; controls stay visible so people can pause or replay.
+// preload="none" means nothing downloads until someone presses play.
 export function GuideVideo({ clip, caption }: { clip: GuideClip; caption?: string }) {
   return (
     <figure className="au-video">
       <div className="au-video-frame">
         {clip.src ? (
-          <video src={clip.src} poster={clip.poster ?? undefined} controls preload="metadata" playsInline />
+          <video
+            src={clip.src}
+            poster={clip.poster ?? undefined}
+            controls
+            preload="none"
+            playsInline
+            aria-label={`${clip.title} — video from Duane`}
+          >
+            {clip.captions ? <track kind="captions" src={clip.captions} srcLang="en" label="English" /> : null}
+          </video>
         ) : (
           <>
             {clip.poster ? (
@@ -22,9 +31,9 @@ export function GuideVideo({ clip, caption }: { clip: GuideClip; caption?: strin
               </span>
               <span>Video coming soon</span>
             </div>
+            <div className="au-video-label">{clip.label}</div>
           </>
         )}
-        <div className="au-video-label">{clip.label}</div>
       </div>
       {caption ? <figcaption className="au-video-caption">{caption}</figcaption> : null}
     </figure>
