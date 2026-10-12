@@ -8,7 +8,7 @@ export const CLIENT_LINKS = [
   { href: "/", label: "Home", icon: "▦", match: (p: string) => p === "/" },
   { href: "/audit", label: "The Aligned Audit", icon: "◎", match: (p: string) => p.startsWith("/audit") },
   { href: "/clear", label: "My plan", icon: "◈", match: (p: string) => p.startsWith("/clear") || p.startsWith("/goals") },
-  { href: "/summary", label: "My Summary", icon: "◑", match: (p: string) => p.startsWith("/summary") },
+  { href: "/summary", label: "My journey", icon: "◑", match: (p: string) => p.startsWith("/summary") },
 ];
 
 export function ClientNav({ fullName }: { fullName: string | null }) {

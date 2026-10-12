@@ -590,3 +590,32 @@ select option { background: var(--bg3); color: var(--text); }
 .past-status { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; border-radius: 100px; padding: 2px 8px; text-align: center; border: 1px solid var(--bdr2); color: var(--text2); }
 .past-status.completed { border-color: rgba(74,222,128,.4); color: var(--hi); }
 .clear-progress .progress-line { max-width: 760px; margin: 0 auto; }
+.au-map-compare { fill: none; stroke: var(--text2); stroke-width: 1.5; stroke-dasharray: 6 5; opacity: .8; }
+
+/* my journey */
+.journey-stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .8rem; margin: 1.25rem 0 1.75rem; }
+@media (max-width: 640px) { .journey-stats { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.journey-stats div { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 12px; padding: .9rem 1rem; display: grid; }
+.journey-stats b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 26px; font-weight: 600; color: var(--gold); }
+.journey-stats span { font-size: 12px; color: var(--text2); }
+.journey-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; align-items: start; }
+@media (max-width: 860px) { .journey-grid { grid-template-columns: 1fr; } }
+.journey-grid .sec-head { margin-bottom: .6rem; }
+.journey-areas { list-style: none; }
+.journey-areas li { display: grid; grid-template-columns: 1fr auto auto 44px; gap: .6rem; align-items: center; padding: .6rem .3rem; border-bottom: 1px solid var(--bdr2); font-size: 13px; }
+.journey-name { color: var(--text); }
+.journey-was { color: var(--text3); }
+.journey-now { font-variant-numeric: tabular-nums; }
+.journey-delta { text-align: right; font-weight: 600; color: var(--text3); font-variant-numeric: tabular-nums; }
+.journey-delta.up { color: var(--hi); }
+.journey-delta.down { color: var(--lo); }
+.journey-timeline { list-style: none; position: relative; padding-left: 1.4rem; }
+.journey-timeline::before { content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px; width: 2px; background: var(--bg5); }
+.journey-timeline li { position: relative; padding: .55rem 0 .9rem; }
+.journey-dot { position: absolute; left: -1.4rem; top: .8rem; width: 12px; height: 12px; border-radius: 50%; background: var(--bg5); border: 2px solid var(--bg); }
+.journey-timeline li.audit .journey-dot { background: var(--gold); }
+.journey-timeline li.done .journey-dot { background: var(--hi); }
+.journey-timeline li.goal .journey-dot { background: var(--text2); }
+.journey-when { font-size: 11px; color: var(--text3); letter-spacing: .04em; }
+.journey-title { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 14px; font-weight: 600; color: var(--text); }
+.journey-detail { font-size: 13px; color: var(--text2); line-height: 1.6; overflow-wrap: anywhere; }

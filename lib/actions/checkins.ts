@@ -76,3 +76,18 @@ export async function saveCheckIn(input: {
   revalidatePath("/");
   redirect(input.nextStep === "adjust" ? "/clear?edit=4" : "/clear");
 }
+
+// Every check-in they've done, newest first — for My journey.
+export async function getAllCheckIns(): Promise<CheckIn[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data } = await supabase
+    .from("goal_checkins")
+    .select("*")
+    .eq("client_id", user.id)
+    .order("created_at", { ascending: false });
+  return (data as CheckIn[]) ?? [];
+}

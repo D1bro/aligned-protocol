@@ -16,6 +16,7 @@ export function LifeMap({
   scores,
   names,
   labels,
+  compareScores,
   highlightIndex = null,
   activeIndex = null,
   title = "Life map of your ten alignment scores",
@@ -24,6 +25,8 @@ export function LifeMap({
   names: string[];
   // Short text around the edge (e.g. "Money"); falls back to 01–10.
   labels?: string[];
+  // An earlier audit, drawn as a dashed outline underneath for comparison.
+  compareScores?: number[];
   highlightIndex?: number | null;
   activeIndex?: number | null;
   title?: string;
@@ -54,6 +57,12 @@ export function LifeMap({
           </g>
         );
       })}
+      {compareScores ? (
+        <polygon
+          points={pts(compareScores.map((s, i) => point(i, n, (R * Math.max(0, Math.min(10, s))) / 10)))}
+          className="au-map-compare"
+        />
+      ) : null}
       <polygon points={pts(shape)} className="au-map-shape" />
       {shape.map(([x, y], i) => (
         <circle
