@@ -94,15 +94,16 @@ export async function saveStartingPoint(input: {
 
   if (existing) {
     const started = Boolean(existing.current_reality || existing.life_vision || existing.emotional_blocks);
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("clear_plans")
       .update({
         ...(started ? {} : { life_area_id: input.lifeAreaId }),
         step_up_target: target,
         step_up_answer: answer,
       })
-      .eq("id", existing.id);
-    if (error) return { ok: false, message: "Couldn’t save — check your connection and try again." };
+      .eq("id", existing.id)
+      .select("id");
+    if (error || !updated?.length) return { ok: false, message: "Couldn’t save — check your connection and try again." };
   } else {
     const { error } = await supabase.from("clear_plans").insert({
       client_id: clientId,
@@ -117,14 +118,22 @@ export async function saveStartingPoint(input: {
   return { ok: true };
 }
 
+// CLEAR saves return a result instead of throwing, so a failed save shows a
+// message and keeps what the person typed rather than ending on an error page.
+// Each update also checks a row was actually changed: a missing row or a
+// refused update returns no error, and must not be reported as "Saved".
+export type SaveResult = { ok: true } | { ok: false; message: string };
+const SAVE_FAILED = "Couldn’t save — check your connection and try again.";
+
 export async function saveClearReflection(
   planId: string,
   fields: Partial<Pick<ClearPlan, "current_reality" | "life_vision" | "emotional_blocks">>
-) {
+): Promise<SaveResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("clear_plans").update(fields).eq("id", planId);
-  if (error) throw error;
+  const { data, error } = await supabase.from("clear_plans").update(fields).eq("id", planId).select("id");
+  if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/clear");
+  return { ok: true };
 }
 
 export async function getGoalForPlan(planId: string): Promise<Goal | null> {
@@ -142,7 +151,7 @@ export async function createGoalFromClear(input: {
   goalTitle: string;
   actionText: string;
   motivationText: string;
-}): Promise<Goal> {
+}): Promise<{ ok: true; goal: Goal } | { ok: false; message: string }> {
   const clientId = await requireUserId();
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -158,37 +167,55 @@ export async function createGoalFromClear(input: {
     })
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/");
   revalidatePath("/goals");
-  return data as Goal;
+  return { ok: true, goal: data as Goal };
 }
 
 export async function updateGoalCore(
   goalId: string,
   fields: { goalTitle: string; actionText: string; motivationText: string }
-) {
+): Promise<SaveResult> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("goals")
     .update({ goal_title: fields.goalTitle, action_text: fields.actionText, motivation_text: fields.motivationText })
-    .eq("id", goalId);
-  if (error) throw error;
+    .eq("id", goalId)
+    .select("id");
+  if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/");
   revalidatePath("/goals");
+  return { ok: true };
 }
 
 // Step 5 — Roadmap & Review. Presence of both fields is what marks a goal's
 // CLEAR plan as fully finished (see dashboard's clearStatus logic).
-export async function saveGoalRoadmap(goalId: string, fields: { frequency: string; successCriteria: string }) {
+export async function saveGoalRoadmap(
+  goalId: string,
+  fields: { frequency: string; successCriteria: string }
+): Promise<SaveResult> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("goals")
     .update({ frequency: fields.frequency, success_criteria: fields.successCriteria })
-    .eq("id", goalId);
-  if (error) throw error;
+    .eq("id", goalId)
+    .select("id");
+  if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/");
   revalidatePath("/goals");
+  return { ok: true };
+}
+
+// Close a goal: done, or let go. Without this, every retake's CLEAR added
+// another "active" goal and old ones never left the list.
+export async function setGoalStatus(goalId: string, status: "completed" | "abandoned"): Promise<SaveResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("goals").update({ status }).eq("id", goalId).select("id");
+  if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
+  revalidatePath("/");
+  revalidatePath("/goals");
+  return { ok: true };
 }
 
 export async function getActiveGoals(): Promise<Goal[]> {

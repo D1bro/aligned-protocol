@@ -4,7 +4,7 @@ import { SessionNoteForm } from "./SessionNoteForm";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { client, audits, goals, notes } = await getClientDetail(id);
+  const { client, audits, goals, notes, startingArea } = await getClientDetail(id);
 
   const latest = audits[0];
 
@@ -23,8 +23,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="sc-v">{latest ? `${latest.total_score}/100` : "—"}</div>
         </div>
         <div className="sc">
-          <div className="sc-l">Focus area</div>
-          <div className="sc-v" style={{ fontSize: 14 }}>{latest?.focus_area || "—"}</div>
+          <div className="sc-l">Starting area</div>
+          <div className="sc-v" style={{ fontSize: 14 }}>{startingArea || "—"}</div>
         </div>
         <div className="sc">
           <div className="sc-l">Audits completed</div>

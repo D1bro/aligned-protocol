@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getActiveGoals } from "@/lib/actions/clear";
+import { GoalActions } from "./GoalActions";
 
 export default async function GoalsPage() {
   const goals = await getActiveGoals();
@@ -13,7 +14,7 @@ export default async function GoalsPage() {
         <>
           <p className="lead">
             You don&apos;t have any goals yet — goals come out of the CLEAR process, which starts once
-            you&apos;ve completed an audit and picked a focus area.
+            you&apos;ve completed an audit and chosen where to start.
           </p>
           <Link href="/" className="btn btn-p">Go to my dashboard</Link>
         </>
@@ -37,6 +38,7 @@ export default async function GoalsPage() {
                   <strong>Success looks like:</strong> {g.success_criteria}
                 </p>
               ) : null}
+              <GoalActions goalId={g.id} />
             </div>
           ))}
         </div>

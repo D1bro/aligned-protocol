@@ -19,6 +19,26 @@ async function requireCoach() {
   return profile;
 }
 
+// The area each audit is being worked on: the starting point saved on its
+// CLEAR plan, or (for audits taken before that change) the old focus answer.
+async function startingAreaByAudit(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  auditIds: string[]
+): Promise<Map<string, string>> {
+  if (!auditIds.length) return new Map();
+  const [{ data: plans }, { data: areas }] = await Promise.all([
+    supabase.from("clear_plans").select("audit_id, life_area_id").in("audit_id", auditIds),
+    supabase.from("life_areas").select("id, name"),
+  ]);
+  const nameById = new Map((areas ?? []).map((a) => [a.id as string, a.name as string]));
+  const result = new Map<string, string>();
+  for (const p of plans ?? []) {
+    const name = p.life_area_id ? nameById.get(p.life_area_id) : undefined;
+    if (p.audit_id && name) result.set(p.audit_id, name);
+  }
+  return result;
+}
+
 export type ClientRow = {
   id: string;
   full_name: string | null;
@@ -43,17 +63,19 @@ export async function getMyClients(): Promise<ClientRow[]> {
   const ids = clients.map((c) => c.id);
   const { data: audits } = await supabase
     .from("audits")
-    .select("client_id, total_score, focus_area, completed_at")
+    .select("id, client_id, total_score, focus_area, completed_at")
     .in("client_id", ids)
     .eq("status", "completed")
     .order("completed_at", { ascending: false });
 
   // audits is already sorted newest-first, so the first row we see per
   // client is that client's latest completed audit.
-  const latestByClient = new Map<string, { total_score: number | null; focus_area: string | null; completed_at: string }>();
+  const latestByClient = new Map<string, { id: string; total_score: number | null; focus_area: string | null; completed_at: string }>();
   for (const a of audits ?? []) {
     if (!latestByClient.has(a.client_id)) latestByClient.set(a.client_id, a);
   }
+
+  const starting = await startingAreaByAudit(supabase, [...latestByClient.values()].map((a) => a.id));
 
   return clients.map((c) => {
     const latest = latestByClient.get(c.id);
@@ -62,7 +84,7 @@ export async function getMyClients(): Promise<ClientRow[]> {
       full_name: c.full_name,
       email: c.email,
       latestScore: latest?.total_score ?? null,
-      focusArea: latest?.focus_area ?? null,
+      focusArea: (latest && starting.get(latest.id)) ?? latest?.focus_area ?? null,
       lastAuditDate: latest?.completed_at ?? null,
     };
   });
@@ -104,7 +126,11 @@ export async function getClientDetail(clientId: string) {
       .order("session_date", { ascending: false }),
   ]);
 
-  return { client, audits: audits ?? [], goals: goals ?? [], notes: notes ?? [] };
+  const latestAudit = audits?.[0];
+  const starting = latestAudit ? await startingAreaByAudit(supabase, [latestAudit.id]) : new Map<string, string>();
+  const startingArea: string | null = (latestAudit && starting.get(latestAudit.id)) ?? latestAudit?.focus_area ?? null;
+
+  return { client, audits: audits ?? [], goals: goals ?? [], notes: notes ?? [], startingArea };
 }
 
 export async function addSessionNote(input: {

@@ -41,7 +41,7 @@ export default async function CoachPage() {
                 <span className="score-badge score-mid">No audit yet</span>
               )}
               {c.focusArea ? (
-                <div className="body-t" style={{ marginTop: ".5rem" }}>Focus: {c.focusArea}</div>
+                <div className="body-t" style={{ marginTop: ".5rem" }}>Starting area: {c.focusArea}</div>
               ) : null}
             </Link>
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveClearReflection,
@@ -14,16 +14,44 @@ import type { LifeArea } from "@/lib/actions/audit";
 const STEP_LABELS = ["Current Reality", "Life Vision", "Emotional Blocks", "Aligned Goal", "Roadmap & Review"];
 const TOTAL_STEPS = 5;
 
+const filled = (v: string | null | undefined) => !!v?.trim();
+
 // Figures out where to resume based on what's actually saved, same idea as
-// the audit's "land on the first unanswered area" behaviour.
+// the audit's "land on the first unanswered area" behaviour. Every step needs
+// an answer before Continue, so this always matches how far they got.
 function computeInitialStep(plan: ClearPlan, goal: Goal | null): number {
-  if (!plan.current_reality) return 1;
-  if (!plan.life_vision) return 2;
-  if (!plan.emotional_blocks) return 3;
+  if (!filled(plan.current_reality)) return 1;
+  if (!filled(plan.life_vision)) return 2;
+  if (!filled(plan.emotional_blocks)) return 3;
   if (!goal) return 4;
-  if (!goal.frequency || !goal.success_criteria) return 5;
+  if (!filled(goal.frequency) || !filled(goal.success_criteria)) return 5;
   return 6; // everything already saved — show the finished summary
 }
+
+type Fields = {
+  currentReality: string;
+  lifeVision: string;
+  emotionalBlocks: string;
+  goalTitle: string;
+  actionText: string;
+  motivationText: string;
+  frequency: string;
+  successCriteria: string;
+};
+
+const STEP_FIELDS: Record<number, (keyof Fields)[]> = {
+  1: ["currentReality"],
+  2: ["lifeVision"],
+  3: ["emotionalBlocks"],
+  4: ["goalTitle", "actionText", "motivationText"],
+  5: ["frequency", "successCriteria"],
+};
+
+function pick(n: number, v: Fields): Partial<Fields> {
+  return Object.fromEntries((STEP_FIELDS[n] ?? []).map((k) => [k, v[k]]));
+}
+
+type Status = { kind: "idle" } | { kind: "saving" } | { kind: "error"; message: string };
 
 export function ClearWizard({
   area,
@@ -36,7 +64,6 @@ export function ClearWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(() => computeInitialStep(plan, initialGoal));
-  const [goal, setGoal] = useState(initialGoal);
   const [currentReality, setCurrentReality] = useState(plan.current_reality ?? "");
   const [lifeVision, setLifeVision] = useState(plan.life_vision ?? "");
   const [emotionalBlocks, setEmotionalBlocks] = useState(plan.emotional_blocks ?? "");
@@ -49,43 +76,123 @@ export function ClearWizard({
   const [motivationText, setMotivationText] = useState(initialGoal?.motivation_text ?? "");
   const [frequency, setFrequency] = useState(initialGoal?.frequency ?? "");
   const [successCriteria, setSuccessCriteria] = useState(initialGoal?.success_criteria ?? "");
-  const [pending, startTransition] = useTransition();
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [navigating, setNavigating] = useState(false);
 
-  const canContinue = step === 4 ? goalTitle.trim().length > 0 : true;
+  // What the database currently holds — "Saved" is only shown when the
+  // screen matches it.
+  const [saved, setSaved] = useState({
+    currentReality: plan.current_reality ?? "",
+    lifeVision: plan.life_vision ?? "",
+    emotionalBlocks: plan.emotional_blocks ?? "",
+    goalTitle: initialGoal?.goal_title ?? "",
+    actionText: initialGoal?.action_text ?? "",
+    motivationText: initialGoal?.motivation_text ?? "",
+    frequency: initialGoal?.frequency ?? "",
+    successCriteria: initialGoal?.success_criteria ?? "",
+  });
+  const current = { currentReality, lifeVision, emotionalBlocks, goalTitle, actionText, motivationText, frequency, successCriteria };
+  // Saves run one at a time, so a slow earlier save can't overwrite a later one.
+  const queue = useRef<Promise<boolean>>(Promise.resolve(true));
+  const goalRef = useRef<Goal | null>(initialGoal);
+
+  function stepDirty(n: number) {
+    if (n === 1) return currentReality !== saved.currentReality;
+    if (n === 2) return lifeVision !== saved.lifeVision;
+    if (n === 3) return emotionalBlocks !== saved.emotionalBlocks;
+    if (n === 4)
+      return !goalRef.current || goalTitle !== saved.goalTitle || actionText !== saved.actionText || motivationText !== saved.motivationText;
+    if (n === 5) return frequency !== saved.frequency || successCriteria !== saved.successCriteria;
+    return false;
+  }
+
+  const canContinue =
+    step === 1 ? filled(currentReality)
+    : step === 2 ? filled(lifeVision)
+    : step === 3 ? filled(emotionalBlocks)
+    : step === 4 ? filled(goalTitle)
+    : step === 5 ? filled(frequency) && filled(successCriteria)
+    : true;
   const pct = Math.round((Math.min(step, TOTAL_STEPS) / TOTAL_STEPS) * 100);
 
-  function next() {
-    if (!canContinue) return;
-    startTransition(async () => {
-      if (step === 1) {
-        await saveClearReflection(plan.id, { current_reality: currentReality });
-      } else if (step === 2) {
-        await saveClearReflection(plan.id, { life_vision: lifeVision });
-      } else if (step === 3) {
-        await saveClearReflection(plan.id, { emotional_blocks: emotionalBlocks });
-      } else if (step === 4) {
-        if (goal) {
-          await updateGoalCore(goal.id, { goalTitle, actionText, motivationText });
+  // Save whatever is on screen for step n. Returns false (and shows why) if it
+  // didn't save; what they typed stays on screen either way.
+  function persist(n: number): Promise<boolean> {
+    const values = { ...current };
+    const run = queue.current.then(async () => {
+      let result: { ok: true } | { ok: false; message: string } = { ok: true };
+      if (n === 4 && !goalRef.current && !filled(values.goalTitle)) return true; // nothing to create yet
+      if (!stepDirtyFor(n, values)) return true;
+      setStatus({ kind: "saving" });
+      if (n === 1) result = await saveClearReflection(plan.id, { current_reality: values.currentReality });
+      else if (n === 2) result = await saveClearReflection(plan.id, { life_vision: values.lifeVision });
+      else if (n === 3) result = await saveClearReflection(plan.id, { emotional_blocks: values.emotionalBlocks });
+      else if (n === 4) {
+        const core = { goalTitle: values.goalTitle, actionText: values.actionText, motivationText: values.motivationText };
+        if (goalRef.current) {
+          result = await updateGoalCore(goalRef.current.id, core);
         } else {
-          const created = await createGoalFromClear({
-            clearPlanId: plan.id,
-            focusArea: area.name,
-            goalTitle,
-            actionText,
-            motivationText,
-          });
-          setGoal(created);
+          const created = await createGoalFromClear({ clearPlanId: plan.id, focusArea: area.name, ...core });
+          if (created.ok) {
+            goalRef.current = created.goal;
+          }
+          result = created.ok ? { ok: true } : created;
         }
-      } else if (step === 5) {
-        if (goal) await saveGoalRoadmap(goal.id, { frequency, successCriteria });
+      } else if (n === 5 && goalRef.current) {
+        result = await saveGoalRoadmap(goalRef.current.id, { frequency: values.frequency, successCriteria: values.successCriteria });
       }
-      setStep((s) => s + 1);
+      if (!result.ok) {
+        setStatus({ kind: "error", message: result.message });
+        return false;
+      }
+      setSaved((prev) => ({ ...prev, ...pick(n, values) }));
+      setStatus({ kind: "idle" });
+      return true;
+    });
+    queue.current = run.catch(() => false);
+    return run.catch(() => {
+      setStatus({ kind: "error", message: "Couldn’t save — check your connection and try again." });
+      return false;
     });
   }
 
-  function back() {
-    if (step > 1) setStep(step - 1);
+  function stepDirtyFor(n: number, v: typeof current) {
+    if (n === 4 && !goalRef.current) return true;
+    const keys = STEP_FIELDS[n] ?? [];
+    return keys.some((k) => v[k] !== savedRef.current[k]);
   }
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
+
+  async function next() {
+    if (!canContinue) return;
+    setNavigating(true);
+    const ok = await persist(step);
+    setNavigating(false);
+    if (ok) {
+      setStatus({ kind: "idle" });
+      setStep((s) => s + 1);
+    }
+  }
+
+  async function back() {
+    if (step <= 1) return;
+    setNavigating(true);
+    await persist(step); // keep their words even if they step back; the text stays on screen if this fails
+    setNavigating(false);
+    setStep((s) => s - 1);
+  }
+
+  const saveOnBlur = () => {
+    if (stepDirty(step)) void persist(step);
+  };
+
+  let statusText: string;
+  if (status.kind === "saving") statusText = "Saving…";
+  else if (status.kind === "error") statusText = status.message;
+  else if (!canContinue) statusText = step === 4 ? "Add a goal to continue" : step === 5 ? "Fill in both to finish" : "Write a line or two to continue";
+  else if (stepDirty(step)) statusText = "Not saved yet";
+  else statusText = "Saved";
 
   if (step === 6) {
     return (
@@ -125,7 +232,7 @@ export function ClearWizard({
     <>
       <div className="topbar">
         {step > 1 ? (
-          <button className="tb-back" onClick={back} disabled={pending}>← Back</button>
+          <button className="tb-back" onClick={back} disabled={navigating}>← Back</button>
         ) : (
           <span />
         )}
@@ -156,6 +263,7 @@ export function ClearWizard({
               rows={6}
               value={currentReality}
               onChange={(e) => setCurrentReality(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="Describe where this area actually stands today…"
             />
           </>
@@ -169,6 +277,7 @@ export function ClearWizard({
               rows={6}
               value={lifeVision}
               onChange={(e) => setLifeVision(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="Describe what full alignment in this area would actually look like…"
             />
           </>
@@ -182,6 +291,7 @@ export function ClearWizard({
               rows={6}
               value={emotionalBlocks}
               onChange={(e) => setEmotionalBlocks(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="What's actually been in the way?"
             />
           </>
@@ -198,6 +308,7 @@ export function ClearWizard({
               id="goal-title"
               value={goalTitle}
               onChange={(e) => setGoalTitle(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="e.g. Build a consistent morning routine"
             />
             <label className="lbl" htmlFor="goal-action">The one action</label>
@@ -206,6 +317,7 @@ export function ClearWizard({
               rows={3}
               value={actionText}
               onChange={(e) => setActionText(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="What will you actually do?"
             />
             <label className="lbl" htmlFor="goal-why">Why this matters</label>
@@ -214,6 +326,7 @@ export function ClearWizard({
               rows={3}
               value={motivationText}
               onChange={(e) => setMotivationText(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="Why does this matter enough to actually follow through?"
             />
           </>
@@ -229,6 +342,7 @@ export function ClearWizard({
               id="goal-freq"
               value={frequency}
               onChange={(e) => setFrequency(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="e.g. Daily, most weekdays, 3x a week"
             />
             <label className="lbl" htmlFor="goal-success">Success looks like</label>
@@ -237,6 +351,7 @@ export function ClearWizard({
               rows={3}
               value={successCriteria}
               onChange={(e) => setSuccessCriteria(e.target.value)}
+              onBlur={saveOnBlur}
               placeholder="How will you know this is actually working?"
             />
           </>
@@ -244,9 +359,9 @@ export function ClearWizard({
       </div>
 
       <div className="foot-nav">
-        <span className="tb-label">{canContinue ? "Saved automatically" : "Add a goal to continue"}</span>
-        <button className="btn btn-p" disabled={pending || !canContinue} onClick={next}>
-          {pending ? "Saving…" : step === TOTAL_STEPS ? "Finish" : "Continue"}
+        <span className={`tb-label${status.kind === "error" ? " clear-err" : ""}`} aria-live="polite">{statusText}</span>
+        <button className="btn btn-p" disabled={navigating || !canContinue} onClick={next}>
+          {navigating ? "Saving…" : step === TOTAL_STEPS ? "Finish" : "Continue"}
         </button>
       </div>
     </>

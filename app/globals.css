@@ -459,3 +459,7 @@ select option { background: var(--bg3); color: var(--text); }
 /* CLEAR: their own words from the snapshot, quoted on every step */
 .clear-quote { margin: .25rem 0 1.5rem; max-width: 640px; }
 .clear-quote cite { margin: 0 0 .3rem; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+
+.clear-err { color: var(--lo); }
+.goal-actions { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--bdr2); font-size: 13px; color: var(--text2); }
+.goal-actions .btn { padding: .5rem 1rem; font-size: 13px; }
