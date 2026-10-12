@@ -1,8 +1,8 @@
 // Ten-area "life map": one spoke per area, scored outwards from the centre
 // (0) to the outer ring (10). Rings mark every 2 points. Pure SVG, no state,
-// so it renders on the server, in the results view, and in the welcome preview.
+// so it renders on the server, in the snapshot, and in the welcome preview.
 
-const C = 240; // centre of the 480×480 viewBox
+const C = 240; // centre
 const R = 180; // radius of the outer ring (score 10)
 
 function point(i: number, count: number, r: number): [number, number] {
@@ -15,13 +15,16 @@ const pts = (list: [number, number][]) => list.map(([x, y]) => `${x.toFixed(1)},
 export function LifeMap({
   scores,
   names,
-  focusIndex = null,
+  labels,
+  highlightIndex = null,
   activeIndex = null,
   title = "Life map of your ten alignment scores",
 }: {
   scores: number[];
   names: string[];
-  focusIndex?: number | null;
+  // Short text around the edge (e.g. "Money"); falls back to 01–10.
+  labels?: string[];
+  highlightIndex?: number | null;
   activeIndex?: number | null;
   title?: string;
 }) {
@@ -29,7 +32,7 @@ export function LifeMap({
   const shape = scores.map((s, i) => point(i, n, (R * Math.max(0, Math.min(10, s))) / 10));
 
   return (
-    <svg className="au-map" viewBox="0 0 480 480" role="img" aria-label={title}>
+    <svg className="au-map" viewBox="-80 -6 640 492" role="img" aria-label={title}>
       <title>{title}</title>
       {[2, 4, 6, 8, 10].map((ring) => (
         <polygon
@@ -40,12 +43,14 @@ export function LifeMap({
       ))}
       {scores.map((_, i) => {
         const [x, y] = point(i, n, R);
-        const [lx, ly] = point(i, n, R + 34);
+        const [lx, ly] = point(i, n, R + 22);
+        const anchor = Math.abs(lx - C) < 8 ? "middle" : lx > C ? "start" : "end";
+        const dy = ly < C - R ? -4 : ly > C + R ? 16 : 6;
         return (
           <g key={i}>
-            <line x1={C} y1={C} x2={x} y2={y} className={i === focusIndex ? "au-map-axis focus" : "au-map-axis"} />
-            <text x={lx} y={ly + 8} textAnchor="middle" className={i === focusIndex ? "au-map-label focus" : "au-map-label"}>
-              {String(i + 1).padStart(2, "0")}
+            <line x1={C} y1={C} x2={x} y2={y} className={i === highlightIndex ? "au-map-axis focus" : "au-map-axis"} />
+            <text x={lx} y={ly + dy} textAnchor={anchor} className={i === highlightIndex ? "au-map-label focus" : "au-map-label"}>
+              {labels?.[i] ?? String(i + 1).padStart(2, "0")}
             </text>
           </g>
         );
@@ -56,10 +61,10 @@ export function LifeMap({
           key={i}
           cx={x}
           cy={y}
-          r={i === focusIndex ? 9 : i === activeIndex ? 7.5 : 5.5}
-          className={i === focusIndex ? "au-map-dot focus" : i === activeIndex ? "au-map-dot active" : "au-map-dot"}
+          r={i === highlightIndex ? 9 : i === activeIndex ? 7.5 : 5.5}
+          className={i === highlightIndex ? "au-map-dot focus" : i === activeIndex ? "au-map-dot active" : "au-map-dot"}
         >
-          <title>{`${names[i]}: ${scores[i]} out of 10${i === focusIndex ? " (your first focus)" : ""}`}</title>
+          <title>{`${names[i]}: ${scores[i]} out of 10${i === highlightIndex ? " (your starting point)" : ""}`}</title>
         </circle>
       ))}
     </svg>

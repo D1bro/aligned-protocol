@@ -9,7 +9,7 @@ import { getClearPlanForAudit, getGoalForPlan, getActiveGoals } from "@/lib/acti
 import { getCurrentProfile } from "@/lib/session";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { SnapshotView } from "@/components/audit/SnapshotView";
-import { AREA_GUIDES } from "@/lib/audit-guides";
+import { AREA_GUIDES, AREA_SHORT_NAMES } from "@/lib/audit-guides";
 
 function scoreLabel(score: number) {
   if (score >= 80) return "Strong";
@@ -70,6 +70,7 @@ export default async function DashboardPage() {
   const noteByArea = new Map(responses.map((r) => [r.life_area_id, (r.note as string | null) ?? null]));
   const snapshot = areas.map((a) => ({
     name: a.name,
+    short: AREA_SHORT_NAMES[a.sort_order] ?? a.name,
     score: scoreByArea.get(a.id) ?? 0,
     note: noteByArea.get(a.id) ?? null,
     prompt: AREA_GUIDES[a.sort_order]?.prompt ?? null,
@@ -144,7 +145,7 @@ export default async function DashboardPage() {
       )}
 
       <div className="sec-head">Your life map</div>
-      <SnapshotView areas={snapshot} focusIndex={focusIdx === -1 ? null : focusIdx} />
+      <SnapshotView areas={snapshot} highlightIndex={focusIdx === -1 ? null : focusIdx} total={audit.total_score ?? undefined} />
 
       <div className="div" />
       <Link href="/audit" className="btn btn-o">Retake the audit</Link>

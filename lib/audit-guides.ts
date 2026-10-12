@@ -59,3 +59,17 @@ export const AREA_GUIDES: Record<number, AreaGuide> = {
   9: { ...clip("area-09", "09-emotional-wellbeing", "Emotional Wellbeing", "Emotional Wellbeing · Duane’s guide", 17.9), prompt: "How do you handle what you feel?" },
   10: { ...clip("area-10", "10-self-respect-identity", "Self-Respect & Identity", "Self-Respect & Identity · Duane’s guide", 10.6), prompt: "Are your everyday choices aligned with the person you say you are?" },
 };
+
+// Short labels for the life map, where full area names don't fit.
+export const AREA_SHORT_NAMES: Record<number, string> = {
+  1: "Health",
+  2: "Mindset",
+  3: "Confidence",
+  4: "Relationships",
+  5: "Career",
+  6: "Money",
+  7: "Purpose",
+  8: "Structure",
+  9: "Emotions",
+  10: "Self-respect",
+};

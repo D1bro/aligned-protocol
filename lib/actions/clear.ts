@@ -21,6 +21,8 @@ export type ClearPlan = {
   current_reality: string | null;
   life_vision: string | null;
   emotional_blocks: string | null;
+  step_up_target: number | null;
+  step_up_answer: string | null;
 };
 
 export type Goal = {
@@ -71,6 +73,48 @@ export async function getOrCreateClearPlan(auditId: string, lifeAreaId: string):
     .single();
   if (error) throw error;
   return created as ClearPlan;
+}
+
+// The snapshot's "starting point": which area to work on first and the
+// person's answer to "What would a [score + 1] look like?". Stored on the
+// CLEAR plan for this audit (created here if needed). Guests can save it too —
+// it stays attached when they create their account. Once CLEAR itself has
+// begun, the chosen area is fixed; the answer can still be updated.
+export async function saveStartingPoint(input: {
+  auditId: string;
+  lifeAreaId: string;
+  target: number;
+  answer: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  const clientId = await requireUserId();
+  const supabase = await createClient();
+  const answer = input.answer.trim() ? input.answer.trim().slice(0, 2000) : null;
+  const target = Math.max(1, Math.min(10, Math.round(input.target)));
+  const existing = await getClearPlanForAudit(input.auditId);
+
+  if (existing) {
+    const started = Boolean(existing.current_reality || existing.life_vision || existing.emotional_blocks);
+    const { error } = await supabase
+      .from("clear_plans")
+      .update({
+        ...(started ? {} : { life_area_id: input.lifeAreaId }),
+        step_up_target: target,
+        step_up_answer: answer,
+      })
+      .eq("id", existing.id);
+    if (error) return { ok: false, message: "Couldn’t save — check your connection and try again." };
+  } else {
+    const { error } = await supabase.from("clear_plans").insert({
+      client_id: clientId,
+      audit_id: input.auditId,
+      life_area_id: input.lifeAreaId,
+      step_up_target: target,
+      step_up_answer: answer,
+    });
+    if (error) return { ok: false, message: "Couldn’t save — check your connection and try again." };
+  }
+  revalidatePath("/audit/results");
+  return { ok: true };
 }
 
 export async function saveClearReflection(
