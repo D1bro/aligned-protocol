@@ -6,7 +6,24 @@ import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
 import { BrandMark } from "@/components/ui/BrandMark";
 
-export type MobileNavLink = { href: string; label: string; icon: string; match: (p: string) => boolean };
+export type MobileNavLink = { href: string; label: string; icon: string; match: (p: string) => boolean; group?: string };
+
+// The menu links, with a small heading wherever the group changes.
+export function NavLinks({ links, pathname, onNavigate }: { links: MobileNavLink[]; pathname: string; onNavigate?: () => void }) {
+  return (
+    <>
+      {links.map((l, i) => (
+        <div key={l.href}>
+          {l.group && l.group !== links[i - 1]?.group ? <div className="ni-group">{l.group}</div> : null}
+          <Link href={l.href} className={`ni ${l.match(pathname) ? "active" : ""}`} onClick={onNavigate}>
+            <span aria-hidden="true">{l.icon}</span>
+            {l.label}
+          </Link>
+        </div>
+      ))}
+    </>
+  );
+}
 
 // The sidebar (.sidebar) is hidden entirely under 768px — this is what
 // replaces it there: a slim top bar with a hamburger button that opens a
@@ -43,17 +60,7 @@ export function MobileNav({ links, fullName }: { links: MobileNavLink[]; fullNam
                 <span aria-hidden="true">✕</span>
               </button>
             </div>
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`ni ${l.match(pathname) ? "active" : ""}`}
-                onClick={() => setOpen(false)}
-              >
-                <span aria-hidden="true">{l.icon}</span>
-                {l.label}
-              </Link>
-            ))}
+            <NavLinks links={links} pathname={pathname} onNavigate={() => setOpen(false)} />
             <form action={signOut} style={{ padding: "0 1.5rem" }}>
               <button type="submit" className="ni" style={{ width: "100%", justifyContent: "flex-start" }}>
                 <span aria-hidden="true">⏻</span> Sign out

@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { getMyClients } from "@/lib/actions/coach";
+import { getMyClients, getEnquiries } from "@/lib/actions/coach";
+import { formatDate } from "@/lib/audit-schedule";
 import { AddClientForm } from "./AddClientForm";
+import { EnquiryStatus } from "./EnquiryStatus";
 
 function scoreBadgeClass(score: number | null) {
   if (score === null) return "score-mid";
@@ -10,7 +12,8 @@ function scoreBadgeClass(score: number | null) {
 }
 
 export default async function CoachPage() {
-  const clients = await getMyClients();
+  const [clients, enquiries] = await Promise.all([getMyClients(), getEnquiries()]);
+  const openCount = enquiries.filter((e) => e.status === "new").length;
 
   return (
     <div className="page">
@@ -22,6 +25,34 @@ export default async function CoachPage() {
       </p>
 
       <AddClientForm />
+
+      <div className="sec-head">Coaching enquiries{openCount ? ` · ${openCount} new` : ""}</div>
+      {enquiries.length === 0 ? (
+        <div className="empty">
+          <span className="empty-icon" aria-hidden="true">◇</span>
+          No enquiries yet. They arrive here from the Coaching page.
+        </div>
+      ) : (
+        <ul className="enq-list">
+          {enquiries.map((e) => (
+            <li key={e.id} className={e.status === "new" ? "new" : undefined}>
+              <div className="enq-head">
+                <div>
+                  <b>{e.name || "Unnamed"}</b>
+                  {e.email ? <a href={`mailto:${e.email}`}>{e.email}</a> : null}
+                  <span>{formatDate(e.created_at)}</span>
+                </div>
+                <EnquiryStatus id={e.id} initial={e.status} />
+              </div>
+              <dl>
+                <dt>Wants help with</dt><dd>{e.wants_help}</dd>
+                {e.tried ? (<><dt>Tried so far</dt><dd>{e.tried}</dd></>) : null}
+                {e.availability ? (<><dt>When suits</dt><dd>{e.availability}</dd></>) : null}
+              </dl>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="sec-head">Client roster</div>
       {clients.length === 0 ? (

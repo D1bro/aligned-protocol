@@ -216,3 +216,46 @@ export async function addClient(formData: FormData): Promise<ActionResult> {
   revalidatePath("/coach");
   return { ok: true, message: `Invite sent to ${email}.` };
 }
+
+export type CoachEnquiry = {
+  id: string;
+  client_id: string;
+  name: string | null;
+  email: string | null;
+  wants_help: string;
+  tried: string | null;
+  availability: string | null;
+  status: "new" | "contacted" | "booked" | "closed";
+  created_at: string;
+};
+
+// Coaching enquiries from anyone, newest first. People enquiring may not be
+// assigned to this coach yet, so their name and email come via the admin client.
+export async function getEnquiries(): Promise<CoachEnquiry[]> {
+  await requireCoach();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("coaching_enquiries")
+    .select("id, client_id, wants_help, tried, availability, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error || !data?.length) return [];
+  const ids = [...new Set(data.map((e) => e.client_id as string))];
+  const { data: people } = await createAdminClient().from("profiles").select("id, full_name, email").in("id", ids);
+  const byId = new Map((people ?? []).map((p) => [p.id as string, p]));
+  return data.map((e) => ({
+    ...(e as Omit<CoachEnquiry, "name" | "email">),
+    name: (byId.get(e.client_id as string)?.full_name as string | null) ?? null,
+    email: (byId.get(e.client_id as string)?.email as string | null) ?? null,
+  }));
+}
+
+export async function setEnquiryStatus(id: string, status: CoachEnquiry["status"]): Promise<ActionResult> {
+  await requireCoach();
+  if (!["new", "contacted", "booked", "closed"].includes(status)) return { ok: false, message: "Unknown status." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("coaching_enquiries").update({ status }).eq("id", id).select("id");
+  if (error || !data?.length) return { ok: false, message: "Couldn’t update — try again." };
+  revalidatePath("/coach");
+  return { ok: true };
+}

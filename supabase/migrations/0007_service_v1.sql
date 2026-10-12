@@ -22,7 +22,7 @@ alter table public.reminder_log enable row level security;
 create policy "reminder_log: client reads own" on public.reminder_log for select using (client_id = auth.uid());
 
 -- Academy ---------------------------------------------------------------------
--- Lesson content lives in the app (lib/academy.ts); this keeps each person's
+-- Lesson content lives in the app (lib/learn-content.ts); this keeps each person's
 -- progress and private reflection per lesson.
 create table if not exists public.lesson_progress (
   id            uuid primary key default gen_random_uuid(),

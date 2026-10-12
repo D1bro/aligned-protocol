@@ -1,14 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
+import { NavLinks, type MobileNavLink } from "@/components/ui/MobileNav";
 
-export const CLIENT_LINKS = [
-  { href: "/", label: "My profile", icon: "▦", match: (p: string) => p === "/" },
-  { href: "/audit", label: "The Aligned Audit", icon: "◎", match: (p: string) => p.startsWith("/audit") },
-  { href: "/clear", label: "My plan", icon: "◈", match: (p: string) => p.startsWith("/clear") || p.startsWith("/goals") },
-  { href: "/summary", label: "My journey", icon: "◑", match: (p: string) => p.startsWith("/summary") },
+export const CLIENT_LINKS: MobileNavLink[] = [
+  { group: "You", href: "/", label: "My profile", icon: "▦", match: (p) => p === "/" },
+  { group: "You", href: "/audit", label: "The Aligned Audit", icon: "◎", match: (p) => p.startsWith("/audit") },
+  { group: "You", href: "/clear", label: "My plan", icon: "◈", match: (p) => p.startsWith("/clear") || p.startsWith("/goals") },
+  { group: "You", href: "/summary", label: "My journey", icon: "◑", match: (p) => p.startsWith("/summary") },
+  { group: "Learn", href: "/learn", label: "Academy", icon: "◇", match: (p) => p.startsWith("/learn") },
+  { group: "Learn", href: "/musings", label: "Musings", icon: "❝", match: (p) => p.startsWith("/musings") },
+  { group: "Learn", href: "/tools", label: "Tools", icon: "✎", match: (p) => p.startsWith("/tools") },
+  { group: "Grow", href: "/coaching", label: "Coaching", icon: "◉", match: (p) => p.startsWith("/coaching") },
 ];
 
 export function ClientNav({ fullName }: { fullName: string | null }) {
@@ -16,12 +20,7 @@ export function ClientNav({ fullName }: { fullName: string | null }) {
 
   return (
     <nav className="sb-nav">
-      {CLIENT_LINKS.map((l) => (
-        <Link key={l.href} href={l.href} className={`ni ${l.match(pathname) ? "active" : ""}`}>
-          <span aria-hidden="true">{l.icon}</span>
-          {l.label}
-        </Link>
-      ))}
+      <NavLinks links={CLIENT_LINKS} pathname={pathname} />
       <div className="sb-q">
         <div className="sb-qm">&ldquo;</div>
         <div className="sb-qt">Alignment is the foundation. Action is the transformation.</div>

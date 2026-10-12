@@ -8,6 +8,8 @@ import {
 import { getPlanState } from "@/lib/actions/clear";
 import { getCheckIns, getAllGoals } from "@/lib/actions/checkins";
 import { getReminderPreference } from "@/lib/actions/preferences";
+import { getLessonProgress } from "@/lib/actions/learn";
+import { PATHS } from "@/lib/learn-content";
 import { ReminderToggle } from "@/components/ui/ReminderToggle";
 import { getCurrentProfile } from "@/lib/session";
 import { LifeMap } from "@/components/audit/LifeMap";
@@ -66,7 +68,10 @@ export default async function ProfilePage() {
   const checkInDays = checkInDue ? daysUntil(checkInDue) : null;
   const when = activeGoal?.action_when?.trim() || activeGoal?.frequency?.trim() || null;
 
-  const [allGoals, remindersOn] = await Promise.all([getAllGoals(), getReminderPreference()]);
+  const [allGoals, remindersOn, lessons] = await Promise.all([getAllGoals(), getReminderPreference(), getLessonProgress()]);
+  const lessonsDone = new Set(lessons.filter((l) => l.completed_at).map((l) => l.lesson_slug));
+  const learnPath = PATHS[0];
+  const nextLesson = learnPath.lessons.find((l) => !lessonsDone.has(l.slug)) ?? null;
 
   const strongest = areas
     .map((a, i) => ({ name: AREA_SHORT_NAMES[a.sort_order] ?? a.name, score: scores[i] }))
@@ -183,6 +188,14 @@ export default async function ProfilePage() {
           <Link href="/clear" className="au-text-link">Open my plan</Link>
           {remindersOn !== null ? <ReminderToggle initial={remindersOn} /> : null}
         </section>
+      ) : null}
+
+      {nextLesson ? (
+        <Link href={`/learn/${learnPath.slug}/${nextLesson.slug}`} className="profile-learn">
+          <span>Keep learning · {learnPath.title}</span>
+          <b>{nextLesson.title}</b>
+          <em>{nextLesson.minutes} min · lesson {learnPath.lessons.indexOf(nextLesson) + 1} of {learnPath.lessons.length} →</em>
+        </Link>
       ) : null}
 
       <div className="profile-tiles">
