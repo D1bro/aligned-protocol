@@ -122,6 +122,56 @@ export const MUSINGS: Musing[] = [
   },
 ];
 
+// The Aligned Podcast. Set `audio` to an MP3 URL (or `video` to an MP4) when an
+// episode is recorded; until then the page shows "Coming soon".
+export type Episode = {
+  slug: string;
+  number: number;
+  title: string;
+  summary: string;
+  minutes: number | null;
+  notes: string[];
+  question: string;
+  audio: string | null;
+  video: Video;
+  draft: boolean;
+};
+
+export const EPISODES: Episode[] = [
+  {
+    slug: "what-alignment-means",
+    number: 1,
+    title: "What alignment actually means",
+    summary: "Why the Aligned Protocol starts with a snapshot, not a strategy.",
+    minutes: null,
+    notes: [
+      "What we mean by alignment: how closely the way you live matches what matters to you.",
+      "Why the audit is a reflection, not a diagnosis — and why honesty beats a high score.",
+      "Alignment is the foundation; action is the transformation.",
+    ],
+    question: "Which part of your life feels most in line with who you are right now?",
+    audio: null,
+    video: null,
+    draft: true,
+  },
+  {
+    slug: "one-step-at-a-time",
+    number: 2,
+    title: "One step at a time",
+    summary: "Why one goal, done properly, beats a list of ten.",
+    minutes: null,
+    notes: [
+      "Why the plan focuses on one area and the next point up, not a perfect 10.",
+      "What makes a step small enough to do on a bad week.",
+      "How monthly check-ins keep the step honest.",
+    ],
+    question: "What’s the smallest step that would still feel like progress this month?",
+    audio: null,
+    video: null,
+    draft: true,
+  },
+];
+
 export type Tool = { slug: string; title: string; purpose: string; prompts: { key: string; label: string; placeholder: string }[] };
 
 export const TOOLS: Tool[] = [

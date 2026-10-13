@@ -11,6 +11,7 @@ export const CLIENT_LINKS: MobileNavLink[] = [
   { group: "You", href: "/summary", label: "My journey", icon: "◑", match: (p) => p.startsWith("/summary") },
   { group: "Learn", href: "/learn", label: "Academy", icon: "◇", match: (p) => p.startsWith("/learn") },
   { group: "Learn", href: "/musings", label: "Musings", icon: "❝", match: (p) => p.startsWith("/musings") },
+  { group: "Learn", href: "/podcast", label: "Podcast", icon: "◐", match: (p) => p.startsWith("/podcast") },
   { group: "Learn", href: "/tools", label: "Tools", icon: "✎", match: (p) => p.startsWith("/tools") },
   { group: "Grow", href: "/coaching", label: "Coaching", icon: "◉", match: (p) => p.startsWith("/coaching") },
 ];

@@ -731,7 +731,7 @@ select option { background: var(--bg3); color: var(--text); }
 .learn-cards a:hover { border-color: var(--bdr); }
 .learn-cards .draft-tag { align-self: flex-start; margin: 0 0 .2rem; }
 .learn-cards b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; font-weight: 600; }
-.learn-cards span:not(.draft-tag) { font-size: 13px; color: var(--text2); flex: 1; }
+.learn-cards span:not(.draft-tag):not(.pod-num) { font-size: 13px; color: var(--text2); flex: 1; }
 .learn-cards em { font-style: normal; font-size: 12px; color: var(--gold); }
 @media (max-width: 768px) {
   .learn-body p { font-size: 17px; }
@@ -778,3 +778,11 @@ select option { background: var(--bg3); color: var(--text); }
 .profile-learn span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
 .profile-learn b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; font-weight: 600; }
 .profile-learn em { font-style: normal; font-size: 12px; color: var(--gold); }
+
+/* The Aligned Podcast */
+.learn-cards .pod-num { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.pod-player { margin: 1rem 0 1.5rem; border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 14px; padding: 1rem; }
+.pod-player audio { width: 100%; }
+.pod-notes { list-style: none; display: grid; gap: .6rem; max-width: 640px; }
+.pod-notes li { position: relative; padding-left: 1.2rem; font-size: 15px; line-height: 1.75; color: var(--text); }
+.pod-notes li::before { content: ""; position: absolute; left: 0; top: .7em; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }

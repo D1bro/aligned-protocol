@@ -4,7 +4,7 @@ import type { GuideClip } from "@/lib/audit-guides";
 // Never autoplays; controls stay visible so people can pause or replay.
 // preload="none" means nothing downloads until someone presses play.
 // Captions are a separate English track, switchable with the CC control.
-export function GuideVideo({ clip, caption }: { clip: GuideClip; caption?: string }) {
+export function GuideVideo({ clip, caption, soon = "Video coming soon" }: { clip: GuideClip; caption?: string; soon?: string }) {
   return (
     <figure className="au-video">
       <div className="au-video-frame">
@@ -30,7 +30,7 @@ export function GuideVideo({ clip, caption }: { clip: GuideClip; caption?: strin
               <span className="au-play" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 16 16"><path d="M5 3.5v9l7.5-4.5z" fill="currentColor" /></svg>
               </span>
-              <span>Video coming soon</span>
+              <span>{soon}</span>
             </div>
             <div className="au-video-label">{clip.label}</div>
           </>
