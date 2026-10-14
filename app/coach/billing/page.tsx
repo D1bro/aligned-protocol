@@ -24,8 +24,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         <div className="eyebrow"><span className="eydot" /> Billing</div>
         <h1>Billing isn&rsquo;t switched on for you</h1>
         <p className="lead">
-          Billing needs database update 0014, and your account marked as the billing admin. See the setup notes in
-          <code> supabase/migrations/0014_billing.sql</code>.
+          Billing needs database update 0014, and your account given billing access (the one line in
+          <code> supabase/test-setup/billing-access.sql</code>, with your own email).
         </p>
       </div>
     );
