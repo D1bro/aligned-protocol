@@ -7,13 +7,20 @@ import { DID_IT_LABELS } from "@/lib/checkin-labels";
 import { cleanReality } from "@/lib/clear-text";
 import type { CheckIn } from "@/lib/actions/checkins";
 import { SessionNoteForm } from "./SessionNoteForm";
+import { ClientSettings } from "./ClientSettings";
+import { getStaff } from "@/lib/actions/admin";
+import { getEnquiries } from "@/lib/actions/coach";
+import { formatDate } from "@/lib/audit-schedule";
 import { PATHS } from "@/lib/learn-content";
 
 const LESSON_TITLE = new Map(PATHS.flatMap((p) => p.lessons.map((l) => [l.slug, l.title] as const)));
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [{ client, audits, goals, notes, startingArea, latestDetail, reflections }, areas] = await Promise.all([getClientDetail(id), getLifeAreas()]);
+  const [{ viewer, client, audits, goals, notes, startingArea, latestDetail, reflections }, areas] = await Promise.all([getClientDetail(id), getLifeAreas()]);
+  const isAdmin = viewer.role === "admin";
+  const [staff, enquiries] = await Promise.all([isAdmin ? getStaff() : Promise.resolve([]), getEnquiries()]);
+  const theirEnquiries = enquiries.filter((e) => e.client_id === client.id);
 
   const latest = audits[0];
   const byArea = new Map((latestDetail?.responses ?? []).map((r) => [r.life_area_id, r]));
@@ -25,12 +32,32 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="page">
-      <Link href="/coach" className="tb-back" style={{ marginBottom: "1rem", display: "inline-flex" }}>
-        ← Back to roster
+      <Link href="/coach/clients" className="tb-back" style={{ marginBottom: "1rem", display: "inline-flex" }}>
+        ← All clients
       </Link>
       <div className="eyebrow"><span className="eydot" /> Client</div>
       <h1>{client.full_name || "Unnamed client"}</h1>
-      <p className="body-t" style={{ marginBottom: "1.5rem" }}>{client.email}</p>
+      <p className="body-t" style={{ marginBottom: "1.5rem" }}>{client.email ?? "Guest — no account yet"}</p>
+
+      {isAdmin ? (
+        <section className="admin-card" aria-label="Settings" style={{ marginBottom: "1.5rem" }}>
+          <h2>Settings</h2>
+          <ClientSettings
+            clientId={client.id}
+            role={client.role as "client" | "coach" | "admin"}
+            coachId={client.coach_id}
+            staff={staff}
+            isSelf={client.id === viewer.id}
+          />
+        </section>
+      ) : null}
+
+      {theirEnquiries.length ? (
+        <p className="plan-note">
+          Coaching enquiry {formatDate(theirEnquiries[0].created_at)} · <b>{theirEnquiries[0].status}</b> ·{" "}
+          <Link href="/coach/enquiries">Enquiries</Link>
+        </p>
+      ) : null}
 
       <div className="stat-grid">
         <div className="sc">
@@ -57,7 +84,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           {goals.map((g) => (
             <div key={g.id} className="card" style={{ marginBottom: ".75rem" }}>
               <div className="hbox-l" style={{ marginBottom: 4 }}>
-                {g.goal_type === "primary" ? "Primary" : "Supporting"}{g.focus_area ? ` · ${g.focus_area}` : ""}
+                {g.goal_type === "primary" ? "Main goal" : "Also active"}{g.focus_area ? ` · ${g.focus_area}` : ""}
               </div>
               <h3 style={{ margin: "0 0 .35rem" }}>{g.goal_title}</h3>
               {g.action_text ? <p className="body-t">{g.action_text}</p> : null}

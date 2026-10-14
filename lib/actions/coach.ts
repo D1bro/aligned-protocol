@@ -96,7 +96,7 @@ export async function getClientDetail(clientId: string) {
 
   const { data: client } = await supabase
     .from("profiles")
-    .select("id, full_name, email, coach_id")
+    .select("id, full_name, email, coach_id, role")
     .eq("id", clientId)
     .single();
 
@@ -104,7 +104,7 @@ export async function getClientDetail(clientId: string) {
   // a client that isn't yours would come back null from the query above
   // regardless — this check just makes the intent explicit and gives a
   // clean redirect instead of a confusing blank page.
-  if (!client || client.coach_id !== coach.id) redirect("/coach");
+  if (!client || (client.coach_id !== coach.id && coach.role !== "admin")) redirect("/coach/clients");
 
   const [{ data: audits }, { data: goals }, { data: notes }] = await Promise.all([
     supabase
@@ -164,6 +164,7 @@ export async function getClientDetail(clientId: string) {
     .order("updated_at", { ascending: false });
 
   return {
+    viewer: coach as { id: string; role: string },
     client,
     audits: audits ?? [],
     goals: goals ?? [],
@@ -259,8 +260,19 @@ export async function getEnquiries(): Promise<CoachEnquiry[]> {
     .limit(100);
   if (error || !data?.length) return [];
   const ids = [...new Set(data.map((e) => e.client_id as string))];
-  const { data: people } = await createAdminClient().from("profiles").select("id, full_name, email").in("id", ids);
-  const byId = new Map((people ?? []).map((p) => [p.id as string, p]));
+  // Admins can read every profile (migration 0011); otherwise, or for anyone
+  // missing, fall back to the server's admin client where it's configured.
+  const { data: visible } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
+  const byId = new Map((visible ?? []).map((p) => [p.id as string, p]));
+  const missing = ids.filter((id) => !byId.has(id));
+  if (missing.length) {
+    try {
+      const { data: rest } = await createAdminClient().from("profiles").select("id, full_name, email").in("id", missing);
+      for (const p of rest ?? []) byId.set(p.id as string, p);
+    } catch {
+      // No service key here (local development): names stay unknown.
+    }
+  }
   return data.map((e) => ({
     ...(e as Omit<CoachEnquiry, "name" | "email">),
     name: (byId.get(e.client_id as string)?.full_name as string | null) ?? null,
@@ -274,6 +286,6 @@ export async function setEnquiryStatus(id: string, status: CoachEnquiry["status"
   const supabase = await createClient();
   const { data, error } = await supabase.from("coaching_enquiries").update({ status }).eq("id", id).select("id");
   if (error || !data?.length) return { ok: false, message: "Couldn’t update — try again." };
-  revalidatePath("/coach");
+  revalidatePath("/coach", "layout");
   return { ok: true };
 }
