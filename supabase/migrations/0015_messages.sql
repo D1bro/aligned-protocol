@@ -1,7 +1,7 @@
 -- 0015_messages.sql
 -- Emails to clients about their coaching and billing. Sharing something in
 -- the app and emailing about it are separate steps: nothing here is sent
--- automatically. Each email is one row, so a repeat click can't send twice
+-- automatically. Eaach email is one row, so a repeat click can't send twice
 -- (dedupe_key), and its state is visible: queued -> sent, or failed.
 -- Run on the TEST project first; live only after review.
 

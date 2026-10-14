@@ -142,6 +142,8 @@ async function build(kind: MessageKind, refId: string, note: string | null): Pro
     const to = (inv.customer as { email?: string } | null)?.email || c?.email;
     if (!to) return { ok: false, message: "Add a billing email for this client first." };
     const pi = inv.payment_instructions as { account_name?: string; sort_code?: string; account_number?: string } | null;
+    const { data: posRows } = await supabase.rpc("invoice_position", { p_invoice: inv.id });
+    const pos = ((Array.isArray(posRows) ? posRows[0] : posRows) ?? { paid: 0, balance: inv.total_pence }) as { paid: number; balance: number };
     return {
       clientId: inv.client_id,
       to,
@@ -154,6 +156,8 @@ async function build(kind: MessageKind, refId: string, note: string | null): Pro
         supplierName: (inv.supplier as { trading_name?: string } | null)?.trading_name ?? supplierName,
         number: inv.number!,
         total: formatPence(inv.total_pence),
+        owed: pos.balance > 0 ? formatPence(pos.balance) : null,
+        partPaid: pos.balance > 0 && pos.balance < inv.total_pence,
         due: ukDate(inv.due_date!),
         bank: pi ? { accountName: pi.account_name, sortCode: pi.sort_code, accountNumber: pi.account_number } : null,
         cardPayments: stripeStatus().ready,
@@ -170,6 +174,7 @@ async function build(kind: MessageKind, refId: string, note: string | null): Pro
     supabase.rpc("receipt_unapplied", { p_receipt: rec.id }),
     client(rec.client_id),
   ]);
+  const { data: refunds } = await supabase.from("refunds").select("amount_pence, refunded_on").eq("receipt_id", rec.id).order("refunded_on");
   const { data: cust } = await supabase.from("billing_customers").select("name, email").eq("client_id", rec.client_id).maybeSingle();
   const to = cust?.email || c?.email;
   if (!to) return { ok: false, message: "Add a billing email for this client first." };
@@ -189,6 +194,7 @@ async function build(kind: MessageKind, refId: string, note: string | null): Pro
         number: a.invoices?.number ?? "",
         amount: formatPence(a.amount_pence),
       })),
+      refunded: (refunds ?? []).map((r) => ({ amount: formatPence(r.amount_pence), on: ukDate(r.refunded_on) })),
       unapplied: (unapplied as number | null) ? formatPence(unapplied as number) : null,
       link: `${origin}/coaching`,
       note,

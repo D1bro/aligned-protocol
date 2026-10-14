@@ -16,7 +16,7 @@ export function emailStatus(): { ready: boolean; mode: "resend" | "outbox" | "of
   const outbox = process.env.EMAIL_OUTBOX_DIR;
   if (outbox && process.env.NODE_ENV !== "production") return { ready: true, mode: "outbox", reason: "Test mode: emails are saved to a local folder, not sent." };
   if (process.env.RESEND_API_KEY && process.env.REMINDER_FROM) return { ready: true, mode: "resend" };
-  return { ready: false, mode: "off", reason: "Email isn’t set up yet (Resend), so nothing can be sent." };
+  return { ready: false, mode: "off", reason: "Email isn’t set up yet (Resend)." };
 }
 
 export async function sendEmail(input: Outgoing): Promise<Sent> {

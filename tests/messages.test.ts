@@ -28,7 +28,7 @@ test("session emails say what changed", () => {
 
 test("invoice email gives the amount, due date and bank reference", () => {
   const m = buildMessage({
-    kind: "invoice_issued", firstName: "Sam", supplierName: "Aligned Media", number: "AM-0004", total: "£160.00", due: "29 October 2026",
+    kind: "invoice_issued", firstName: "Sam", supplierName: "Aligned Media", number: "AM-0004", total: "£160.00", owed: "£160.00", partPaid: false, due: "29 October 2026",
     bank: { accountName: "A", sortCode: "00-00-00", accountNumber: "00000000" }, cardPayments: false, link: "https://x.test/coaching",
   });
   assert.equal(m.subject, "Invoice AM-0004 from Aligned Media");
@@ -38,7 +38,7 @@ test("invoice email gives the amount, due date and bank reference", () => {
 });
 
 test("invoice email leaves out bank details that aren't complete", () => {
-  const m = buildMessage({ kind: "invoice_issued", firstName: "Sam", supplierName: "Aligned Media", number: "AM-1", total: "£1.00", due: "1 Nov", bank: { accountName: "A" }, cardPayments: true, link: "https://x.test" });
+  const m = buildMessage({ kind: "invoice_issued", firstName: "Sam", supplierName: "Aligned Media", number: "AM-1", total: "£1.00", owed: "£1.00", partPaid: false, due: "1 Nov", bank: { accountName: "A" }, cardPayments: true, link: "https://x.test" });
   assert.ok(!/Sort code/.test(m.text));
   assert.match(m.text, /pay by card/);
 });
@@ -50,4 +50,23 @@ test("payment receipt lists where the money went, and any left over", () => {
   });
   assert.match(m.text, /£30\.00 paid towards invoice AM-0002/);
   assert.match(m.text, /£130\.00 hasn’t been put towards an invoice yet/);
+});
+
+test("invoice email for a paid or part-paid invoice doesn't ask for the full amount", () => {
+  const base = { kind: "invoice_issued" as const, firstName: "Sam", supplierName: "Aligned Media", number: "AM-5", total: "£80.00", due: "10 October 2026", bank: { accountName: "A", sortCode: "00-00-00", accountNumber: "00000000" }, cardPayments: true, link: "https://x.test" };
+  const paid = buildMessage({ ...base, owed: null, partPaid: false });
+  assert.match(paid.text, /paid in full/);
+  assert.ok(!/Sort code|pay by card/.test(paid.text));
+  const part = buildMessage({ ...base, owed: "£30.00", partPaid: true });
+  assert.match(part.text, /£30\.00 still to pay/);
+  assert.match(part.text, /Reference: AM-5/);
+});
+
+test("payment receipt mentions any refund", () => {
+  const m = buildMessage({
+    kind: "payment_received", firstName: "Sam", supplierName: "Aligned Media", amount: "£160.00", receivedOn: "15 October 2026",
+    applied: [{ number: "AM-0002", amount: "£30.00" }], refunded: [{ amount: "£130.00", on: "15 October 2026" }], unapplied: null, link: "https://x.test",
+  });
+  assert.match(m.text, /£130\.00 refunded to you on 15 October 2026/);
+  assert.ok(!/hasn’t been put towards/.test(m.text));
 });

@@ -25,6 +25,9 @@ export type MessageInput =
       supplierName: string;
       number: string;
       total: string;
+      // What's still to pay right now: null when nothing is owed.
+      owed: string | null;
+      partPaid: boolean;
       due: string;
       bank: { accountName?: string; sortCode?: string; accountNumber?: string } | null;
       cardPayments: boolean;
@@ -38,6 +41,7 @@ export type MessageInput =
       amount: string;
       receivedOn: string;
       applied: { number: string; amount: string }[];
+      refunded?: { amount: string; on: string }[];
       unapplied: string | null;
       link: string;
       note?: string | null;
@@ -77,7 +81,7 @@ export function buildMessage(m: MessageInput): Message {
       );
     case "session_update": {
       const where = m.location?.trim() ? `\nWhere: ${m.location.trim()}` : "";
-      const details = `${m.when} (UK time), ${m.durationMinutes} minutes${where}`;
+      const details = `${m.when}, ${m.durationMinutes} minutes${where}`;
       const lines: Record<typeof m.change, [string, string]> = {
         confirmed: ["Your coaching session is confirmed", `Our next session is confirmed:\n${details}`],
         proposed: ["A proposed time for your next session", `I’d like to suggest this time for our next session:\n${details}\n\nReply to let me know if it works.`],
@@ -85,25 +89,24 @@ export function buildMessage(m: MessageInput): Message {
           "Your coaching session has moved",
           `Our session${m.previousWhen ? ` on ${m.previousWhen}` : ""} has moved to:\n${details}`,
         ],
-        cancelled: ["Your coaching session is cancelled", `Our session on ${m.when} (UK time) is cancelled.`],
+        cancelled: ["Your coaching session is cancelled", `Our session on ${m.when} is cancelled.`],
       };
       const [subject, main] = lines[m.change];
       return compose(subject, [`Hi ${m.firstName},`, main, noteBlock(m.note)], { href: m.link, label: "See your coaching page" }, m.coachName);
     }
     case "invoice_issued": {
       const bank =
-        m.bank?.accountName && m.bank.sortCode && m.bank.accountNumber
+        m.owed && m.bank?.accountName && m.bank.sortCode && m.bank.accountNumber
           ? `To pay by bank transfer:\nAccount name: ${m.bank.accountName}\nSort code: ${m.bank.sortCode}\nAccount number: ${m.bank.accountNumber}\nReference: ${m.number}`
           : null;
+      const status = !m.owed
+        ? `Invoice ${m.number} for ${m.total} has been paid in full — thank you. You can view and download it in your member area.`
+        : m.partPaid
+          ? `Invoice ${m.number} for ${m.total} has ${m.owed} still to pay, due by ${m.due}. You can view and download it in your member area.`
+          : `Invoice ${m.number} for ${m.total} is ready, due by ${m.due}. You can view and download it in your member area.`;
       return compose(
         `Invoice ${m.number} from ${m.supplierName}`,
-        [
-          `Hi ${m.firstName},`,
-          `Invoice ${m.number} for ${m.total} is ready, due by ${m.due}. You can view and download it in your member area.`,
-          bank,
-          m.cardPayments ? "You can also pay by card from your member area." : null,
-          noteBlock(m.note),
-        ],
+        [`Hi ${m.firstName},`, status, bank, m.owed && m.cardPayments ? "You can also pay by card from your member area." : null, noteBlock(m.note)],
         { href: m.link, label: "View your invoice" },
         `Thank you,\n${m.supplierName}`
       );
@@ -115,6 +118,7 @@ export function buildMessage(m: MessageInput): Message {
           `Hi ${m.firstName},`,
           `Thank you — we received your payment of ${m.amount} on ${m.receivedOn}.`,
           m.applied.length ? m.applied.map((a) => `${a.amount} paid towards invoice ${a.number}`).join("\n") : null,
+          m.refunded?.length ? m.refunded.map((r) => `${r.amount} refunded to you on ${r.on}`).join("\n") : null,
           m.unapplied ? `${m.unapplied} hasn’t been put towards an invoice yet. We’ll be in touch about it.` : null,
           noteBlock(m.note),
         ],
