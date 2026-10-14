@@ -63,7 +63,22 @@ export async function startOrResumeAudit(): Promise<string> {
     .select("id")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // Two requests started the audit at the same moment (e.g. a double
+    // load): the other one won the unique sequence number, so use its row.
+    if (error.code === "23505") {
+      const { data: raced } = await supabase
+        .from("audits")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("status", "in_progress")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (raced) return raced.id;
+    }
+    throw error;
+  }
   return created.id;
 }
 

@@ -14,3 +14,6 @@ next-env.d.ts
 
 # Any local settings file (test project keys etc.)
 .env*.local
+
+# Local test-account notes (test project only)
+supabase/test-setup/*.local.md
