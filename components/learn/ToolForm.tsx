@@ -18,6 +18,7 @@ export function ToolForm({
   const [pending, setPending] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const any = prompts.some((p) => answers[p.key]?.trim());
+  const sectioned = prompts.some((p) => p.section);
 
   async function save() {
     setPending(true);
@@ -31,14 +32,26 @@ export function ToolForm({
     <div className="learn-reflect">
       {prompts.map((p) => (
         <div key={p.key}>
-          <label htmlFor={`t-${p.key}`} className="au-start-q">{p.label}</label>
-          <textarea
-            id={`t-${p.key}`}
-            rows={3}
-            placeholder={p.placeholder || undefined}
-            value={answers[p.key] ?? ""}
-            onChange={(e) => setAnswers({ ...answers, [p.key]: e.target.value })}
-          />
+          {p.section ? <h2 className="tool-section">{p.section}</h2> : null}
+          {p.sectionIntro ? <p className="tool-section-intro">{p.sectionIntro}</p> : null}
+          <label htmlFor={`t-${p.key}`} className={`au-start-q${sectioned ? " clear-q-sm" : ""}`}>{p.label}</label>
+          {p.rows === 1 ? (
+            <input
+              id={`t-${p.key}`}
+              type="text"
+              placeholder={p.placeholder || undefined}
+              value={answers[p.key] ?? ""}
+              onChange={(e) => setAnswers({ ...answers, [p.key]: e.target.value })}
+            />
+          ) : (
+            <textarea
+              id={`t-${p.key}`}
+              rows={p.rows ?? 3}
+              placeholder={p.placeholder || undefined}
+              value={answers[p.key] ?? ""}
+              onChange={(e) => setAnswers({ ...answers, [p.key]: e.target.value })}
+            />
+          )}
         </div>
       ))}
       <div className="learn-actions">

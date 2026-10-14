@@ -41,7 +41,7 @@ const KIND_LABEL: Record<Milestone["kind"], string> = {
   audit: "Audit",
   checkin: "Check-in",
   "next-checkin": "Check-in",
-  "next-audit": "Next audit",
+  "next-audit": "Audit (suggested)",
 };
 
 export function ProgressPath({ milestones, target, compact = false }: { milestones: Milestone[]; target: number; compact?: boolean }) {

@@ -47,7 +47,7 @@ export function PlanCard({ areaName, score, target, stage, step, goalTitle, freq
         {hideAction ? null : (
           <Link href={cta.href} className={stage === "done" ? "btn btn-o" : "btn btn-p"}>{cta.label}</Link>
         )}
-        <span>{nextCheckIn ? `Next check-in ${formatDate(nextCheckIn)}` : `Next audit ${formatDate(nextAuditDue)}`}</span>
+        <span>{nextCheckIn ? `Goal check-in ${formatDate(nextCheckIn)}` : `Suggested next audit ${formatDate(nextAuditDue)}`}</span>
       </div>
     </section>
   );

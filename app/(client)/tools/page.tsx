@@ -12,7 +12,7 @@ export default async function ToolsPage() {
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Tools</div>
       <h1 className="au-latest-h">Put it into practice.</h1>
-      <p className="lead">Short exercises for when you want to think something through. Your answers are saved, so you can come back and change them.</p>
+      <p className="lead">Short exercises for when you want to think something through. Your answers are private to you and saved, so you can come back and change them.</p>
       <ul className="learn-cards">
         {TOOLS.map((t) => (
           <li key={t.slug}>

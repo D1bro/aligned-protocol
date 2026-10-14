@@ -140,6 +140,12 @@ async function LatestAudit({
         Taken {formatDate(audit.completed_at)} · Overall {total} / 100
         {change !== null ? ` · ${change >= 0 ? "+" : ""}${change} since your previous audit` : ""}
       </p>
+      {isGuest ? null : (
+        <p className="au-small" style={{ marginTop: "-.6rem", marginBottom: "1rem" }}>
+          Scores are self-reported: how each area felt to you that day.{" "}
+          <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link> (optional guide)
+        </p>
+      )}
 
       <div className="au-latest">
         <div className="au-chart">
@@ -174,12 +180,12 @@ async function LatestAudit({
           ) : null}
 
           <div className={`au-sum-card${days <= 0 ? " due" : ""}`}>
-            <h3>{days <= 0 ? "Your next audit is due" : "Your next audit"}</h3>
+            <h3>Suggested next whole-life audit</h3>
             <p className="au-latest-big">{days <= 0 ? "Now" : formatDate(due)}</p>
             <p>
               {days <= 0
-                ? "It’s been around three months. Take it again to see what’s moved."
-                : `In ${days} day${days === 1 ? "" : "s"}. We suggest retaking the audit ${AUDIT_EVERY_LABEL} — long enough for real change to show.`}
+                ? "It’s been around three months — a good time to revisit all ten areas."
+                : `In ${days} day${days === 1 ? "" : "s"}. We suggest revisiting all ten areas ${AUDIT_EVERY_LABEL}. You can revisit earlier after a meaningful change.`}
             </p>
           </div>
 
@@ -191,7 +197,7 @@ async function LatestAudit({
               <Link href="/clear" className="btn btn-o">Go to CLEAR</Link>
             )}
             <Link href="/audit/1" className="au-text-link">
-              {days <= 0 ? "Retake the audit" : "Retake early"}
+              {days <= 0 ? "Retake the audit" : "Revisit early"}
             </Link>
           </div>
         </div>

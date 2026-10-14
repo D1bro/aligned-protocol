@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { setReminderPreference } from "@/lib/actions/preferences";
 
-// "Email me when a check-in is due" — saved immediately; shows the real state.
+// "Email me when a goal check-in is due" — saved immediately; shows the real
+// state. Only shown once reminder emails are configured (remindersConfigured).
 export function ReminderToggle({ initial }: { initial: boolean }) {
   const [on, setOn] = useState(initial);
   const [pending, setPending] = useState(false);
@@ -25,8 +26,8 @@ export function ReminderToggle({ initial }: { initial: boolean }) {
         <span />
       </button>
       <div>
-        <p>Email me when a check-in is due</p>
-        <span>{error ? "Couldn’t save — try again." : on ? "On — one email per monthly check-in." : "Off"}</span>
+        <p>Email me when a goal check-in is due</p>
+        <span>{error ? "Couldn’t save — try again." : on ? "On — one email when each goal check-in is due." : "Off"}</span>
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export async function getCheckIns(goalId: string): Promise<CheckIn[]> {
   return (data as CheckIn[]) ?? [];
 }
 
-// Every goal they've set, newest first — for "Past goals" on My plan.
+// Every goal they’ve set, newest first — for My plan’s goal list and My journey.
 export async function getAllGoals() {
   const supabase = await createClient();
   const {
@@ -34,7 +34,7 @@ export async function getAllGoals() {
   if (!user) return [];
   const { data } = await supabase
     .from("goals")
-    .select("id, goal_title, focus_area, status, created_at, updated_at")
+    .select("id, goal_title, goal_type, focus_area, status, created_at, updated_at")
     .eq("client_id", user.id)
     .order("created_at", { ascending: false });
   return data ?? [];

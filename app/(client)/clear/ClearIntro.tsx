@@ -67,8 +67,8 @@ export function ClearIntro({
       </div>
 
       <p className="clear-after">
-        When you finish, your plan lives on your profile with your goal. Your next audit, around{" "}
-        {formatDate(nextAuditDue)}, shows whether {area.name} has moved.
+        When you finish, your plan lives in My plan, with a goal check-in each month. Your suggested next
+        whole-life audit is around {formatDate(nextAuditDue)}; your goal can finish sooner or carry on after it.
       </p>
       <div className="au-latest-actions">
         <Link href="/clear?start=1" className="btn btn-p">Begin CLEAR →</Link>

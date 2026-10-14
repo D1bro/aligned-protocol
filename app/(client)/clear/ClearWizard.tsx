@@ -380,7 +380,7 @@ export function ClearWizard({
               The next step: what would a {target} look like?
               {filled(plan.step_up_answer) ? <span className="clear-tag">From your snapshot</span> : null}
             </label>
-            <p className="au-start-help">Not a complete fix — one honest step up. This becomes your target until your next audit.</p>
+            <p className="au-start-help">Not a complete fix — one honest step up. This becomes the target for this goal.</p>
             <textarea id="l-step" rows={3} value={form.stepUp} onChange={(e) => set("stepUp", e.target.value)} onBlur={saveOnBlur} placeholder={`A ${target} would mean…`} />
             <div className="clear-track-wrap"><ScoreTrack score={score} target={target} /></div>
           </>
@@ -480,7 +480,7 @@ export function ClearWizard({
             <label className="au-start-q" htmlFor="r-success">
               Success looks like <span className="clear-tag">Your {target}</span>
             </label>
-            <p className="au-start-help">How you&rsquo;ll know it&rsquo;s working by your next audit.</p>
+            <p className="au-start-help">What would you see or be able to count that tells you the goal is done? Doing the action once is practice; this is the finish line.</p>
             <textarea id="r-success" rows={2} value={form.success} onChange={(e) => set("success", e.target.value)} onBlur={saveOnBlur} />
             <p className="au-start-q">If something gets in the way, what will you do?</p>
             <p className="au-start-help">
@@ -492,12 +492,12 @@ export function ClearWizard({
               <label htmlFor="r-then">then I&rsquo;ll</label>
               <input id="r-then" type="text" value={form.ifResponse} onChange={(e) => set("ifResponse", e.target.value)} onBlur={saveOnBlur} placeholder="do it Monday before work" />
             </div>
-            <p className="au-start-q">Your check-ins</p>
+            <p className="au-start-q">Your goal check-ins</p>
             <div className="au-chips clear-dates">
               {checkins.map((d) => (
-                <span key={d.toISOString()}>{formatDate(d)} · check-in</span>
+                <span key={d.toISOString()}>{formatDate(d)} · goal check-in</span>
               ))}
-              <span className="audit">{formatDate(nextAuditDue)} · next audit</span>
+              <span className="audit">{formatDate(nextAuditDue)} · suggested whole-life audit</span>
             </div>
           </>
         )}

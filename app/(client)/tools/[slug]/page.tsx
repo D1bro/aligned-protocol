@@ -20,7 +20,9 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
         <div className="eyebrow"><span className="eydot" /> Tool</div>
         <h1 className="au-latest-h">{tool.title}</h1>
         <p className="lead">{tool.purpose}</p>
+        {tool.intro ? <p className="tool-intro">{tool.intro}</p> : null}
         <ToolForm toolSlug={tool.slug} prompts={tool.prompts} initial={entry?.answers ?? {}} />
+        {tool.closing ? <p className="tool-closing">{tool.closing}</p> : null}
       </div>
     </>
   );

@@ -80,6 +80,12 @@ export default async function ResultsPage() {
         <div className="eyebrow"><span className="eydot" /> Your Aligned snapshot</div>
         <h1>Here&rsquo;s where you stand.</h1>
         <p className="lead">Ten areas. One honest picture. A clear place to start.</p>
+        {isGuest ? null : (
+          <p className="au-small">
+            Scores are self-reported.{" "}
+            <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link> (optional guide)
+          </p>
+        )}
       </div>
 
       <ResultsBody
@@ -150,7 +156,7 @@ export default async function ResultsPage() {
           <li>
             <span className="au-step-n">03</span>
             <h3>Come back and compare</h3>
-            <p>Retake the audit in a few weeks. Seeing what&rsquo;s moved is where the momentum comes from.</p>
+            <p>Monthly goal check-ins keep your plan honest. Revisit all ten areas in about three months, or sooner after a meaningful change, to see what&rsquo;s moved.</p>
             {isGuest ? null : <Link href="/" className="au-text-link">Go to my profile</Link>}
           </li>
         </ol>

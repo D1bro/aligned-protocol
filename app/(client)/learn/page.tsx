@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PATHS } from "@/lib/learn-content";
+import { ACADEMY_INTRO, PATHS } from "@/lib/learn-content";
 import { getLessonProgress } from "@/lib/actions/learn";
 
 // Academy: short guided paths. Each lesson is a short read (or video), one
@@ -12,10 +12,7 @@ export default async function AcademyPage() {
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Academy</div>
       <h1 className="au-latest-h">Learn at your own pace.</h1>
-      <p className="lead">
-        Short lessons that sit alongside your plan. Each one takes a few minutes: a short read or video, a question to
-        reflect on, and one thing to try.
-      </p>
+      <p className="lead">{ACADEMY_INTRO}</p>
 
       {PATHS.map((path) => {
         const count = path.lessons.filter((l) => done.has(l.slug)).length;
@@ -27,6 +24,10 @@ export default async function AcademyPage() {
                 <div className="eyebrow"><span className="eydot" /> Path · {path.lessons.length} lessons</div>
                 <h2 id={`path-${path.slug}`}>{path.title}</h2>
                 <p>{path.promise}</p>
+                <p className="learn-guide-link">
+                  New to the ten areas? <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link>{" "}
+                  <span>· optional guide</span>
+                </p>
               </div>
               <Link href={`/learn/${path.slug}/${(next ?? path.lessons[0]).slug}`} className="btn btn-p">
                 {count === 0 ? "Start the path →" : next ? "Continue →" : "Review the path"}
@@ -57,7 +58,10 @@ export default async function AcademyPage() {
         );
       })}
 
-      <p className="au-small learn-more">More paths are on the way. Meanwhile, the <Link href="/tools" className="au-text-link">Tools</Link> help you put each lesson into practice.</p>
+      <p className="au-small learn-more">
+        Finishing a lesson means your reflection is saved; it doesn&rsquo;t change your goal. More paths are on the way.
+        Meanwhile, the <Link href="/tools" className="au-text-link">Tools</Link> help you put each lesson into practice.
+      </p>
     </div>
   );
 }

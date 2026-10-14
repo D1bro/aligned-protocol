@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { saveLesson } from "@/lib/actions/learn";
 
-// The lesson's reflection (private to them, and their coach) and "mark complete".
+// The lesson's reflection (private to the member) and "mark complete".
+// Completing a lesson is separate from completing a goal.
 export function LessonForm({
   lessonSlug,
   question,
@@ -38,7 +39,7 @@ export function LessonForm({
   return (
     <section className="learn-reflect" aria-labelledby="reflect-h">
       <label id="reflect-h" htmlFor="reflect" className="au-start-q">{question}</label>
-      <p className="au-start-help">Just for you — only you and your coach can see it.</p>
+      <p className="au-start-help">Private to you. Completing a lesson doesn&rsquo;t change your goal.</p>
       <textarea id="reflect" rows={4} value={text} onChange={(e) => setText(e.target.value)} />
       <div className="learn-actions">
         {done ? (

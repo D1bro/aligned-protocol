@@ -15,3 +15,14 @@ export function cleanReality(t: string | null | undefined) {
     .join("\n")
     .trim();
 }
+
+// A gentle check on "success looks like": hard to verify when it has no
+// number, time or concrete thing to see. Used only to offer a way to clarify
+// it — the person's saved words are never changed.
+export function looksHardToVerify(text: string | null | undefined): boolean {
+  const t = (text ?? "").trim().toLowerCase();
+  if (!t) return false;
+  if (/\d/.test(t)) return false;
+  const vague = /\b(better|more|less|right direction|a step|progress|improve|improved|happier|good|feel|feeling|on track|sorted)\b/;
+  return vague.test(t) || t.split(/\s+/).length < 5;
+}

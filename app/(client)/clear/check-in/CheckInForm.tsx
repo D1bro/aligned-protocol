@@ -13,13 +13,14 @@ const DID_IT: { key: CheckIn["did_it"]; label: string }[] = [
 const NEXT: { key: CheckIn["next_step"]; label: string; help: string }[] = [
   { key: "keep", label: "Keep going", help: "Same action, another month." },
   { key: "adjust", label: "Adjust my action", help: "Make it smaller, or change when." },
-  { key: "done", label: "Mark goal done", help: "You’ve got there — set a new one." },
+  { key: "done", label: "The whole goal is done", help: "Not just this month’s action — the goal itself." },
 ];
 
 export function CheckInForm({
   goalId,
   areaName,
   goalTitle,
+  successCriteria,
   lastScore,
   target,
   ifThen,
@@ -27,6 +28,7 @@ export function CheckInForm({
   goalId: string;
   areaName: string;
   goalTitle: string;
+  successCriteria: string;
   lastScore: number;
   target: number;
   ifThen: string | null;
@@ -59,17 +61,17 @@ export function CheckInForm({
     <>
       <div className="topbar">
         <Link href="/clear" className="tb-back">← My plan</Link>
-        <span className="tb-label">Monthly check-in</span>
+        <span className="tb-label">Goal check-in</span>
       </div>
       <div className="page au-page clear-step">
-        <div className="eyebrow"><span className="eydot" /> Monthly check-in · {areaName}</div>
+        <div className="eyebrow"><span className="eydot" /> Goal check-in · {areaName}</div>
         <h1 className="clear-h">How&rsquo;s it going?</h1>
         <div className="au-sum-card clear-from">
           <p className="au-detail-k">Your action</p>
           <p className="clear-note">{goalTitle}</p>
         </div>
 
-        <p className="au-start-q">How often did you do it this month?</p>
+        <p className="au-start-q">How often did you do it since your last check-in?</p>
         <div className="au-chips" role="group" aria-label="How often did you do it">
           {DID_IT.map((d) => (
             <button key={d.key} type="button" aria-pressed={didIt === d.key} onClick={() => setDidIt(d.key)}>{d.label}</button>
@@ -77,7 +79,7 @@ export function CheckInForm({
         </div>
 
         <p className="au-start-q">Where&rsquo;s {areaName} now?</p>
-        <p className="au-start-help">Last time: {lastScore}/10. Your target: {target}.</p>
+        <p className="au-start-help">Self-reported, as it feels to you now. Last time: {lastScore}/10. Your target: {target}.</p>
         <div className="au-scores" role="group" aria-label="Score from 1 to 10">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
             <button key={n} type="button" data-score={n} aria-pressed={score === n} aria-label={`${n} out of 10`} onClick={() => setScore(n)}>
@@ -95,6 +97,7 @@ export function CheckInForm({
         <textarea id="ci-way" rows={2} value={gotInWay} onChange={(e) => setGotInWay(e.target.value)} />
 
         <p className="au-start-q">What next?</p>
+        {successCriteria ? <p className="au-start-help">Your goal is done when: {successCriteria}</p> : null}
         <div className="checkin-next" role="group" aria-label="What next">
           {NEXT.map((n) => (
             <button key={n.key} type="button" aria-pressed={next === n.key} onClick={() => setNext(n.key)}>
