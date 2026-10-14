@@ -15,14 +15,16 @@ async function me() {
   return { supabase, userId: user?.id ?? null };
 }
 
-export type LessonProgress = { lesson_slug: string; reflection: string | null; completed_at: string | null };
+// `private`: kept from their coach. By default a reflection is shared with the
+// member's assigned coach (migration 0009).
+export type LessonProgress = { lesson_slug: string; reflection: string | null; completed_at: string | null; private: boolean };
 
 export async function getLessonProgress(): Promise<LessonProgress[]> {
   const { supabase, userId } = await me();
   if (!userId) return [];
   const { data } = await supabase
     .from("lesson_progress")
-    .select("lesson_slug, reflection, completed_at")
+    .select("lesson_slug, reflection, completed_at, private")
     .eq("client_id", userId);
   return (data ?? []) as LessonProgress[];
 }
@@ -30,7 +32,8 @@ export async function getLessonProgress(): Promise<LessonProgress[]> {
 export async function saveLesson(
   lessonSlug: string,
   reflection: string,
-  complete: boolean
+  complete: boolean,
+  keepPrivate: boolean
 ): Promise<{ ok: boolean; message?: string }> {
   const { supabase, userId } = await me();
   if (!userId) return { ok: false, message: "Please sign in again." };
@@ -38,6 +41,7 @@ export async function saveLesson(
     client_id: userId,
     lesson_slug: lessonSlug,
     reflection: reflection.trim() || null,
+    private: keepPrivate,
     updated_at: new Date().toISOString(),
   };
   if (complete) row.completed_at = new Date().toISOString();

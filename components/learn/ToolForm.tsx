@@ -19,6 +19,34 @@ export function ToolForm({
   const [note, setNote] = useState<string | null>(null);
   const any = prompts.some((p) => answers[p.key]?.trim());
   const sectioned = prompts.some((p) => p.section);
+  // Group prompts into the sections they start.
+  const sections: { title?: string; intro?: string; optional?: boolean; prompts: Tool["prompts"] }[] = [];
+  for (const p of prompts) {
+    if (p.section || !sections.length) sections.push({ title: p.section, intro: p.sectionIntro, optional: p.optional, prompts: [] });
+    sections[sections.length - 1].prompts.push(p);
+  }
+  const field = (p: Tool["prompts"][number]) => (
+    <div key={p.key}>
+      <label htmlFor={`t-${p.key}`} className={`au-start-q${sectioned ? " clear-q-sm" : ""}`}>{p.label}</label>
+      {p.rows === 1 ? (
+        <input
+          id={`t-${p.key}`}
+          type="text"
+          placeholder={p.placeholder || undefined}
+          value={answers[p.key] ?? ""}
+          onChange={(e) => setAnswers({ ...answers, [p.key]: e.target.value })}
+        />
+      ) : (
+        <textarea
+          id={`t-${p.key}`}
+          rows={p.rows ?? 3}
+          placeholder={p.placeholder || undefined}
+          value={answers[p.key] ?? ""}
+          onChange={(e) => setAnswers({ ...answers, [p.key]: e.target.value })}
+        />
+      )}
+    </div>
+  );
 
   async function save() {
     setPending(true);
@@ -30,30 +58,31 @@ export function ToolForm({
 
   return (
     <div className="learn-reflect">
-      {prompts.map((p) => (
-        <div key={p.key}>
-          {p.section ? <h2 className="tool-section">{p.section}</h2> : null}
-          {p.sectionIntro ? <p className="tool-section-intro">{p.sectionIntro}</p> : null}
-          <label htmlFor={`t-${p.key}`} className={`au-start-q${sectioned ? " clear-q-sm" : ""}`}>{p.label}</label>
-          {p.rows === 1 ? (
-            <input
-              id={`t-${p.key}`}
-              type="text"
-              placeholder={p.placeholder || undefined}
-              value={answers[p.key] ?? ""}
-              onChange={(e) => setAnswers({ ...answers, [p.key]: e.target.value })}
-            />
-          ) : (
-            <textarea
-              id={`t-${p.key}`}
-              rows={p.rows ?? 3}
-              placeholder={p.placeholder || undefined}
-              value={answers[p.key] ?? ""}
-              onChange={(e) => setAnswers({ ...answers, [p.key]: e.target.value })}
-            />
-          )}
-        </div>
-      ))}
+      {sections.map((sec, i) => {
+        const body = (
+          <>
+            {sec.intro ? <p className="tool-section-intro">{sec.intro}</p> : null}
+            {sec.prompts.map(field)}
+          </>
+        );
+        if (!sec.title) return <div key={i}>{body}</div>;
+        if (!sec.optional) {
+          return (
+            <div key={i}>
+              <h2 className="tool-section">{sec.title}</h2>
+              {body}
+            </div>
+          );
+        }
+        return (
+          <details key={i} className="tool-optional" open={sec.prompts.some((p) => answers[p.key]?.trim())}>
+            <summary>
+              {sec.title} <span>Optional</span>
+            </summary>
+            {body}
+          </details>
+        );
+      })}
       <div className="learn-actions">
         <button type="button" className="btn btn-p" disabled={!any || pending} onClick={save}>
           {pending ? "Saving…" : "Save my answers"}

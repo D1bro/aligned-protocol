@@ -878,3 +878,9 @@ select option { background: var(--bg3); color: var(--text); }
   .identity-add { border-radius: 12px; text-align: left; }
   .identity-add span { display: block; margin: .1rem 0 0; }
 }
+.learn-private { display: flex; align-items: center; gap: .5rem; font-size: 13px; color: var(--text2); margin-top: .6rem; cursor: pointer; }
+.learn-private input { width: 16px; height: 16px; accent-color: var(--gold); }
+.tool-optional { margin-top: 1.5rem; border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 12px; padding: 0 1rem; }
+.tool-optional[open] { padding-bottom: 1rem; }
+.tool-optional summary { cursor: pointer; padding: .8rem 0; font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; font-weight: 600; }
+.tool-optional summary span { font-family: var(--font-dm-sans), 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; color: var(--text3); margin-left: .4rem; }

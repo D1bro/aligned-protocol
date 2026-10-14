@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { findLesson, clipFor, TOOLS } from "@/lib/learn-content";
 import { getLessonProgress } from "@/lib/actions/learn";
 import { getMainGoal } from "@/lib/actions/goals";
+import { getCurrentProfile } from "@/lib/session";
 import { GuideVideo } from "@/components/audit/GuideVideo";
 import { LessonForm } from "@/components/learn/LessonForm";
 
@@ -11,7 +12,7 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
   const found = findLesson(pathSlug, lessonSlug);
   if (!found) notFound();
   const { path, lesson, index, next } = found;
-  const [progress, main] = await Promise.all([getLessonProgress(), getMainGoal()]);
+  const [progress, main, profile] = await Promise.all([getLessonProgress(), getMainGoal(), getCurrentProfile()]);
   const mine = progress.find((p) => p.lesson_slug === lesson.slug) ?? null;
   const tool = lesson.tool ? TOOLS.find((t) => t.slug === lesson.tool) : null;
   const planSet = !!main && !!main.goal.frequency?.trim() && !!main.goal.success_criteria?.trim();
@@ -43,6 +44,8 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
           lessonSlug={lesson.slug}
           question={lesson.reflection}
           initialReflection={mine?.reflection ?? ""}
+          initialPrivate={mine?.private ?? false}
+          hasCoach={!!profile?.coach_id}
           completed={!!mine?.completed_at}
           nextHref={next ? `/learn/${path.slug}/${next.slug}` : "/learn"}
           nextLabel={next ? `Next: ${next.title} →` : "Back to the Academy"}

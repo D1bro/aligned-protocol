@@ -228,20 +228,6 @@ export const MUSINGS: Musing[] = [
     video: null,
     draft: true,
   },
-  {
-    slug: "small-choices-repeated",
-    title: "Small choices, repeated",
-    summary: "Who you become is built in ordinary moments.",
-    body: [
-      "Big decisions get the attention, but identity is mostly built in small, repeated choices: what you do first thing, what you say yes to, what you let slide.",
-      "Each one is a vote for the person you’re becoming. None of them feels important on its own. Together, they’re everything.",
-      "Pick one small choice this week and make it on purpose.",
-    ],
-    question: "Which small choice, made on purpose, would say the most about who you want to be?",
-    note: "",
-    video: null,
-    draft: true,
-  },
 ];
 
 // The Aligned Podcast. Set `audio` to an MP3 URL (or `video` to an MP4) when an
@@ -302,6 +288,8 @@ export type ToolPrompt = {
   // Starts a new titled section (with an optional line of guidance).
   section?: string;
   sectionIntro?: string;
+  // An optional section starts folded away until the member opens it.
+  optional?: boolean;
 };
 
 export type Tool = {
@@ -321,6 +309,7 @@ const valuePrompts = (n: number): ToolPrompt[] => [
     placeholder: "",
     rows: 1,
     section: `Value ${n}`,
+    optional: n > 1,
     sectionIntro:
       n === 1
         ? "Example: Connection means giving attention and being honest with someone I trust. This week, I will invite them for a phone-free conversation. My boundary is making room for both people to speak, rather than being available for every request."

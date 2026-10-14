@@ -7,10 +7,13 @@ import { DID_IT_LABELS } from "@/lib/checkin-labels";
 import { cleanReality } from "@/lib/clear-text";
 import type { CheckIn } from "@/lib/actions/checkins";
 import { SessionNoteForm } from "./SessionNoteForm";
+import { PATHS } from "@/lib/learn-content";
+
+const LESSON_TITLE = new Map(PATHS.flatMap((p) => p.lessons.map((l) => [l.slug, l.title] as const)));
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [{ client, audits, goals, notes, startingArea, latestDetail }, areas] = await Promise.all([getClientDetail(id), getLifeAreas()]);
+  const [{ client, audits, goals, notes, startingArea, latestDetail, reflections }, areas] = await Promise.all([getClientDetail(id), getLifeAreas()]);
 
   const latest = audits[0];
   const byArea = new Map((latestDetail?.responses ?? []).map((r) => [r.life_area_id, r]));
@@ -126,6 +129,23 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               </ol>
             </>
           ) : null}
+        </>
+      ) : null}
+
+      {reflections.length ? (
+        <>
+          <div className="sec-head">Academy reflections · shared with you</div>
+          <ol className="checkin-list">
+            {reflections.map((r) => (
+              <li key={r.lesson_slug}>
+                <div className="checkin-head">
+                  <b>{LESSON_TITLE.get(r.lesson_slug) ?? r.lesson_slug}</b>
+                  <span>{new Date(r.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
+                </div>
+                <p>{r.reflection}</p>
+              </li>
+            ))}
+          </ol>
         </>
       ) : null}
 

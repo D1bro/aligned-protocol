@@ -153,7 +153,25 @@ export async function getClientDetail(clientId: string) {
     latestDetail = { responses: responses ?? [], plan: plan ?? null, goal: goal ?? null, checkIns: checkIns ?? [] };
   }
 
-  return { client, audits: audits ?? [], goals: goals ?? [], notes: notes ?? [], startingArea, latestDetail };
+  // Academy reflections the client has shared (RLS returns only rows not
+  // marked private).
+  const { data: reflections } = await supabase
+    .from("lesson_progress")
+    .select("lesson_slug, reflection, completed_at, updated_at")
+    .eq("client_id", clientId)
+    .eq("private", false)
+    .not("reflection", "is", null)
+    .order("updated_at", { ascending: false });
+
+  return {
+    client,
+    audits: audits ?? [],
+    goals: goals ?? [],
+    notes: notes ?? [],
+    startingArea,
+    latestDetail,
+    reflections: (reflections ?? []) as { lesson_slug: string; reflection: string; completed_at: string | null; updated_at: string }[],
+  };
 }
 
 export async function addSessionNote(input: {
