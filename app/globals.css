@@ -1101,3 +1101,56 @@ a.admin-row:hover { background: var(--bg3); }
 .mc-report textarea, .mc-prep textarea { background: var(--bg); width: 100%; }
 .mc-prep { display: grid; gap: .4rem; }
 .mc-list { margin-left: 1.1rem; display: grid; gap: .35rem; font-size: 15px; color: var(--text); }
+
+/* Billing: invoices, payments and session credits */
+.bl-wrap { display: grid; gap: .9rem; }
+.bl-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .8rem; }
+.bl-summary > div { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 12px; padding: .8rem 1rem; display: grid; gap: .15rem; align-content: start; }
+.bl-summary span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.bl-summary b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bl-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.bl-head h2 { margin: 0; }
+.bl-act { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.bl-btn { padding: .5rem 1rem; font-size: 13px; }
+.bl-form { border: 1px solid var(--bdr); background: var(--bg3); border-radius: 12px; padding: .9rem 1rem; display: grid; gap: .7rem; width: 100%; }
+.bl-form textarea, .bl-form select, .bl-form input, .bl-editor input, .bl-editor textarea, .bl-fieldset input, .bl-fieldset textarea { background: var(--bg); width: 100%; }
+.bl-wide { grid-column: 1 / -1; }
+.bl-warn { border: 1px solid var(--bdr); background: var(--gd2); color: var(--text); border-radius: 10px; padding: .6rem .85rem; font-size: 13px; line-height: 1.6; }
+.bl-warn a { color: var(--gold); }
+.bl-ok { color: var(--green); font-size: 13px; }
+.bl-note { color: var(--text2); font-size: 12px; }
+.bl-row-actions { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
+.bl-items { list-style: none; display: grid; gap: .25rem; font-size: 13px; color: var(--text2); }
+.bl-items li { display: flex; justify-content: space-between; gap: 1rem; font-variant-numeric: tabular-nums; }
+.bl-reversed { opacity: .55; }
+.bl-reversed b, .bl-items .bl-reversed span:last-child { text-decoration: line-through; }
+.bl-unapplied { font-size: 12px; color: var(--gold); font-weight: 600; }
+.bl-editor { display: grid; gap: .8rem; border-top: 1px solid var(--bdr2); padding-top: .8rem; }
+.bl-lines { display: grid; gap: .45rem; }
+.bl-line { display: grid; grid-template-columns: minmax(0, 1fr) 70px 110px 100px 28px; gap: .5rem; align-items: center; }
+.bl-line.head span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.bl-amt { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+.bl-bad { border-color: var(--coral) !important; }
+.bl-totals { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; align-items: baseline; font-size: 13px; color: var(--text2); }
+.bl-totals b { color: var(--text); font-variant-numeric: tabular-nums; }
+.bl-confirm { border: 1px solid var(--gold); background: var(--gd2); border-radius: 12px; padding: .9rem 1rem; display: grid; gap: .7rem; font-size: 14px; line-height: 1.6; }
+.bl-credit-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: .4rem 0 .8rem; }
+.bl-credit-facts div { display: grid; gap: .1rem; }
+.bl-credit-facts b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 22px; font-weight: 600; }
+.bl-credit-facts span { font-size: 12px; color: var(--text2); }
+.bl-ledger { list-style: none; display: grid; gap: .35rem; font-size: 13px; }
+.bl-ledger li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: .6rem; align-items: baseline; }
+.bl-fieldset { border: 0; display: grid; gap: .6rem; margin-bottom: 1rem; }
+.bl-fieldset legend { font-size: 13px; font-weight: 600; color: var(--gold); margin-bottom: .5rem; }
+.cs-state.bl-paid { border-color: rgba(63,160,107,.5); color: var(--green); }
+.cs-state.bl-overdue { border-color: rgba(176,80,80,.6); color: #e08a8a; }
+.cs-state.bl-part_paid, .cs-state.bl-unpaid { border-color: var(--bdr); color: var(--gold); }
+.cs-state.bl-void { text-decoration: line-through; }
+.cs-top { display: flex; flex-wrap: wrap; gap: .8rem 1.2rem; align-items: center; }
+@media (max-width: 640px) {
+  .bl-line { grid-template-columns: minmax(0, 1fr) 64px; }
+  .bl-line.head { display: none; }
+  .bl-line input:first-child { grid-column: 1 / -1; }
+  .bl-amt { text-align: left; }
+  .bl-credit-facts { grid-template-columns: 1fr; }
+}

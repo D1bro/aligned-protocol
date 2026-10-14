@@ -3,6 +3,8 @@ import type { getClientProfile } from "@/lib/actions/admin";
 import { formatSessionTime, toLocalParts } from "@/lib/time";
 import { SessionBooking } from "./SessionBooking";
 import { SessionActions } from "./SessionActions";
+import { NoShowCredit } from "./BillingActions";
+import type { ClientBilling } from "@/lib/actions/billing";
 
 type Profile = Awaited<ReturnType<typeof getClientProfile>>;
 
@@ -16,7 +18,7 @@ export const STATE_LABEL: Record<string, string> = {
 
 // Sessions: upcoming and past conversations, each with its own actions and
 // history. Counts never include cancelled or rescheduled-away times.
-export function SessionsTab({ p }: { p: Profile }) {
+export function SessionsTab({ p, billing }: { p: Profile; billing: ClientBilling | null }) {
   const { sessions, events, summaries } = p.coaching;
   const now = Date.now();
   const upcoming = sessions
@@ -32,6 +34,16 @@ export function SessionsTab({ p }: { p: Profile }) {
     if (pub) return `Shared (revision ${pub.revision})`;
     if (draft) return draft.status === "approved" ? "Summary approved, not shared" : "Summary draft";
     return "No summary";
+  };
+
+  // What each session means for their paid sessions (after migration 0014).
+  const creditLabel = (s: (typeof sessions)[number]) => {
+    if (!billing?.available) return null;
+    const r = billing.reservations.find((x) => x.session_id === s.id);
+    if (r?.status === "consumed") return "Paid session used";
+    if (r?.status === "active") return s.state === "no_show" ? "Credit on hold — decide below" : "Paid session reserved";
+    if (s.state === "confirmed") return "Not covered by a paid session";
+    return null;
   };
 
   const row = (s: (typeof sessions)[number]) => {
@@ -55,7 +67,11 @@ export function SessionsTab({ p }: { p: Profile }) {
           {s.duration_minutes} minutes{s.location ? ` · ${s.location}` : ""} · {summaryState(s.id)}
           {s.cancel_reason ? ` · Reason: ${s.cancel_reason}` : ""}
           {s.no_show_decision ? ` · Decision: ${s.no_show_decision}` : ""}
+          {creditLabel(s) ? ` · ${creditLabel(s)}` : ""}
         </p>
+        {s.state === "no_show" && billing?.canBill && billing.reservations.some((x) => x.session_id === s.id && x.status === "active") ? (
+          <NoShowCredit sessionId={s.id} clientId={p.client.id} />
+        ) : null}
         <SessionActions sessionId={s.id} state={s.state} localDate={local.date} localTime={local.time} />
         {moves.length ? (
           <details className="cs-history">
@@ -77,6 +93,12 @@ export function SessionsTab({ p }: { p: Profile }) {
     <section aria-label="Sessions">
       <div className="cs-top">
         <SessionBooking clientId={p.client.id} />
+        {billing?.available ? (
+          <span className="cs-meta">
+            Paid sessions available: <b>{billing.credits.available}</b>
+            {billing.credits.reserved ? ` · ${billing.credits.reserved} reserved for booked sessions` : ""}
+          </span>
+        ) : null}
       </div>
       <h2 className="sec-head">Upcoming</h2>
       {upcoming.length ? <ul className="cs-list">{upcoming.map(row)}</ul> : <p className="cp-sub">No upcoming sessions.</p>}

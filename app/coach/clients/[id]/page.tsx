@@ -14,6 +14,8 @@ import { CoachNotesTab } from "./CoachNotesTab";
 import { formatSessionTime } from "@/lib/time";
 import { ClientSettings } from "./ClientSettings";
 import { ResetPasswordButton } from "./ResetPasswordButton";
+import { BillingTab } from "./BillingTab";
+import { getClientBilling } from "@/lib/actions/billing";
 
 const TABS = [
   ["overview", "Overview"],
@@ -46,6 +48,7 @@ export default async function ClientProfilePage({
   const { viewer, client, summary } = p;
   const isAdmin = viewer.role === "admin";
   const staff = isAdmin && tab === "settings" ? await getStaff() : [];
+  const billing = tab === "billing" || tab === "sessions" ? await getClientBilling(id) : null;
 
   const scoresFor = (auditId: string) => {
     const rs = p.responses.filter((r) => r.audit_id === auditId);
@@ -120,7 +123,7 @@ export default async function ClientProfilePage({
         <OverviewTab p={p} firstName={firstName} mainGoal={mainGoal} focusNote={focusNote} nextSession={nextAny} />
       ) : null}
 
-      {tab === "sessions" ? <SessionsTab p={p} /> : null}
+      {tab === "sessions" ? <SessionsTab p={p} billing={billing} /> : null}
 
       {tab === "goals" ? (
         latest ? (
@@ -283,15 +286,7 @@ export default async function ClientProfilePage({
 
       {tab === "notes" ? <CoachNotesTab p={p} /> : null}
 
-      {tab === "billing" ? (
-        <section className="admin-card" aria-label="Payments and invoices">
-          <h2>Payments and invoices</h2>
-          <p className="cp-sub">
-            Invoicing isn&rsquo;t switched on yet. It&rsquo;s the next part of this build: draft and issue invoices for
-            Aligned Media (not VAT registered), record bank transfers, and track paid sessions.
-          </p>
-        </section>
-      ) : null}
+      {tab === "billing" && billing ? <BillingTab b={billing} clientId={client.id} /> : null}
 
       {tab === "settings" && isAdmin ? (
         <section className="admin-card" aria-label="Settings">

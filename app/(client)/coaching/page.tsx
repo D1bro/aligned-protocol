@@ -5,6 +5,8 @@ import { clipFor } from "@/lib/learn-content";
 import { EnquiryForm } from "@/components/learn/EnquiryForm";
 import { getMyCoaching } from "@/lib/actions/member-coaching";
 import { MemberCoaching } from "@/components/coaching/MemberCoaching";
+import { getMyBilling } from "@/lib/actions/billing";
+import { MemberInvoices } from "@/components/coaching/MemberInvoices";
 
 const SESSIONS = [
   { title: "Get clear", text: "We look at your snapshot and your plan together, and agree the one thing that matters most right now." },
@@ -20,8 +22,8 @@ const STATUS: Record<string, string> = {
 };
 
 // Coaching Studio: what coaching is here, the Focus Series pilot and an enquiry form.
-export default async function CoachingPage() {
-  const [enquiries, coaching] = await Promise.all([getMyEnquiries(), getMyCoaching()]);
+export default async function CoachingPage({ searchParams }: { searchParams: Promise<{ paid?: string }> }) {
+  const [enquiries, coaching, billing, sp] = await Promise.all([getMyEnquiries(), getMyCoaching(), getMyBilling(), searchParams]);
   const coached = coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0);
   const open = enquiries.find((e) => e.status === "new" || e.status === "contacted") ?? null;
 
@@ -29,6 +31,7 @@ export default async function CoachingPage() {
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Coaching</div>
       {coached ? <MemberCoaching data={coaching} /> : null}
+      <MemberInvoices data={billing} justPaid={sp.paid === "1"} />
       <h1 className="au-latest-h">{coached ? "About coaching" : "Work on it together."}</h1>
       <p className="draft-tag">Draft</p>
       <p className="lead">
