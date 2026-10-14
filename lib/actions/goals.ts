@@ -64,7 +64,8 @@ export async function getMainGoal(): Promise<MainGoal | null> {
 }
 
 // Make one active goal the main goal. Only changes which goal is main — never
-// a goal's status or wording.
+// a goal's status or wording. Done in one database transaction
+// (set_main_goal, migration 0010), so it can't stop halfway.
 export async function setMainGoal(goalId: string): Promise<{ ok: boolean; message?: string }> {
   const supabase = await createClient();
   const {
@@ -72,22 +73,8 @@ export async function setMainGoal(goalId: string): Promise<{ ok: boolean; messag
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, message: "Please sign in again." };
 
-  const { data: chosen, error } = await supabase
-    .from("goals")
-    .update({ goal_type: "primary" })
-    .eq("id", goalId)
-    .eq("client_id", user.id)
-    .eq("status", "active")
-    .select("id");
-  if (error || !chosen?.length) return { ok: false, message: "Couldn’t change your main goal — try again." };
-
-  const { error: othersError } = await supabase
-    .from("goals")
-    .update({ goal_type: "supporting" })
-    .eq("client_id", user.id)
-    .eq("status", "active")
-    .neq("id", goalId);
-  if (othersError) return { ok: false, message: "Couldn’t change your main goal — try again." };
+  const { data, error } = await supabase.rpc("set_main_goal", { p_goal_id: goalId });
+  if (error || data !== true) return { ok: false, message: "Couldn’t change your main goal — try again." };
 
   revalidatePath("/");
   revalidatePath("/clear");
