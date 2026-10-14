@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SITE_URL } from "@/lib/email";
 import { readGuestWork, saveGuestWorkToAccount } from "@/lib/guest-transfer";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; message: string };
@@ -100,7 +101,8 @@ export async function requestPasswordReset(formData: FormData): Promise<ActionRe
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/reset-password/confirm`,
+    // Must be a full address; NEXT_PUBLIC_SITE_URL isn't set on Vercel.
+    redirectTo: `${SITE_URL}/reset-password/confirm`,
   });
   if (error) return { ok: false, message: error.message };
   return { ok: true };

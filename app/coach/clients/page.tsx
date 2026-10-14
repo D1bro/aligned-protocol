@@ -1,34 +1,31 @@
 import Link from "next/link";
-import { requireStaff, getClientSummaries, getStaff, type ClientSummary } from "@/lib/actions/admin";
+import { requireStaff, getClientSummaries, getStaff } from "@/lib/actions/admin";
 import { getMyClients } from "@/lib/actions/coach";
 import { formatDate } from "@/lib/audit-schedule";
 import { AddClientForm } from "../AddClientForm";
+import { buildView, filterPeople, stageOf, STAGES, VIEW_LABELS, type ViewKey } from "@/lib/console-views";
 
-const DAY = 86_400_000;
-const STAGES: Record<string, { label: string; test: (c: ClientSummary) => boolean }> = {
-  "no-audit": { label: "No audit yet", test: (c) => c.audits === 0 },
-  "no-plan": { label: "Audit done, no plan", test: (c) => c.audits > 0 && !c.plan_set },
-  "no-checkin": { label: "Plan set, no check-in", test: (c) => c.plan_set && c.checkins === 0 },
-  active: { label: "Checking in", test: (c) => c.checkins > 0 },
-  quiet: { label: "Quiet 30+ days", test: (c) => !!c.last_active_at && Date.now() - new Date(c.last_active_at).getTime() > 30 * DAY },
-};
+const VIEWS: ViewKey[] = ["audits", "plans", "checkins", "lessons"];
 
-function stageOf(c: ClientSummary) {
-  if (c.audits === 0) return "No audit yet";
-  if (!c.plan_set) return c.active_goals ? "Plan in progress" : "Audit done";
-  if (c.checkins === 0) return "Plan set";
-  return `${c.checkins} check-in${c.checkins === 1 ? "" : "s"}`;
+function qs(params: Record<string, string | undefined>) {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v) u.set(k, v);
+  const t = u.toString();
+  return t ? `?${t}` : "";
 }
+
 
 // Clients: everyone (admins) or your own clients (coaches), searchable and
 // filterable, each opening their full workspace.
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; coach?: string; stage?: string; guests?: string }>;
+  searchParams: Promise<{ q?: string; coach?: string; stage?: string; guests?: string; view?: string; status?: string; did?: string }>;
 }) {
   const me = await requireStaff();
-  const { q = "", coach = "all", stage = "", guests } = await searchParams;
+  const params = await searchParams;
+  const { q = "", coach = "all", stage = "", guests, status, did } = params;
+  const view = VIEWS.includes(params.view as ViewKey) ? (params.view as ViewKey) : null;
   const [all, staff] = await Promise.all([getClientSummaries(), me.role === "admin" ? getStaff() : Promise.resolve([])]);
 
   // Before migration 0011, fall back to the coach's own roster.
@@ -50,11 +47,61 @@ export default async function ClientsPage({
   }
 
   const needle = q.trim().toLowerCase();
-  const shown = all
-    .filter((c) => (guests ? true : !!c.email))
-    .filter((c) => !needle || `${c.full_name ?? ""} ${c.email ?? ""}`.toLowerCase().includes(needle))
-    .filter((c) => (coach === "all" ? true : coach === "none" ? !c.coach_id : coach === "me" ? c.coach_id === me.id : c.coach_id === coach))
-    .filter((c) => (STAGES[stage] ? STAGES[stage].test(c) : true));
+  const tabs = (
+    <nav className="admin-tabs" aria-label="Lists">
+      <Link href="/coach/clients" aria-current={!view ? "page" : undefined}>People</Link>
+      {VIEWS.map((v) => (
+        <Link key={v} href={`/coach/clients?view=${v}`} aria-current={view === v ? "page" : undefined}>{VIEW_LABELS[v]}</Link>
+      ))}
+    </nav>
+  );
+
+  // A list behind one of the Overview numbers.
+  if (view) {
+    const v = await buildView(view, { includeGuests: !!guests || view === "audits", status, didIt: !!did }, all);
+    const rows = v.rows.filter((r) => !needle || r.cells[0].toLowerCase().includes(needle));
+    const exportHref = `/coach/clients/export${qs({ view, q, guests, status, did })}`;
+    return (
+      <div className="page admin-page">
+        <div className="eyebrow"><span className="eydot" /> Clients</div>
+        <h1>{v.title}</h1>
+        <p className="lead">{v.lead} {rows.length} shown.</p>
+        {tabs}
+        <form className="admin-filters" method="get">
+          <input type="hidden" name="view" value={view} />
+          {status ? <input type="hidden" name="status" value={status} /> : null}
+          {did ? <input type="hidden" name="did" value={did} /> : null}
+          <input type="search" name="q" defaultValue={q} placeholder="Search by name" aria-label="Search" />
+          {view !== "audits" ? (
+            <label className="admin-check">
+              <input type="checkbox" name="guests" value="1" defaultChecked={!!guests} /> Include guests
+            </label>
+          ) : null}
+          <button type="submit" className="btn btn-g">Filter</button>
+          <a href={exportHref} className="au-text-link">Export CSV</a>
+        </form>
+        {rows.length ? (
+          <div className="admin-table admin-generic" role="table" aria-label={v.title} style={{ ["--cols" as string]: v.columns.length }}>
+            <div className="admin-row head" role="row">
+              {v.columns.map((c) => <span key={c} role="columnheader">{c}</span>)}
+            </div>
+            {rows.map((r, i) => (
+              <Link key={i} href={`/coach/clients/${r.personId}`} className="admin-row" role="row">
+                {r.cells.map((c, j) => <span key={j} role="cell" className={j === 0 ? "admin-who" : undefined}>{j === 0 ? <b>{c}</b> : c}</span>)}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="empty">
+            <span className="empty-icon" aria-hidden="true">◇</span>
+            Nothing here yet.
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const shown = filterPeople(all, { q, coach, stage, guests: !!guests }, me.id);
   const guestCount = all.filter((c) => !c.email).length;
 
   return (
@@ -66,6 +113,7 @@ export default async function ClientsPage({
         goal check-ins, shared reflections and notes.
       </p>
 
+      {tabs}
       <form className="admin-filters" method="get">
         <input type="search" name="q" defaultValue={q} placeholder="Search name or email" aria-label="Search clients" />
         {me.role === "admin" ? (
@@ -89,6 +137,7 @@ export default async function ClientsPage({
         ) : null}
         <button type="submit" className="btn btn-g">Filter</button>
         {q || coach !== "all" || stage || guests ? <Link href="/coach/clients" className="au-text-link">Clear</Link> : null}
+        <a href={`/coach/clients/export${qs({ q, coach: coach === "all" ? undefined : coach, stage, guests })}`} className="au-text-link">Export CSV</a>
       </form>
 
       {shown.length ? (
@@ -104,7 +153,7 @@ export default async function ClientsPage({
           {shown.map((c) => (
             <Link key={c.id} href={`/coach/clients/${c.id}`} className="admin-row" role="row">
               <span role="cell" className="admin-who">
-                <b>{c.full_name || (c.email ? "Unnamed" : "Guest")}</b>
+                <b>{c.full_name || (c.email ? "Unnamed" : "Guest (no account)")}</b>
                 <em>{c.email ?? "No account yet"}</em>
                 {me.role === "admin" ? <em className="admin-coach">{c.coach_name ? `Coach: ${c.coach_name}` : "No coach"}</em> : null}
               </span>

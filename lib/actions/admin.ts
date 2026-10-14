@@ -135,3 +135,74 @@ export async function getReminderStatus(): Promise<ReminderStatus> {
     sentTotal: count ?? 0,
   };
 }
+
+// Everything for one client's profile in the console. Admins can open anyone;
+// a coach only their own clients. Private reflections and tool answers are
+// never returned (the database refuses them).
+export async function getClientProfile(clientId: string) {
+  const me = await requireStaff();
+  const supabase = await createClient();
+  const { data: client } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, coach_id, role, created_at")
+    .eq("id", clientId)
+    .maybeSingle();
+  if (!client || (me.role !== "admin" && client.coach_id !== me.id)) redirect("/coach/clients");
+
+  const [audits, plans, goals, checkIns, notes, reflections, enquiries, coach, summaries] = await Promise.all([
+    supabase
+      .from("audits")
+      .select("id, completed_at, total_score, sequence_number")
+      .eq("client_id", clientId)
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false }),
+    supabase.from("clear_plans").select("*").eq("client_id", clientId),
+    supabase.from("goals").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+    supabase.from("goal_checkins").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+    supabase.from("session_notes").select("*").eq("client_id", clientId).order("session_date", { ascending: false }),
+    supabase
+      .from("lesson_progress")
+      .select("lesson_slug, reflection, completed_at, updated_at")
+      .eq("client_id", clientId)
+      .eq("private", false),
+    supabase.from("coaching_enquiries").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+    client.coach_id
+      ? supabase.from("profiles").select("full_name, email").eq("id", client.coach_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    getClientSummaries(),
+  ]);
+
+  const auditIds = (audits.data ?? []).map((a) => a.id as string);
+  const { data: responses } = auditIds.length
+    ? await supabase.from("audit_responses").select("audit_id, life_area_id, satisfaction_score, note").in("audit_id", auditIds)
+    : { data: [] };
+
+  return {
+    viewer: me,
+    client: client as { id: string; full_name: string | null; email: string | null; coach_id: string | null; role: "client" | "coach" | "admin"; created_at: string },
+    coachName: (coach.data?.full_name as string | null) ?? (coach.data?.email as string | null) ?? null,
+    audits: (audits.data ?? []) as { id: string; completed_at: string; total_score: number | null; sequence_number: number }[],
+    responses: (responses ?? []) as { audit_id: string; life_area_id: string; satisfaction_score: number; note: string | null }[],
+    plans: (plans.data ?? []) as Record<string, unknown>[],
+    goals: (goals.data ?? []) as Record<string, unknown>[],
+    checkIns: (checkIns.data ?? []) as Record<string, unknown>[],
+    notes: (notes.data ?? []) as Record<string, unknown>[],
+    reflections: (reflections.data ?? []) as { lesson_slug: string; reflection: string | null; completed_at: string | null; updated_at: string }[],
+    enquiries: (enquiries.data ?? []) as Record<string, unknown>[],
+    summary: summaries?.find((s) => s.id === clientId) ?? null,
+  };
+}
+
+// Admin: email someone a password reset link (goes through Supabase's email
+// settings — set up custom SMTP so it actually arrives).
+export async function sendPasswordReset(clientId: string): Promise<{ ok: boolean; message?: string }> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data } = await supabase.from("profiles").select("email").eq("id", clientId).maybeSingle();
+  const email = data?.email as string | undefined;
+  if (!email) return { ok: false, message: "This person has no email address yet." };
+  const { SITE_URL } = await import("@/lib/email");
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${SITE_URL}/reset-password/confirm` });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, message: `Reset link sent to ${email}.` };
+}

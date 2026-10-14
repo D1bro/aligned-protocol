@@ -967,3 +967,25 @@ a.admin-row:hover { background: var(--bg3); }
 .admin-links { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: 13px; }
 .admin-links a { color: var(--gold); }
 .admin-list { list-style: none; display: grid; gap: .4rem; }
+.admin-generic .admin-row { grid-template-columns: minmax(0, 1.4fr) repeat(calc(var(--cols) - 1), minmax(0, 1fr)); }
+@media (max-width: 900px) { .admin-generic .admin-row { grid-template-columns: 1fr 1fr; } }
+.admin-stats > a { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 12px; padding: .9rem 1rem; display: grid; gap: .1rem; text-decoration: none; color: inherit; transition: border-color .15s; }
+.admin-stats > a:hover { border-color: var(--bdr); }
+.admin-stats > a:hover span { text-decoration: underline; text-underline-offset: 3px; }
+.admin-funnel-link { display: block; text-decoration: none; color: inherit; border-radius: 8px; }
+.admin-funnel-link:hover .admin-funnel-top span { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Console: client profile */
+.cp-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.cp-head h1 { margin: 0; overflow-wrap: anywhere; }
+.cp-head p { font-size: 13px; color: var(--text2); overflow-wrap: anywhere; }
+.cp-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--gd); color: var(--gold); display: grid; place-items: center; font-family: var(--font-sora), 'Sora', sans-serif; font-weight: 600; font-size: 17px; flex-shrink: 0; }
+.cp-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .6rem; margin-bottom: 1.2rem; }
+.cp-facts > div { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 10px; padding: .6rem .8rem; display: grid; gap: .1rem; }
+.cp-facts span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.cp-facts b { font-size: 14px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.cp-tabs { border-bottom: 1px solid var(--bdr2); padding-bottom: .9rem; }
+.cp-sub { font-size: 13px; color: var(--text2); margin-bottom: 1rem; }
+.cp-sub a { color: var(--text); }
+.cp-up { color: var(--hi); font-style: normal; }
+.cp-down { color: var(--lo); font-style: normal; }

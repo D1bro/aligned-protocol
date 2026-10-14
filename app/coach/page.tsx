@@ -24,11 +24,11 @@ export default async function OverviewPage() {
   }
 
   const funnel = [
-    { label: "Took the audit", sub: "including guests", n: m.people_audited },
-    { label: "Created an account", sub: "members", n: m.members },
-    { label: "Member with an audit", sub: "", n: m.members_audited },
-    { label: "Set a plan", sub: "action, when and 'done when'", n: m.plans_set },
-    { label: "Recorded an action", sub: "at a goal check-in", n: m.first_action },
+    { label: "Took the audit", sub: "including guests", n: m.people_audited, href: "/coach/clients?view=audits" },
+    { label: "Created an account", sub: "members", n: m.members, href: "/coach/clients" },
+    { label: "Member with an audit", sub: "", n: m.members_audited, href: "/coach/clients?stage=audited" },
+    { label: "Set a plan", sub: "action, when and 'done when'", n: m.plans_set, href: "/coach/clients?view=plans" },
+    { label: "Recorded an action", sub: "at a goal check-in", n: m.first_action, href: "/coach/clients?view=checkins&did=1" },
   ];
   const top = Math.max(1, ...funnel.map((f) => f.n));
 
@@ -57,14 +57,14 @@ export default async function OverviewPage() {
       </p>
 
       <div className="admin-stats">
-        <div><b>{m.members}</b><span>Members</span><em>+{m.members_30d} in 30 days · {m.guests} guests</em></div>
-        <div><b>{m.audits}</b><span>Audits completed</span><em>+{m.audits_30d} in 30 days</em></div>
-        <div><b>{m.checkins}</b><span>Goal check-ins</span><em>+{m.checkins_30d} in 30 days</em></div>
-        <div><b>{m.goals_done}</b><span>Goals completed</span><em>by members</em></div>
-        <div><b>{m.lessons_done}</b><span>Lessons completed</span><em>{m.people_learning} {m.people_learning === 1 ? "person" : "people"} learning</em></div>
+        <Link href="/coach/clients"><b>{m.members}</b><span>Members</span><em>+{m.members_30d} in 30 days · {m.guests} guests</em></Link>
+        <Link href="/coach/clients?view=audits"><b>{m.audits}</b><span>Audits completed</span><em>+{m.audits_30d} in 30 days</em></Link>
+        <Link href="/coach/clients?view=checkins"><b>{m.checkins}</b><span>Goal check-ins</span><em>+{m.checkins_30d} in 30 days</em></Link>
+        <Link href="/coach/clients?view=plans&status=completed"><b>{m.goals_done}</b><span>Goals completed</span><em>by members</em></Link>
+        <Link href="/coach/clients?view=lessons"><b>{m.lessons_done}</b><span>Lessons completed</span><em>{m.people_learning} {m.people_learning === 1 ? "person" : "people"} learning</em></Link>
         <div><b>{m.came_back}</b><span>Came back</span><em>active on 2+ different days</em></div>
-        <div><b>{m.active_30d}</b><span>Active in 30 days</span><em>members doing anything</em></div>
-        <div><b>{m.enquiries}</b><span>Coaching enquiries</span><em>{m.enquiries_new} new · {m.enquiries_booked} booked</em></div>
+        <Link href="/coach/clients?stage=active30"><b>{m.active_30d}</b><span>Active in 30 days</span><em>members doing anything</em></Link>
+        <Link href="/coach/enquiries"><b>{m.enquiries}</b><span>Coaching enquiries</span><em>{m.enquiries_new} new · {m.enquiries_booked} booked</em></Link>
       </div>
 
       <div className="admin-grid">
@@ -74,6 +74,7 @@ export default async function OverviewPage() {
           <ol className="admin-funnel">
             {funnel.map((f, i) => (
               <li key={f.label}>
+                <Link href={f.href} className="admin-funnel-link">
                 <div className="admin-funnel-top">
                   <span>{f.label}{f.sub ? <em> · {f.sub}</em> : null}</span>
                   <b>
@@ -84,6 +85,7 @@ export default async function OverviewPage() {
                 <div className="admin-bar" aria-hidden="true">
                   <span style={{ width: `${Math.max(f.n ? 2 : 0, (f.n / top) * 100)}%` }} />
                 </div>
+                </Link>
               </li>
             ))}
           </ol>
