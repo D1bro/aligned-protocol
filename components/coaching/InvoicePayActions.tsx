@@ -49,7 +49,7 @@ export function InvoicePayActions({ invoiceId, card, noticeSent }: { invoiceId: 
         <button type="button" className="btn btn-p bl-btn" disabled={pending} onClick={pay}>{pending ? "Opening…" : "Pay by card"}</button>
       ) : null}
       {noticeSent ? (
-        <span className="cs-meta">You’ve told Duane it’s paid — he’ll confirm once it arrives.</span>
+        <span className="cs-meta">You’ve told Duane it’s paid. Duane will confirm once it arrives.</span>
       ) : (
         <button type="button" className="au-text-link as-btn" onClick={() => setMode("notice")}>I’ve paid by bank transfer</button>
       )}

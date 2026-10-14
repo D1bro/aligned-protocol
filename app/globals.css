@@ -127,7 +127,7 @@ h3 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 15px; font-we
 
 /* FORM */
 .lbl { display: block; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin: .9rem 0 .35rem; }
-textarea, input[type=text], input[type=email], input[type=password], input[type=date], input[type=time], select {
+textarea, input:not([type]), input[type=text], input[type=email], input[type=password], input[type=date], input[type=time], input[type=number], input[type=url], select {
   width: 100%; background: var(--bg3); border: 1px solid var(--bdr2); border-radius: var(--r); color: var(--text);
   font-family: var(--font-dm-sans), 'DM Sans', sans-serif; font-size: 14px; padding: .75rem 1rem; resize: vertical;
   outline: none; transition: border-color .18s; line-height: 1.6;
@@ -1129,6 +1129,7 @@ a.admin-row:hover { background: var(--bg3); }
 .bl-lines { display: grid; gap: .45rem; }
 .bl-line { display: grid; grid-template-columns: minmax(0, 1fr) 70px 110px 100px 28px; gap: .5rem; align-items: center; }
 .bl-line.head span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.bl-line input { padding: .55rem .7rem; }
 .bl-amt { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
 .bl-bad { border-color: var(--coral) !important; }
 .bl-totals { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; align-items: baseline; font-size: 13px; color: var(--text2); }

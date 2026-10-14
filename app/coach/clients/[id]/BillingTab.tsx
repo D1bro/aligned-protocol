@@ -129,12 +129,15 @@ export function BillingTab({ b, clientId }: { b: ClientBilling; clientId: string
                       ))}
                       {inv.discount_pence ? <li><span>Discount</span><span>−{formatPence(inv.discount_pence)}</span></li> : null}
                     </ul>
-                    <p className="cs-meta">
-                      Paid {formatPence(inv.paid_pence)}
-                      {inv.credited_pence ? ` · Credited ${formatPence(inv.credited_pence)}` : ""} · Still owed {formatPence(Math.max(inv.balance_pence, 0))}
-                      {inv.credits_purchased ? ` · Includes ${inv.credits_purchased} session${inv.credits_purchased === 1 ? "" : "s"}` : ""}
-                      {inv.void_reason ? ` · Void: ${inv.void_reason}` : ""}
-                    </p>
+                    {inv.status === "void" ? (
+                      <p className="cs-meta">Void, nothing owed{inv.void_reason ? ` · ${inv.void_reason}` : ""}</p>
+                    ) : (
+                      <p className="cs-meta">
+                        Paid {formatPence(inv.paid_pence)}
+                        {inv.credited_pence ? ` · Credited ${formatPence(inv.credited_pence)}` : ""} · Still owed {formatPence(Math.max(inv.balance_pence, 0))}
+                        {inv.credits_purchased ? ` · Includes ${inv.credits_purchased} session${inv.credits_purchased === 1 ? "" : "s"}` : ""}
+                      </p>
+                    )}
                     {notes.map((c) => (
                       <p key={c.id} className="cs-meta">
                         Credit note {c.number} · {formatPence(c.amount_pence)} · {c.reason}

@@ -5,8 +5,9 @@ import { formatPence } from "@/lib/money";
 import { trackerStatus, TRACKER_LABEL, todayUk, type TrackerStatus } from "@/lib/billing-status";
 import { formatDate } from "@/lib/audit-schedule";
 
-const FILTERS: ["all" | TrackerStatus, string][] = [
+const FILTERS: ["all" | "owed" | TrackerStatus, string][] = [
   ["all", "All"],
+  ["owed", "Still owed"],
   ["unpaid", "Unpaid"],
   ["part_paid", "Part paid"],
   ["overdue", "Overdue"],
@@ -14,6 +15,8 @@ const FILTERS: ["all" | TrackerStatus, string][] = [
   ["draft", "Drafts"],
   ["void", "Void"],
 ];
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 // Every invoice in one list, filtered by where the money is.
 export default async function BillingPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -34,8 +37,10 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const rows = (await getInvoiceTracker()) ?? [];
   const today = todayUk();
   const withStatus = rows.map((r) => ({ ...r, st: trackerStatus(r, today) }));
-  const count = (f: string) => (f === "all" ? withStatus.length : withStatus.filter((r) => r.st === f).length);
-  const shown = status === "all" ? withStatus : withStatus.filter((r) => r.st === status);
+  const OWED: TrackerStatus[] = ["unpaid", "part_paid", "overdue"];
+  const matches = (f: string) => (r: (typeof withStatus)[number]) => f === "all" || (f === "owed" ? OWED.includes(r.st) : r.st === f);
+  const count = (f: string) => withStatus.filter(matches(f)).length;
+  const shown = withStatus.filter(matches(status));
   const live = withStatus.filter((r) => r.status === "issued");
   const owed = live.reduce((t, r) => t + Math.max(r.balance_pence, 0), 0);
   const overdue = live.filter((r) => r.st === "overdue").reduce((t, r) => t + r.balance_pence, 0);
@@ -51,8 +56,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
       </p>
 
       <div className="admin-stats">
-        <Link href="/coach/billing?status=unpaid"><b>{formatPence(owed)}</b><span>Owed</span><em>across {live.filter((r) => r.balance_pence > 0).length} invoices</em></Link>
-        <Link href="/coach/billing?status=overdue"><b>{formatPence(overdue)}</b><span>Overdue</span><em>{count("overdue")} invoices</em></Link>
+        <Link href="/coach/billing?status=owed"><b>{formatPence(owed)}</b><span>Owed</span><em>{plural(live.filter((r) => r.balance_pence > 0).length, "invoice")}</em></Link>
+        <Link href="/coach/billing?status=overdue"><b>{formatPence(overdue)}</b><span>Overdue</span><em>{plural(count("overdue"), "invoice")}</em></Link>
         <Link href="/coach/billing?status=draft"><b>{count("draft")}</b><span>Drafts</span><em>not issued yet</em></Link>
         <div><b>{notices}</b><span>“I’ve paid” to check</span><em>from members</em></div>
       </div>

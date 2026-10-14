@@ -75,6 +75,8 @@ function ActionForm({
           type="button"
           className={tone === "link" ? "au-text-link as-btn" : `btn btn-${tone} bl-btn`}
           onClick={() => {
+            // Start from today's figures, not the ones from when the page loaded.
+            setValues(initial());
             setOpen(true);
             setMsg(null);
           }}
@@ -163,7 +165,29 @@ export function NewInvoiceButton({ clientId }: { clientId: string }) {
 }
 
 export function RetryPdf({ invoiceId }: { invoiceId: string }) {
-  return <ActionForm open="Retry PDF" submit="Make the PDF" tone="link" fields={[]} run={() => makeInvoicePdf(invoiceId)} />;
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <span className="bl-act">
+      <button
+        type="button"
+        className="au-text-link as-btn"
+        disabled={pending}
+        onClick={async () => {
+          setPending(true);
+          setErr(null);
+          const r = await makeInvoicePdf(invoiceId);
+          setPending(false);
+          if (!r.ok) return setErr(r.message);
+          router.refresh();
+        }}
+      >
+        {pending ? "Making the PDF…" : "Retry PDF"}
+      </button>
+      {err ? <span className="clear-err" role="alert">{err}</span> : null}
+    </span>
+  );
 }
 
 export function PaymentLink({ invoiceId, clientId, url }: { invoiceId: string; clientId: string; url: string | null }) {
@@ -270,7 +294,7 @@ export function RecordPayment({ clientId, openInvoices }: { clientId: string; op
   if (!open) {
     return (
       <span className="bl-act">
-        <button type="button" className="btn btn-g bl-btn" onClick={() => { setOpen(true); setDone(null); }}>Record a bank payment</button>
+        <button type="button" className="btn btn-g bl-btn" onClick={() => { setV(blank()); setOpen(true); setDone(null); }}>Record a bank payment</button>
         {done ? <span className="bl-ok" role="status">{done}</span> : null}
       </span>
     );

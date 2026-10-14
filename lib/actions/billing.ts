@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, requireStaff } from "@/lib/actions/admin";
 import { parsePounds } from "@/lib/money";
-import { looksLikeDuplicate, settingsGaps } from "@/lib/billing-status";
+import { looksLikeDuplicate, settingsGaps, todayUk } from "@/lib/billing-status";
 import { renderInvoicePdf, type InvoiceForPdf } from "@/lib/invoice-pdf";
 import { createCheckout, stripeStatus } from "@/lib/stripe";
 
@@ -325,6 +325,7 @@ export async function saveDraftInvoice(input: {
   if (discount === null) return { ok: false, message: "Enter the discount in pounds, or leave it empty." };
   if (!Number.isInteger(input.credits) || input.credits < 0 || input.credits > 100) return { ok: false, message: "Session credits must be 0–100." };
   if (input.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)) return { ok: false, message: "Choose a valid due date." };
+  if (input.dueDate && input.dueDate < todayUk()) return { ok: false, message: "The due date can’t be in the past." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("save_invoice_draft", {
     p_invoice: input.invoiceId,
@@ -612,7 +613,7 @@ export async function getMyBilling(): Promise<MyBilling> {
       .select("id, status, number, issue_date, due_date, total_pence, pdf_status, payment_instructions, credits_purchased, void_reason")
       .eq("client_id", user.id)
       .neq("status", "draft")
-      .order("issue_date", { ascending: false }),
+      .order("sequence", { ascending: false }),
     supabase.rpc("credit_position", { p_client: user.id }),
     supabase.from("payment_notices").select("invoice_id, status").eq("client_id", user.id),
   ]);
