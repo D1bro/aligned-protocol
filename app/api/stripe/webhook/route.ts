@@ -43,6 +43,12 @@ export async function POST(req: Request) {
       outcome = "not a GBP amount";
     } else {
       const externalId = obj.payment_intent || obj.id!;
+      // The same payment can arrive under a new event id; it's only counted once.
+      const { data: known } = await db.from("receipts").select("id").eq("source", "payment_link").eq("external_id", externalId).maybeSingle();
+      if (known) {
+        await db.from("provider_events").insert({ id: event.id, provider: "stripe", type: event.type, invoice_id: invoiceId, outcome: "already recorded" });
+        return NextResponse.json({ received: true, outcome: "already recorded" });
+      }
       const { data: receiptId, error } = await db.rpc("record_receipt", {
         p_client: inv.client_id,
         p_source: "payment_link",
