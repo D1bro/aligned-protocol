@@ -3,6 +3,8 @@ import { formatDate } from "@/lib/audit-schedule";
 import { GuideVideo } from "@/components/audit/GuideVideo";
 import { clipFor } from "@/lib/learn-content";
 import { EnquiryForm } from "@/components/learn/EnquiryForm";
+import { getMyCoaching } from "@/lib/actions/member-coaching";
+import { MemberCoaching } from "@/components/coaching/MemberCoaching";
 
 const SESSIONS = [
   { title: "Get clear", text: "We look at your snapshot and your plan together, and agree the one thing that matters most right now." },
@@ -19,13 +21,15 @@ const STATUS: Record<string, string> = {
 
 // Coaching Studio: what coaching is here, the Focus Series pilot and an enquiry form.
 export default async function CoachingPage() {
-  const enquiries = await getMyEnquiries();
+  const [enquiries, coaching] = await Promise.all([getMyEnquiries(), getMyCoaching()]);
+  const coached = coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0);
   const open = enquiries.find((e) => e.status === "new" || e.status === "contacted") ?? null;
 
   return (
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Coaching</div>
-      <h1 className="au-latest-h">Work on it together.</h1>
+      {coached ? <MemberCoaching data={coaching} /> : null}
+      <h1 className="au-latest-h">{coached ? "About coaching" : "Work on it together."}</h1>
       <p className="draft-tag">Draft</p>
       <p className="lead">
         Coaching here is led by you. You bring what matters; we work out the next step together. It builds on your

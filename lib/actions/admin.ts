@@ -152,6 +152,8 @@ export async function getClientProfile(clientId: string) {
     .eq("id", clientId)
     .maybeSingle();
   if (!client || (me.role !== "admin" && client.coach_id !== me.id)) redirect("/coach/clients");
+  // Their own words, if they've written an identity statement (migration 0008).
+  const { data: identity } = await supabase.from("profiles").select("identity_statement").eq("id", clientId).maybeSingle();
 
   const [audits, plans, goals, checkIns, notes, reflections, enquiries, coach, summaries] = await Promise.all([
     supabase
@@ -176,6 +178,19 @@ export async function getClientProfile(clientId: string) {
     getClientSummaries(),
   ]);
 
+  // Coaching records (migration 0013). Private notes and transcripts are only
+  // returned by the database to the assigned coach or the note's author.
+  const [sessions, sessionEvents, sessionSummaries, commitments, updates, prepShares, relationship, coachNotes] = await Promise.all([
+    supabase.from("coaching_sessions").select("*").eq("client_id", clientId).order("scheduled_at", { ascending: false }),
+    supabase.from("coaching_session_events").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+    supabase.from("session_summaries").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+    supabase.from("session_commitments").select("*").eq("client_id", clientId).order("created_at", { ascending: true }),
+    supabase.from("commitment_updates").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+    supabase.from("prep_shares").select("*").eq("client_id", clientId).order("shared_at", { ascending: false }),
+    supabase.from("coaching_relationships").select("*").eq("client_id", clientId).maybeSingle(),
+    supabase.from("coach_notes").select("*").eq("client_id", clientId).order("updated_at", { ascending: false }),
+  ]);
+
   const auditIds = (audits.data ?? []).map((a) => a.id as string);
   const { data: responses } = auditIds.length
     ? await supabase.from("audit_responses").select("audit_id, life_area_id, satisfaction_score, note").in("audit_id", auditIds)
@@ -194,6 +209,18 @@ export async function getClientProfile(clientId: string) {
     reflections: (reflections.data ?? []) as { lesson_slug: string; reflection: string | null; completed_at: string | null; updated_at: string }[],
     enquiries: (enquiries.data ?? []) as Record<string, unknown>[],
     summary: summaries?.find((s) => s.id === clientId) ?? null,
+    identityStatement: ((identity?.identity_statement as string | null | undefined) ?? "").trim() || null,
+    coaching: {
+      available: !sessions.error,
+      sessions: (sessions.data ?? []) as import("@/lib/actions/sessions").CoachingSession[],
+      events: (sessionEvents.data ?? []) as import("@/lib/actions/sessions").SessionEvent[],
+      summaries: (sessionSummaries.data ?? []) as Record<string, unknown>[],
+      commitments: (commitments.data ?? []) as Record<string, unknown>[],
+      updates: (updates.data ?? []) as Record<string, unknown>[],
+      prepShares: (prepShares.data ?? []) as Record<string, unknown>[],
+      relationship: (relationship.data as { status: string; started_on: string | null } | null) ?? null,
+      notes: (coachNotes.data ?? []) as import("@/lib/actions/sessions").CoachNote[],
+    },
   };
 }
 
