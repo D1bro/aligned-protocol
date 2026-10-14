@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
-import { NavLinks, type MobileNavLink } from "@/components/ui/MobileNav";
+import { MobileNav, NavLinks, type MobileNavLink } from "@/components/ui/MobileNav";
 
 export const CLIENT_LINKS: MobileNavLink[] = [
   { group: "You", href: "/", label: "My profile", icon: "▦", match: (p) => p === "/" },
@@ -16,12 +16,16 @@ export const CLIENT_LINKS: MobileNavLink[] = [
   { group: "Grow", href: "/coaching", label: "Coaching", icon: "◉", match: (p) => p.startsWith("/coaching") },
 ];
 
-export function ClientNav({ fullName }: { fullName: string | null }) {
+// Coaches and admins can use the member pages too, with a way back to the console.
+const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "◆", match: () => false };
+const linksFor = (staff: boolean) => (staff ? [...CLIENT_LINKS, STAFF_LINK] : CLIENT_LINKS);
+
+export function ClientNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className="sb-nav">
-      <NavLinks links={CLIENT_LINKS} pathname={pathname} />
+      <NavLinks links={linksFor(staff)} pathname={pathname} />
       <div className="sb-q">
         <div className="sb-qm">&ldquo;</div>
         <div className="sb-qt">Alignment is the foundation. Action is the transformation.</div>
@@ -38,4 +42,8 @@ export function ClientNav({ fullName }: { fullName: string | null }) {
       ) : null}
     </nav>
   );
+}
+
+export function ClientMobileNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
+  return <MobileNav links={linksFor(staff)} fullName={fullName} />;
 }
