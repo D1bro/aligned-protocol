@@ -17,3 +17,6 @@ next-env.d.ts
 
 # Local test-account notes (test project only)
 supabase/test-setup/*.local.md
+
+# Test emails saved locally instead of sent (EMAIL_OUTBOX_DIR)
+/.outbox/

@@ -7,6 +7,8 @@ import { NoteEditor } from "../../NoteEditor";
 import { SessionActions } from "../../SessionActions";
 import { STATE_LABEL } from "../../SessionsTab";
 import { SummaryWorkspace } from "./SummaryWorkspace";
+import { EmailButton } from "../../EmailButton";
+import { getMessageJobs } from "@/lib/actions/messages";
 import { getTranscripts } from "@/lib/actions/summaries";
 
 // AI drafting can take a while; allow up to 5 minutes (Vercel caps this per plan).
@@ -73,6 +75,8 @@ export default async function SessionDeskPage({
   const local = toLocalParts(session.scheduled_at, session.timezone);
   const summaries = coaching.summaries.filter((x) => x.session_id === session.id);
   const transcripts = stage === "import" || stage === "review" ? await getTranscripts(session.id) : [];
+  const publishedHere = summaries.find((x) => x.status === "published") ?? null;
+  const jobs = stage === "review" && publishedHere ? await getMessageJobs(client.id) : [];
   const nextBookingSession =
     coaching.sessions
       .filter((x) => (x.state === "proposed" || x.state === "confirmed") && new Date(x.scheduled_at) > new Date(session.scheduled_at))
@@ -252,6 +256,22 @@ export default async function SessionDeskPage({
           sessionLabel={sessionLabel}
           nextBooking={nextBooking}
         />
+      ) : null}
+
+      {stage === "review" && publishedHere && client.email ? (
+        <section className="admin-card desk-email" aria-label="Email about the shared summary">
+          <h2>Let {firstName} know</h2>
+          <p className="admin-card-sub">
+            Sharing puts the notes in {firstName}&rsquo;s member area. Emailing is a separate step: the email says the notes are
+            ready and links to them. It doesn&rsquo;t include the notes themselves.
+          </p>
+          <EmailButton
+            kind="summary_shared"
+            refId={publishedHere.id as string}
+            label={`Email ${firstName} that the notes are ready`}
+            last={jobs.find((j) => j.dedupe_key.startsWith(`summary:${publishedHere.id}`)) ?? null}
+          />
+        </section>
       ) : null}
     </div>
   );

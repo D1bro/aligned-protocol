@@ -5,6 +5,8 @@ import { SessionBooking } from "./SessionBooking";
 import { SessionActions } from "./SessionActions";
 import { NoShowCredit } from "./BillingActions";
 import type { ClientBilling } from "@/lib/actions/billing";
+import type { MessageJob } from "@/lib/actions/messages";
+import { EmailButton } from "./EmailButton";
 
 type Profile = Awaited<ReturnType<typeof getClientProfile>>;
 
@@ -18,7 +20,7 @@ export const STATE_LABEL: Record<string, string> = {
 
 // Sessions: upcoming and past conversations, each with its own actions and
 // history. Counts never include cancelled or rescheduled-away times.
-export function SessionsTab({ p, billing }: { p: Profile; billing: ClientBilling | null }) {
+export function SessionsTab({ p, billing, jobs }: { p: Profile; billing: ClientBilling | null; jobs: MessageJob[] }) {
   const { sessions, events, summaries } = p.coaching;
   const now = Date.now();
   const upcoming = sessions
@@ -44,6 +46,13 @@ export function SessionsTab({ p, billing }: { p: Profile; billing: ClientBilling
     if (r?.status === "active") return s.state === "no_show" ? "Credit on hold — decide below" : "Paid session reserved";
     if (s.state === "confirmed") return "Not covered by a paid session";
     return null;
+  };
+
+  const firstName = p.client.full_name?.trim().split(/\s+/)[0] || "them";
+  // The email for a session is about its latest change (booked, moved, cancelled).
+  const emailKey = (s: (typeof sessions)[number]) => {
+    const latest = events.find((e) => e.session_id === s.id && ["created", "confirmed", "rescheduled", "cancelled"].includes(e.kind));
+    return `session:${s.id}:${latest?.id ?? s.state}`;
   };
 
   const row = (s: (typeof sessions)[number]) => {
@@ -73,6 +82,14 @@ export function SessionsTab({ p, billing }: { p: Profile; billing: ClientBilling
           <NoShowCredit sessionId={s.id} clientId={p.client.id} />
         ) : null}
         <SessionActions sessionId={s.id} state={s.state} localDate={local.date} localTime={local.time} />
+        {p.client.email && (s.state === "proposed" || s.state === "confirmed" || s.state === "cancelled") && !(s.state === "cancelled" && new Date(s.scheduled_at).getTime() < now) ? (
+          <EmailButton
+            kind="session_update"
+            refId={s.id}
+            label={`Email ${firstName} about this`}
+            last={jobs.find((j) => j.dedupe_key.startsWith(emailKey(s))) ?? null}
+          />
+        ) : null}
         {moves.length ? (
           <details className="cs-history">
             <summary>Moved {moves.length} time{moves.length === 1 ? "" : "s"}</summary>
@@ -104,6 +121,20 @@ export function SessionsTab({ p, billing }: { p: Profile; billing: ClientBilling
       {upcoming.length ? <ul className="cs-list">{upcoming.map(row)}</ul> : <p className="cp-sub">No upcoming sessions.</p>}
       <h2 className="sec-head">History</h2>
       {past.length ? <ul className="cs-list">{past.map(row)}</ul> : <p className="cp-sub">No past sessions yet.</p>}
+      {jobs.length ? (
+        <>
+          <h2 className="sec-head">Emails to {firstName}</h2>
+          <ul className="bl-ledger">
+            {jobs.map((j) => (
+              <li key={j.id}>
+                <span className={`cs-state ${j.status === "sent" ? "bl-paid" : j.status === "failed" ? "bl-overdue" : ""}`}>{j.status}</span>
+                <span>{j.subject}{j.error ? ` · ${j.error}` : ""}</span>
+                <span className="cs-meta">{new Date(j.sent_at ?? j.created_at).toLocaleString("en-GB", { timeZone: "Europe/London", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
     </section>
   );
 }

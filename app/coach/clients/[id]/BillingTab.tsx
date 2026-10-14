@@ -4,6 +4,8 @@ import { formatPence } from "@/lib/money";
 import { trackerStatus, TRACKER_LABEL, todayUk } from "@/lib/billing-status";
 import { formatDate } from "@/lib/audit-schedule";
 import { InvoiceEditor } from "./InvoiceEditor";
+import { EmailButton } from "./EmailButton";
+import type { MessageJob } from "@/lib/actions/messages";
 import {
   AdjustCredits,
   AllocatePayment,
@@ -25,7 +27,7 @@ const LEDGER_LABEL: Record<string, string> = { grant: "Paid for", use: "Used", a
 // Payments and invoices for one client: their invoices (drafts editable,
 // issued ones frozen), the money received and where it went, and their
 // session credits. Coaches without billing access see the credits only.
-export function BillingTab({ b, clientId }: { b: ClientBilling; clientId: string }) {
+export function BillingTab({ b, clientId, jobs, firstName }: { b: ClientBilling; clientId: string; jobs: MessageJob[]; firstName: string }) {
   if (!b.available) {
     return <p className="plan-note">Invoicing needs database update 0014. Run it, then reload.</p>;
   }
@@ -153,6 +155,9 @@ export function BillingTab({ b, clientId }: { b: ClientBilling; clientId: string
                           <RetryPdf invoiceId={inv.id} />
                         </>
                       ) : null}
+                      {inv.status === "issued" ? (
+                        <EmailButton kind="invoice_issued" refId={inv.id} label={`Email to ${firstName}`} last={jobs.find((j) => j.dedupe_key.startsWith(`invoice:${inv.id}`)) ?? null} />
+                      ) : null}
                       {inv.status === "issued" && inv.balance_pence > 0 ? (
                         <>
                           {b.stripe.ready ? <PaymentLink invoiceId={inv.id} clientId={clientId} url={inv.payment_link_url} /> : null}
@@ -217,6 +222,7 @@ export function BillingTab({ b, clientId }: { b: ClientBilling; clientId: string
                     {r.unapplied_pence > 0 ? <AllocatePayment receiptId={r.id} clientId={clientId} unapplied={r.unapplied_pence} openInvoices={open} /> : null}
                     {r.unapplied_pence > 0 ? <RefundPayment receiptId={r.id} clientId={clientId} unapplied={r.unapplied_pence} /> : null}
                     {!active.length && !refunds.length ? <ReversePayment receiptId={r.id} clientId={clientId} /> : null}
+                    <EmailButton kind="payment_received" refId={r.id} label="Email a receipt" last={jobs.find((j) => j.dedupe_key.startsWith(`receipt:${r.id}`)) ?? null} />
                   </div>
                 ) : null}
               </li>

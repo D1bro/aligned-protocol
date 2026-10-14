@@ -1155,3 +1155,8 @@ a.admin-row:hover { background: var(--bg3); }
   .bl-amt { text-align: left; }
   .bl-credit-facts { grid-template-columns: 1fr; }
 }
+
+/* Emails to clients */
+.em-preview { margin-top: .4rem; }
+.em-body { white-space: pre-wrap; font-family: var(--font-dm-sans), 'DM Sans', sans-serif; font-size: 13px; line-height: 1.6; color: var(--text2); background: var(--bg); border: 1px solid var(--bdr2); border-radius: 10px; padding: .8rem 1rem; max-height: 320px; overflow: auto; }
+.desk-email { margin-top: 1.2rem; display: grid; gap: .5rem; }

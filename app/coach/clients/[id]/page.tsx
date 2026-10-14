@@ -16,6 +16,7 @@ import { ClientSettings } from "./ClientSettings";
 import { ResetPasswordButton } from "./ResetPasswordButton";
 import { BillingTab } from "./BillingTab";
 import { getClientBilling } from "@/lib/actions/billing";
+import { getMessageJobs } from "@/lib/actions/messages";
 
 const TABS = [
   ["overview", "Overview"],
@@ -49,6 +50,7 @@ export default async function ClientProfilePage({
   const isAdmin = viewer.role === "admin";
   const staff = isAdmin && tab === "settings" ? await getStaff() : [];
   const billing = tab === "billing" || tab === "sessions" ? await getClientBilling(id) : null;
+  const jobs = tab === "billing" || tab === "sessions" ? await getMessageJobs(id) : [];
 
   const scoresFor = (auditId: string) => {
     const rs = p.responses.filter((r) => r.audit_id === auditId);
@@ -123,7 +125,7 @@ export default async function ClientProfilePage({
         <OverviewTab p={p} firstName={firstName} mainGoal={mainGoal} focusNote={focusNote} nextSession={nextAny} />
       ) : null}
 
-      {tab === "sessions" ? <SessionsTab p={p} billing={billing} /> : null}
+      {tab === "sessions" ? <SessionsTab p={p} billing={billing} jobs={jobs} /> : null}
 
       {tab === "goals" ? (
         latest ? (
@@ -286,7 +288,7 @@ export default async function ClientProfilePage({
 
       {tab === "notes" ? <CoachNotesTab p={p} /> : null}
 
-      {tab === "billing" && billing ? <BillingTab b={billing} clientId={client.id} /> : null}
+      {tab === "billing" && billing ? <BillingTab b={billing} clientId={client.id} jobs={jobs} firstName={firstName} /> : null}
 
       {tab === "settings" && isAdmin ? (
         <section className="admin-card" aria-label="Settings">

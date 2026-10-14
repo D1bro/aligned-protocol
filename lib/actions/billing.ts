@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, requireStaff } from "@/lib/actions/admin";
@@ -9,6 +8,7 @@ import { parsePounds } from "@/lib/money";
 import { looksLikeDuplicate, settingsGaps, todayUk } from "@/lib/billing-status";
 import { renderInvoicePdf, type InvoiceForPdf } from "@/lib/invoice-pdf";
 import { createCheckout, stripeStatus } from "@/lib/stripe";
+import { requestOrigin } from "@/lib/request-origin";
 
 // Invoices, payments and session credits. Every change that touches money or
 // credits is a database function (migration 0014) that checks the caller can
@@ -417,7 +417,7 @@ export async function createPaymentLink(invoiceId: string, clientId: string): Pr
     number: inv.number!,
     amountPence: balance,
     customerEmail: (inv.customer as { email?: string } | null)?.email ?? null,
-    returnUrl: `${await origin()}/coaching`,
+    returnUrl: `${await requestOrigin()}/coaching`,
   });
   if (!r.ok) return r;
   await supabase.from("invoices").update({ payment_link_url: r.url, payment_link_at: new Date().toISOString() }).eq("id", invoiceId);
@@ -425,12 +425,6 @@ export async function createPaymentLink(invoiceId: string, clientId: string): Pr
   return { ok: true, url: r.url };
 }
 
-async function origin() {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "www.the-aligned.com";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
 
 // Payments ----------------------------------------------------------------
 
@@ -673,6 +667,6 @@ export async function payInvoiceByCard(invoiceId: string): Promise<Result & { ur
     number: inv.number!,
     amountPence: balance,
     customerEmail: user.email ?? null,
-    returnUrl: `${await origin()}/coaching`,
+    returnUrl: `${await requestOrigin()}/coaching`,
   });
 }
