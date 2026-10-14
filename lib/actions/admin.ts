@@ -30,7 +30,11 @@ export async function requireAdmin() {
 export type Metrics = {
   members: number;
   members_30d: number;
+  // Guests who started (answered at least one question) / finished the audit.
   guests: number;
+  guests_finished?: number;
+  // Guest sign-ins with nothing started (older visits, crawlers, previews).
+  guest_signins_empty?: number;
   audits: number;
   audits_30d: number;
   people_audited: number;

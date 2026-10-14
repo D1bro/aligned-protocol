@@ -57,7 +57,7 @@ export default async function OverviewPage() {
       </p>
 
       <div className="admin-stats">
-        <Link href="/coach/clients"><b>{m.members}</b><span>Members</span><em>+{m.members_30d} in 30 days · {m.guests} guests</em></Link>
+        <Link href="/coach/clients"><b>{m.members}</b><span>Members</span><em>+{m.members_30d} in 30 days · {m.guests} guests started the audit{m.guests_finished !== undefined ? `, ${m.guests_finished} finished` : ""}</em></Link>
         <Link href="/coach/clients?view=audits"><b>{m.audits}</b><span>Audits completed</span><em>+{m.audits_30d} in 30 days</em></Link>
         <Link href="/coach/clients?view=checkins"><b>{m.checkins}</b><span>Goal check-ins</span><em>+{m.checkins_30d} in 30 days</em></Link>
         <Link href="/coach/clients?view=plans&status=completed"><b>{m.goals_done}</b><span>Goals completed</span><em>by members</em></Link>

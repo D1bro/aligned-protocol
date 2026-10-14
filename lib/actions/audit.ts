@@ -67,6 +67,21 @@ export async function startOrResumeAudit(): Promise<string> {
   return created.id;
 }
 
+// "Begin my audit": the only place a guest sign-in is created. Visiting the
+// welcome page creates nothing, so link previews, crawlers and people who
+// just look don't become accounts. A form post, which crawlers don't send.
+export async function beginAudit() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) redirect("/login");
+  }
+  redirect("/audit/1");
+}
+
 // The current unfinished audit, if any, with its answers — without creating
 // one (unlike startOrResumeAudit). Used where just looking shouldn't start
 // a new audit.
