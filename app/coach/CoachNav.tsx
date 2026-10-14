@@ -3,6 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
+import { MobileNav, type MobileNavLink } from "@/components/ui/MobileNav";
+
+const COACH_LINKS: MobileNavLink[] = [
+  { href: "/coach", label: "Client Roster", icon: "▦", match: (p) => p === "/coach" || p.startsWith("/coach/clients") },
+  { href: "/", label: "My member area", icon: "◎", match: () => false },
+];
+
+// Defined here (a browser component) because functions can't be passed from
+// the server layout to a browser component.
+export function CoachMobileNav({ fullName }: { fullName: string | null }) {
+  return <MobileNav links={COACH_LINKS} fullName={fullName} />;
+}
 
 export function CoachNav({ fullName }: { fullName: string | null }) {
   const pathname = usePathname();
@@ -12,6 +24,9 @@ export function CoachNav({ fullName }: { fullName: string | null }) {
     <nav className="sb-nav">
       <Link href="/coach" className={`ni ${active ? "active" : ""}`}>
         <span aria-hidden="true">▦</span> Client Roster
+      </Link>
+      <Link href="/" className="ni">
+        <span aria-hidden="true">◎</span> My member area
       </Link>
       <div className="sb-q">
         <div className="sb-qm">&ldquo;</div>

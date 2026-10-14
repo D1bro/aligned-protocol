@@ -2,13 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/session";
 import { Logo } from "@/components/ui/Logo";
-import { MobileNav } from "@/components/ui/MobileNav";
-import { ClientNav, CLIENT_LINKS } from "./ClientNav";
+import { ClientNav, ClientMobileNav } from "./ClientNav";
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  if (profile.role === "coach" || profile.role === "admin") redirect("/");
+  // Coaches and admins can use the member pages too (they land in /coach
+  // after signing in). Redirecting them to "/" here looped forever.
+  const staff = profile.role === "coach" || profile.role === "admin";
 
   if (profile.isAnonymous) {
     // Guests taking the audit before creating an account can only ever land
@@ -36,9 +37,9 @@ export default async function ClientLayout({ children }: { children: React.React
     <div className="shell">
       <aside className="sidebar">
         <Logo subtitle="Protocol" />
-        <ClientNav fullName={profile.full_name} />
+        <ClientNav fullName={profile.full_name} staff={staff} />
       </aside>
-      <MobileNav links={CLIENT_LINKS} fullName={profile.full_name} />
+      <ClientMobileNav fullName={profile.full_name} staff={staff} />
       <div className="main">{children}</div>
     </div>
   );
