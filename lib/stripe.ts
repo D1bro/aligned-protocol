@@ -1,14 +1,21 @@
 import "server-only";
+import { stripeMode, type StripeMode } from "@/lib/stripe-mode";
 
-// Card payments through Stripe Checkout, test mode only for now. Without a
-// test key the app says "card payments aren't set up" and bank transfer
-// still works. Live keys are refused until launch is agreed.
+// Card payments through Stripe Checkout. Without a key the app says "card
+// payments aren't set up" and bank transfer still works. Test keys work on
+// your Mac and previews, never on the live site; live keys only work once
+// STRIPE_ALLOW_LIVE=true is set (see lib/stripe-mode.ts).
+
+export function currentStripeMode(): StripeMode {
+  return stripeMode(process.env.STRIPE_SECRET_KEY ?? "", {
+    allowLive: process.env.STRIPE_ALLOW_LIVE === "true",
+    production: process.env.VERCEL_ENV === "production",
+  });
+}
 
 export function stripeStatus(): { ready: boolean; reason?: string } {
-  const key = process.env.STRIPE_SECRET_KEY ?? "";
-  if (!key) return { ready: false, reason: "Card payments aren’t set up yet (no Stripe key)." };
-  if (!/^(sk|rk)_test_/.test(key)) return { ready: false, reason: "Only Stripe test keys are allowed until launch." };
-  return { ready: true };
+  const m = currentStripeMode();
+  return m.ready ? { ready: true } : { ready: false, reason: m.reason };
 }
 
 // A one-off Checkout page for what's still owed on an invoice.
