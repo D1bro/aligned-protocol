@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getInProgressAudit, getAuditWithResponses, getLifeAreas, getRecentCompletedAudits } from "@/lib/actions/audit";
+import { beginAudit, getInProgressAudit, getAuditWithResponses, getLifeAreas, getRecentCompletedAudits } from "@/lib/actions/audit";
 import { getPlanState } from "@/lib/actions/clear";
 import { PlanCard } from "@/components/audit/PlanCard";
 import { createClient } from "@/lib/supabase/server";
@@ -19,9 +19,13 @@ const EXAMPLE_SCORES = [8, 8, 8, 4, 8, 5, 8, 5, 6, 8];
 // Someone brand new sees the welcome and intro video.
 export default async function AuditEntryPage({ searchParams }: { searchParams: Promise<{ intro?: string }> }) {
   const { intro } = await searchParams;
+  // Someone who hasn't pressed "Begin" yet has no sign-in at all.
+  const {
+    data: { user },
+  } = await (await createClient()).auth.getUser();
   const [inProgress, recent, areas] = await Promise.all([
-    getInProgressAudit(),
-    getRecentCompletedAudits(2),
+    user ? getInProgressAudit() : Promise.resolve(null),
+    user ? getRecentCompletedAudits(2) : Promise.resolve([]),
     getLifeAreas(),
   ]);
   const responses = inProgress?.responses ?? [];
@@ -64,7 +68,9 @@ export default async function AuditEntryPage({ searchParams }: { searchParams: P
             {responses.length > 0 ? (
               <Link href={`/audit/${resumeStep}`} className="btn btn-p">Continue my audit →</Link>
             ) : (
-              <Link href="/audit/1" className="btn btn-p">Begin my audit →</Link>
+              <form action={beginAudit}>
+                <button type="submit" className="btn btn-p">Begin my audit →</button>
+              </form>
             )}
             <a href="#example" className="au-text-link">See an example snapshot</a>
           </div>

@@ -2,12 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
-// /api/cron and /api/reminders check their own secret or token.
-const PUBLIC_PATHS = ["/login", "/reset-password", "/api/cron", "/api/reminders"];
+// /api/cron and /api/reminders check their own secret or token; the Stripe
+// webhook checks Stripe's signature.
+const PUBLIC_PATHS = ["/login", "/reset-password", "/api/cron", "/api/reminders", "/api/stripe/webhook"];
 
 // Anyone can start and finish the audit without an account. A real (but
 // temporary, nameless) account is created behind the scenes via Supabase's
-// anonymous sign-in, so the answers still live in the real database under
+// anonymous sign-in when they press "Begin my audit" (lib/actions/audit.ts), so the answers still live in the real database under
 // the same security rules as everyone else — nothing is faked or stored
 // client-side. It only becomes a permanent, findable account if the person
 // chooses to save it (see lib/actions/auth.ts's signUp, which converts this
@@ -61,19 +62,17 @@ export async function updateSession(request: NextRequest) {
   const isGuestPath = GUEST_PATHS.some((p) => path === p || path.startsWith(p + "/"));
 
   if (isGuestPath) {
-    if (!user) {
-      // First visit to the audit with no session at all — mint a temporary
-      // anonymous account so the answers have somewhere real to save. The
-      // setAll callback above writes this new session's cookies onto
-      // `response` automatically, same as it does for normal token refresh.
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/login";
-        return NextResponse.redirect(url);
-      }
+    // The welcome page (/audit) needs no session. The temporary guest
+    // sign-in is only created when someone presses "Begin my audit" (see
+    // beginAudit), so link previews, crawlers and people who just look
+    // don't become accounts. Any other audit page without a session goes
+    // back to the welcome page.
+    if (!user && path !== "/audit") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/audit";
+      url.search = "";
+      return NextResponse.redirect(url);
     }
-    // A session already exists (anonymous or real) — let them through either way.
     return response;
   }
 

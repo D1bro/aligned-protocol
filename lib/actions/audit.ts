@@ -63,8 +63,38 @@ export async function startOrResumeAudit(): Promise<string> {
     .select("id")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // Two requests started the audit at the same moment (e.g. a double
+    // load): the other one won the unique sequence number, so use its row.
+    if (error.code === "23505") {
+      const { data: raced } = await supabase
+        .from("audits")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("status", "in_progress")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (raced) return raced.id;
+    }
+    throw error;
+  }
   return created.id;
+}
+
+// "Begin my audit": the only place a guest sign-in is created. Visiting the
+// welcome page creates nothing, so link previews, crawlers and people who
+// just look don't become accounts. A form post, which crawlers don't send.
+export async function beginAudit() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) redirect("/login");
+  }
+  redirect("/audit/1");
 }
 
 // The current unfinished audit, if any, with its answers — without creating

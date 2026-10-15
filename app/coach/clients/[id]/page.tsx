@@ -8,17 +8,23 @@ import { cleanReality } from "@/lib/clear-text";
 import { formatDate } from "@/lib/audit-schedule";
 import { PATHS } from "@/lib/learn-content";
 import { stageOf } from "@/lib/console-views";
-import { SessionNoteForm } from "./SessionNoteForm";
+import { OverviewTab } from "./OverviewTab";
+import { SessionsTab } from "./SessionsTab";
+import { CoachNotesTab } from "./CoachNotesTab";
+import { formatSessionTime } from "@/lib/time";
 import { ClientSettings } from "./ClientSettings";
 import { ResetPasswordButton } from "./ResetPasswordButton";
+import { BillingTab } from "./BillingTab";
+import { getClientBilling } from "@/lib/actions/billing";
+import { getMessageJobs } from "@/lib/actions/messages";
 
 const TABS = [
-  ["snapshot", "Snapshot"],
-  ["audits", "Audits"],
-  ["plan", "Plan and goals"],
-  ["checkins", "Check-ins"],
+  ["overview", "Overview"],
+  ["sessions", "Sessions"],
+  ["goals", "Goals and audit"],
+  ["notes", "Coach notes"],
+  ["billing", "Payments and invoices"],
   ["learning", "Learning"],
-  ["notes", "Notes"],
   ["settings", "Settings"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -38,11 +44,13 @@ export default async function ClientProfilePage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const tab: Tab = (TABS.map((t) => t[0]) as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "snapshot";
+  const tab: Tab = (TABS.map((t) => t[0]) as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "overview";
   const [p, areas] = await Promise.all([getClientProfile(id), getLifeAreas()]);
   const { viewer, client, summary } = p;
   const isAdmin = viewer.role === "admin";
   const staff = isAdmin && tab === "settings" ? await getStaff() : [];
+  const billing = tab === "billing" || tab === "sessions" ? await getClientBilling(id) : null;
+  const jobs = tab === "billing" || tab === "sessions" ? await getMessageJobs(id) : [];
 
   const scoresFor = (auditId: string) => {
     const rs = p.responses.filter((r) => r.audit_id === auditId);
@@ -60,6 +68,17 @@ export default async function ClientProfilePage({
   const mainPlan = mainGoal ? p.plans.find((pl) => pl.id === mainGoal.clear_plan_id) ?? null : null;
   const goalTitle = new Map(p.goals.map((g) => [g.id as string, str(g.goal_title) ?? "Goal"]));
   const name = client.full_name?.trim() || client.email || "Guest (no account)";
+  const firstName = client.full_name?.trim().split(/\s+/)[0] || "them";
+  const { sessions } = p.coaching;
+  const upcoming = sessions
+    .filter((x) => x.state === "proposed" || x.state === "confirmed")
+    .sort((x, y) => new Date(x.scheduled_at).getTime() - new Date(y.scheduled_at).getTime());
+  const nextConfirmed = upcoming.find((x) => x.state === "confirmed" && new Date(x.scheduled_at).getTime() >= Date.now()) ?? null;
+  const nextAny = upcoming.find((x) => new Date(x.scheduled_at).getTime() >= Date.now()) ?? upcoming[0] ?? null;
+  const held = sessions.filter((x) => x.state === "held").length;
+  const bookedAhead = sessions.filter((x) => x.state === "confirmed" && new Date(x.scheduled_at).getTime() >= Date.now()).length;
+  const focusIdx = mainGoal ? areas.findIndex((a) => a.name === str(mainGoal.focus_area)) : -1;
+  const focusNote = focusIdx !== -1 ? latestRows[focusIdx]?.note ?? null : null;
   const initials = name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
@@ -76,29 +95,39 @@ export default async function ClientProfilePage({
             {client.email ?? "Guest — no account yet"} · Joined {formatDate(client.created_at)} ·{" "}
             {p.coachName ? `Coach: ${p.coachName}` : "No coach"}
             {client.role !== "client" ? ` · ${client.role}` : ""}
+            {p.coaching.relationship ? ` · Coaching: ${p.coaching.relationship.status}` : ""}
           </p>
         </div>
       </header>
 
       <div className="cp-facts">
+        <div><span>Current focus</span><b>{str(mainGoal?.focus_area) ?? "—"}</b></div>
+        <div><span>Next confirmed</span><b>{nextConfirmed ? formatSessionTime(nextConfirmed.scheduled_at, nextConfirmed.timezone) : "—"}</b></div>
+        <div><span>Sessions held</span><b>{held}</b></div>
+        <div><span>Booked ahead</span><b>{bookedAhead}</b></div>
         <div><span>Stage</span><b>{summary ? stageOf(summary) : "—"}</b></div>
-        <div><span>Latest audit</span><b>{latest ? `${latest.total_score ?? 0}/100` : "—"}</b></div>
-        <div><span>Main goal</span><b>{str(mainGoal?.focus_area) ?? "—"}</b></div>
-        <div><span>Goal check-ins</span><b>{p.checkIns.length}</b></div>
-        <div><span>Lessons</span><b>{summary?.lessons_done ?? 0} of {LESSONS.length}</b></div>
         <div><span>Last active</span><b>{summary?.last_active_at ? formatDate(summary.last_active_at) : "—"}</b></div>
       </div>
+      {!p.coaching.available ? (
+        <p className="plan-note">Sessions and coach notes need database update 0013. Run it, then reload.</p>
+      ) : null}
 
       <nav className="admin-tabs cp-tabs" aria-label="Client sections">
         {TABS.filter(([k]) => k !== "settings" || isAdmin).map(([k, label]) => (
           <Link key={k} href={`/coach/clients/${client.id}?tab=${k}`} aria-current={tab === k ? "page" : undefined}>
             {label}
-            {k === "audits" ? ` ${p.audits.length}` : k === "checkins" ? ` ${p.checkIns.length}` : k === "notes" && p.notes.length ? ` ${p.notes.length}` : ""}
+            {k === "sessions" && sessions.length ? ` ${sessions.length}` : ""}
           </Link>
         ))}
       </nav>
 
-      {tab === "snapshot" ? (
+      {tab === "overview" ? (
+        <OverviewTab p={p} firstName={firstName} mainGoal={mainGoal} focusNote={focusNote} nextSession={nextAny} />
+      ) : null}
+
+      {tab === "sessions" ? <SessionsTab p={p} billing={billing} jobs={jobs} /> : null}
+
+      {tab === "goals" ? (
         latest ? (
           <section aria-label="Latest audit">
             <p className="cp-sub">
@@ -141,7 +170,7 @@ export default async function ClientProfilePage({
         )
       ) : null}
 
-      {tab === "audits" ? (
+      {tab === "goals" ? (
         p.audits.length ? (
           <AuditsTab
             audits={p.audits}
@@ -156,7 +185,7 @@ export default async function ClientProfilePage({
         )
       ) : null}
 
-      {tab === "plan" ? (
+      {tab === "goals" ? (
         p.goals.length ? (
           <section aria-label="Plan and goals">
             {mainGoal ? (
@@ -210,8 +239,10 @@ export default async function ClientProfilePage({
         )
       ) : null}
 
-      {tab === "checkins" ? (
+      {tab === "goals" ? (
         p.checkIns.length ? (
+          <>
+          <h2 className="sec-head">Goal check-ins</h2>
           <ol className="checkin-list">
             {p.checkIns.map((c) => (
               <li key={c.id as string}>
@@ -227,6 +258,7 @@ export default async function ClientProfilePage({
               </li>
             ))}
           </ol>
+          </>
         ) : (
           <Empty text="No goal check-ins yet." />
         )
@@ -254,33 +286,9 @@ export default async function ClientProfilePage({
         </section>
       ) : null}
 
-      {tab === "notes" ? (
-        <section aria-label="Notes">
-          {p.enquiries.length ? (
-            <p className="plan-note">
-              Coaching enquiry {formatDate(p.enquiries[0].created_at as string)} · <b>{p.enquiries[0].status as string}</b>
-              {str(p.enquiries[0].wants_help) ? ` · “${str(p.enquiries[0].wants_help)}”` : ""} · <Link href="/coach/enquiries">Enquiries</Link>
-            </p>
-          ) : null}
-          <SessionNoteForm clientId={client.id} />
-          {p.notes.length ? (
-            <ol className="checkin-list">
-              {p.notes.map((n) => (
-                <li key={n.id as string}>
-                  <div className="checkin-head">
-                    <b>{formatDate(n.session_date as string)}</b>
-                    {str(n.focus) ? <span>{str(n.focus)}</span> : null}
-                  </div>
-                  <p>{str(n.note)}</p>
-                  {str(n.next_actions) ? <p><span>Next:</span> {str(n.next_actions)}</p> : null}
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <Empty text="No session notes yet." />
-          )}
-        </section>
-      ) : null}
+      {tab === "notes" ? <CoachNotesTab p={p} /> : null}
+
+      {tab === "billing" && billing ? <BillingTab b={billing} clientId={client.id} jobs={jobs} firstName={firstName} /> : null}
 
       {tab === "settings" && isAdmin ? (
         <section className="admin-card" aria-label="Settings">

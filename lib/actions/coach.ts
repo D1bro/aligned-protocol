@@ -90,33 +90,6 @@ export async function getMyClients(): Promise<ClientRow[]> {
   });
 }
 
-export async function addSessionNote(input: {
-  clientId: string;
-  sessionDate: string;
-  focus: string;
-  note: string;
-  nextActions: string;
-  clientMood: number | null;
-}): Promise<ActionResult> {
-  const coach = await requireCoach();
-  if (!input.note.trim()) return { ok: false, message: "Add a note before saving." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("session_notes").insert({
-    client_id: input.clientId,
-    coach_id: coach.id,
-    session_date: input.sessionDate,
-    focus: input.focus || null,
-    note: input.note,
-    next_actions: input.nextActions || null,
-    client_mood: input.clientMood,
-  });
-  if (error) return { ok: false, message: error.message };
-
-  revalidatePath(`/coach/clients/${input.clientId}`);
-  return { ok: true };
-}
-
 // THE fix for the original security bug: the old coach.html called
 // supabase.auth.signUp() straight from the coach's own browser tab, which
 // replaces whatever session is active — silently signing the coach out and

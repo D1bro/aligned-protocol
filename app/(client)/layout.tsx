@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/session";
 import { Logo } from "@/components/ui/Logo";
 import { ClientNav, ClientMobileNav } from "./ClientNav";
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
-  if (!profile) redirect("/login");
+  // No sign-in at all: only the audit welcome page gets here (middleware sends
+  // every other member page to /login), so show it with the guest bar.
+  if (!profile) return <GuestShell>{children}</GuestShell>;
   // Coaches and admins can use the member pages too (they land in /coach
   // after signing in). Redirecting them to "/" here looped forever.
   const staff = profile.role === "coach" || profile.role === "admin";
@@ -20,17 +21,7 @@ export default async function ClientLayout({ children }: { children: React.React
     // The thin bar below is the only nav they get — mainly so a returning
     // client who lands here by mistake (or just wants to check) has an
     // obvious way to sign in instead of being stuck taking the audit again.
-    return (
-      <div className="shell">
-        <div className="main no-sidebar">
-          <div className="guest-bar">
-            <span>Taking the Aligned Audit as a guest</span>
-            <Link href="/login" className="guest-bar-link">Already have an account? Sign in</Link>
-          </div>
-          {children}
-        </div>
-      </div>
-    );
+    return <GuestShell>{children}</GuestShell>;
   }
 
   return (
@@ -41,6 +32,20 @@ export default async function ClientLayout({ children }: { children: React.React
       </aside>
       <ClientMobileNav fullName={profile.full_name} staff={staff} />
       <div className="main">{children}</div>
+    </div>
+  );
+}
+
+function GuestShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="shell">
+      <div className="main no-sidebar">
+        <div className="guest-bar">
+          <span>Taking the Aligned Audit as a guest</span>
+          <Link href="/login" className="guest-bar-link">Already have an account? Sign in</Link>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
