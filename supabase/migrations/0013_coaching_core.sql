@@ -41,8 +41,10 @@ create table if not exists public.coaching_relationships (
   updated_at  timestamptz not null default now()
 );
 alter table public.coaching_relationships enable row level security;
+drop policy if exists "coaching_relationships: staff" on public.coaching_relationships;
 create policy "coaching_relationships: staff" on public.coaching_relationships for all
   using (public.is_my_client(client_id)) with check (public.is_my_client(client_id));
+drop policy if exists "coaching_relationships: member reads own" on public.coaching_relationships;
 create policy "coaching_relationships: member reads own" on public.coaching_relationships for select
   using (client_id = auth.uid());
 
@@ -75,10 +77,13 @@ create table if not exists public.coaching_sessions (
 );
 create index if not exists coaching_sessions_client_idx on public.coaching_sessions (client_id, scheduled_at desc);
 alter table public.coaching_sessions enable row level security;
+drop policy if exists "coaching_sessions: staff" on public.coaching_sessions;
 create policy "coaching_sessions: staff" on public.coaching_sessions for all
   using (public.is_my_client(client_id)) with check (public.is_my_client(client_id));
+drop policy if exists "coaching_sessions: member reads own" on public.coaching_sessions;
 create policy "coaching_sessions: member reads own" on public.coaching_sessions for select
   using (client_id = auth.uid());
+drop trigger if exists coaching_sessions_touch on public.coaching_sessions;
 create trigger coaching_sessions_touch before update on public.coaching_sessions
   for each row execute function public.touch_updated_at();
 
@@ -102,6 +107,7 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists coaching_sessions_refs on public.coaching_sessions;
 create trigger coaching_sessions_refs before insert or update on public.coaching_sessions
   for each row execute function public.coaching_sessions_check_refs();
 
@@ -117,6 +123,7 @@ create table if not exists public.coaching_session_events (
   created_at  timestamptz not null default now()
 );
 alter table public.coaching_session_events enable row level security;
+drop policy if exists "coaching_session_events: staff" on public.coaching_session_events;
 create policy "coaching_session_events: staff" on public.coaching_session_events for all
   using (public.is_my_client(client_id)) with check (public.is_my_client(client_id) and actor_id = auth.uid());
 
@@ -135,9 +142,11 @@ create table if not exists public.coach_notes (
 );
 create unique index if not exists coach_notes_one_per_session on public.coach_notes (session_id, author_id) where session_id is not null;
 alter table public.coach_notes enable row level security;
+drop policy if exists "coach_notes: author or assigned coach" on public.coach_notes;
 create policy "coach_notes: author or assigned coach" on public.coach_notes for all
   using (author_id = auth.uid() or public.is_assigned_coach(client_id))
   with check (author_id = auth.uid() and public.is_my_client(client_id));
+drop trigger if exists coach_notes_touch on public.coach_notes;
 create trigger coach_notes_touch before update on public.coach_notes
   for each row execute function public.touch_updated_at();
 
@@ -166,6 +175,7 @@ create table if not exists public.session_transcripts (
   unique (session_id, content_hash)
 );
 alter table public.session_transcripts enable row level security;
+drop policy if exists "session_transcripts: author or assigned coach" on public.session_transcripts;
 create policy "session_transcripts: author or assigned coach" on public.session_transcripts for all
   using (created_by = auth.uid() or public.is_assigned_coach(client_id))
   with check (created_by = auth.uid() and public.is_my_client(client_id));
@@ -196,8 +206,10 @@ create table if not exists public.session_summaries (
   unique (session_id, revision)
 );
 alter table public.session_summaries enable row level security;
+drop policy if exists "session_summaries: staff" on public.session_summaries;
 create policy "session_summaries: staff" on public.session_summaries for all
   using (public.is_my_client(client_id)) with check (public.is_my_client(client_id));
+drop policy if exists "session_summaries: member reads published" on public.session_summaries;
 create policy "session_summaries: member reads published" on public.session_summaries for select
   using (client_id = auth.uid() and status = 'published');
 
@@ -230,6 +242,7 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists session_summaries_guard on public.session_summaries;
 create trigger session_summaries_guard before update on public.session_summaries
   for each row execute function public.session_summaries_guard();
 
@@ -250,8 +263,10 @@ create table if not exists public.session_commitments (
   unique (summary_id, position)
 );
 alter table public.session_commitments enable row level security;
+drop policy if exists "session_commitments: staff" on public.session_commitments;
 create policy "session_commitments: staff" on public.session_commitments for all
   using (public.is_my_client(client_id)) with check (public.is_my_client(client_id));
+drop policy if exists "session_commitments: member reads own" on public.session_commitments;
 create policy "session_commitments: member reads own" on public.session_commitments for select
   using (client_id = auth.uid() and visible_to_client);
 
@@ -266,6 +281,7 @@ create table if not exists public.commitment_updates (
   created_at         timestamptz not null default now()
 );
 alter table public.commitment_updates enable row level security;
+drop policy if exists "commitment_updates: member own" on public.commitment_updates;
 create policy "commitment_updates: member own" on public.commitment_updates for all
   using (client_id = auth.uid())
   with check (
@@ -273,6 +289,7 @@ create policy "commitment_updates: member own" on public.commitment_updates for 
     and exists (select 1 from public.session_commitments c
                 where c.id = commitment_id and c.client_id = auth.uid() and c.visible_to_client)
   );
+drop policy if exists "commitment_updates: staff read" on public.commitment_updates;
 create policy "commitment_updates: staff read" on public.commitment_updates for select
   using (public.is_my_client(client_id));
 
@@ -288,6 +305,7 @@ create table if not exists public.prep_drafts (
   unique (client_id, session_id)
 );
 alter table public.prep_drafts enable row level security;
+drop policy if exists "prep_drafts: member own" on public.prep_drafts;
 create policy "prep_drafts: member own" on public.prep_drafts for all
   using (client_id = auth.uid()) with check (client_id = auth.uid());
 
@@ -299,12 +317,14 @@ create table if not exists public.prep_shares (
   shared_at   timestamptz not null default now()
 );
 alter table public.prep_shares enable row level security;
+drop policy if exists "prep_shares: member own" on public.prep_shares;
 create policy "prep_shares: member own" on public.prep_shares for all
   using (client_id = auth.uid())
   with check (
     client_id = auth.uid()
     and (session_id is null or exists (select 1 from public.coaching_sessions s where s.id = session_id and s.client_id = auth.uid()))
   );
+drop policy if exists "prep_shares: staff read" on public.prep_shares;
 create policy "prep_shares: staff read" on public.prep_shares for select
   using (public.is_my_client(client_id));
 
@@ -320,8 +340,10 @@ create table if not exists public.audit_events (
   created_at   timestamptz not null default now()
 );
 alter table public.audit_events enable row level security;
+drop policy if exists "audit_events: staff write own" on public.audit_events;
 create policy "audit_events: staff write own" on public.audit_events for insert
   with check (actor_id = auth.uid() and (client_id is null or public.is_my_client(client_id)));
+drop policy if exists "audit_events: admin read" on public.audit_events;
 create policy "audit_events: admin read" on public.audit_events for select using (public.is_admin());
 
 -- Publish a summary --------------------------------------------------------

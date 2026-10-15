@@ -78,6 +78,7 @@ create table if not exists public.billing_settings (
 );
 insert into public.billing_settings (id) values (1) on conflict (id) do nothing;
 alter table public.billing_settings enable row level security;
+drop policy if exists "billing_settings: billing admin" on public.billing_settings;
 create policy "billing_settings: billing admin" on public.billing_settings for all using (public.can_bill()) with check (public.can_bill());
 
 create table if not exists public.billing_counters (
@@ -86,6 +87,7 @@ create table if not exists public.billing_counters (
 );
 insert into public.billing_counters (kind) values ('invoice'), ('credit_note') on conflict (kind) do nothing;
 alter table public.billing_counters enable row level security;
+drop policy if exists "billing_counters: billing admin reads" on public.billing_counters;
 create policy "billing_counters: billing admin reads" on public.billing_counters for select using (public.can_bill());
 
 -- Customers ---------------------------------------------------------------
@@ -97,7 +99,9 @@ create table if not exists public.billing_customers (
   updated_at  timestamptz not null default now()
 );
 alter table public.billing_customers enable row level security;
+drop policy if exists "billing_customers: billing admin" on public.billing_customers;
 create policy "billing_customers: billing admin" on public.billing_customers for all using (public.can_bill()) with check (public.can_bill());
+drop policy if exists "billing_customers: member reads own" on public.billing_customers;
 create policy "billing_customers: member reads own" on public.billing_customers for select using (client_id = auth.uid());
 
 -- Invoices ----------------------------------------------------------------
@@ -140,7 +144,9 @@ create table if not exists public.invoices (
 );
 create index if not exists invoices_client_idx on public.invoices (client_id);
 alter table public.invoices enable row level security;
+drop policy if exists "invoices: billing admin" on public.invoices;
 create policy "invoices: billing admin" on public.invoices for all using (public.can_bill()) with check (public.can_bill());
+drop policy if exists "invoices: member reads own issued" on public.invoices;
 create policy "invoices: member reads own issued" on public.invoices for select using (client_id = auth.uid() and status <> 'draft');
 
 create table if not exists public.invoice_items (
@@ -153,7 +159,9 @@ create table if not exists public.invoice_items (
   unique (invoice_id, position)
 );
 alter table public.invoice_items enable row level security;
+drop policy if exists "invoice_items: billing admin" on public.invoice_items;
 create policy "invoice_items: billing admin" on public.invoice_items for all using (public.can_bill()) with check (public.can_bill());
+drop policy if exists "invoice_items: member reads own issued" on public.invoice_items;
 create policy "invoice_items: member reads own issued" on public.invoice_items for select using (
   exists (select 1 from public.invoices i where i.id = invoice_id and i.client_id = auth.uid() and i.status <> 'draft')
 );
@@ -182,6 +190,7 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists invoices_guard on public.invoices;
 create trigger invoices_guard before update on public.invoices for each row execute function public.invoices_guard();
 
 create or replace function public.invoices_no_delete()
@@ -195,6 +204,7 @@ begin
   return old;
 end;
 $$;
+drop trigger if exists invoices_no_delete on public.invoices;
 create trigger invoices_no_delete before delete on public.invoices for each row execute function public.invoices_no_delete();
 
 create or replace function public.invoice_items_guard()
@@ -210,6 +220,7 @@ begin
   return coalesce(new, old);
 end;
 $$;
+drop trigger if exists invoice_items_guard on public.invoice_items;
 create trigger invoice_items_guard before insert or update or delete on public.invoice_items
   for each row execute function public.invoice_items_guard();
 
@@ -232,7 +243,9 @@ create table if not exists public.receipts (
 );
 create unique index if not exists receipts_external_unique on public.receipts (source, external_id) where external_id is not null;
 alter table public.receipts enable row level security;
+drop policy if exists "receipts: billing admin" on public.receipts;
 create policy "receipts: billing admin" on public.receipts for all using (public.can_bill()) with check (public.can_bill());
+drop policy if exists "receipts: member reads own" on public.receipts;
 create policy "receipts: member reads own" on public.receipts for select using (client_id = auth.uid() and status = 'confirmed');
 
 create table if not exists public.receipt_allocations (
@@ -247,7 +260,9 @@ create table if not exists public.receipt_allocations (
   reverse_reason text
 );
 alter table public.receipt_allocations enable row level security;
+drop policy if exists "receipt_allocations: billing admin" on public.receipt_allocations;
 create policy "receipt_allocations: billing admin" on public.receipt_allocations for all using (public.can_bill()) with check (public.can_bill());
+drop policy if exists "receipt_allocations: member reads own" on public.receipt_allocations;
 create policy "receipt_allocations: member reads own" on public.receipt_allocations for select using (
   reversed_at is null and exists (select 1 from public.invoices i where i.id = invoice_id and i.client_id = auth.uid() and i.status <> 'draft')
 );
@@ -265,7 +280,9 @@ create table if not exists public.credit_notes (
   issued_at          timestamptz not null default now()
 );
 alter table public.credit_notes enable row level security;
+drop policy if exists "credit_notes: billing admin" on public.credit_notes;
 create policy "credit_notes: billing admin" on public.credit_notes for all using (public.can_bill()) with check (public.can_bill());
+drop policy if exists "credit_notes: member reads own" on public.credit_notes;
 create policy "credit_notes: member reads own" on public.credit_notes for select using (client_id = auth.uid());
 
 create table if not exists public.refunds (
@@ -279,7 +296,9 @@ create table if not exists public.refunds (
   created_at    timestamptz not null default now()
 );
 alter table public.refunds enable row level security;
+drop policy if exists "refunds: billing admin" on public.refunds;
 create policy "refunds: billing admin" on public.refunds for all using (public.can_bill()) with check (public.can_bill());
+drop policy if exists "refunds: member reads own" on public.refunds;
 create policy "refunds: member reads own" on public.refunds for select using (client_id = auth.uid());
 
 -- "I've paid" from a member: a request to check, never proof of payment.
@@ -292,9 +311,12 @@ create table if not exists public.payment_notices (
   created_at  timestamptz not null default now()
 );
 alter table public.payment_notices enable row level security;
+drop policy if exists "payment_notices: member reads own" on public.payment_notices;
 create policy "payment_notices: member reads own" on public.payment_notices for select using (client_id = auth.uid());
+drop policy if exists "payment_notices: member adds" on public.payment_notices;
 create policy "payment_notices: member adds" on public.payment_notices for insert
   with check (client_id = auth.uid() and exists (select 1 from public.invoices i where i.id = invoice_id and i.client_id = auth.uid() and i.status = 'issued'));
+drop policy if exists "payment_notices: billing admin" on public.payment_notices;
 create policy "payment_notices: billing admin" on public.payment_notices for all using (public.can_bill()) with check (public.can_bill());
 
 -- Payment provider events (deduplicated; written by the server only).
@@ -307,6 +329,7 @@ create table if not exists public.provider_events (
   received_at  timestamptz not null default now()
 );
 alter table public.provider_events enable row level security;
+drop policy if exists "provider_events: billing admin reads" on public.provider_events;
 create policy "provider_events: billing admin reads" on public.provider_events for select using (public.can_bill());
 
 -- Session credits -----------------------------------------------------------
@@ -323,7 +346,9 @@ create table if not exists public.entitlement_ledger (
   created_at     timestamptz not null default now()
 );
 alter table public.entitlement_ledger enable row level security;
+drop policy if exists "entitlement_ledger: billing admin" on public.entitlement_ledger;
 create policy "entitlement_ledger: billing admin" on public.entitlement_ledger for select using (public.can_bill());
+drop policy if exists "entitlement_ledger: member reads own" on public.entitlement_ledger;
 create policy "entitlement_ledger: member reads own" on public.entitlement_ledger for select using (client_id = auth.uid());
 
 create table if not exists public.session_reservations (
@@ -333,7 +358,9 @@ create table if not exists public.session_reservations (
   updated_at  timestamptz not null default now()
 );
 alter table public.session_reservations enable row level security;
+drop policy if exists "session_reservations: staff read" on public.session_reservations;
 create policy "session_reservations: staff read" on public.session_reservations for select using (public.is_my_client(client_id) or public.can_bill());
+drop policy if exists "session_reservations: member reads own" on public.session_reservations;
 create policy "session_reservations: member reads own" on public.session_reservations for select using (client_id = auth.uid());
 
 -- Internal helpers: the maths without permission checks. Only callable from
@@ -430,6 +457,7 @@ begin
   return new;
 end;
 $$;
+drop trigger if exists coaching_sessions_credits on public.coaching_sessions;
 create trigger coaching_sessions_credits after insert or update of state on public.coaching_sessions
   for each row execute function public.coaching_sessions_credits();
 

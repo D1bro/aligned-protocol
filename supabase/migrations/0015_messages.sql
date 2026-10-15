@@ -31,6 +31,7 @@ create index if not exists message_jobs_client_idx on public.message_jobs (clien
 alter table public.message_jobs enable row level security;
 
 -- Coaching emails: the client's coach (or an admin). Billing emails: billing admins only.
+drop policy if exists "message_jobs: staff" on public.message_jobs;
 create policy "message_jobs: staff" on public.message_jobs for all
   using (case when kind in ('invoice_issued', 'payment_received') then public.can_bill() else public.is_my_client(client_id) end)
   with check (case when kind in ('invoice_issued', 'payment_received') then public.can_bill() else public.is_my_client(client_id) end);
