@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyStripeEvent } from "@/lib/stripe-signature";
+import { eventMatchesMode } from "@/lib/stripe-mode";
+import { currentStripeMode } from "@/lib/stripe";
 
 // Stripe tells us here when a card payment succeeds. Only signed events are
 // trusted; each event is handled once; the payment is recorded against the
@@ -13,8 +15,10 @@ export async function POST(req: Request) {
   const raw = await req.text();
   const event = verifyStripeEvent(raw, req.headers.get("stripe-signature"), secret);
   if (!event) return NextResponse.json({ error: "invalid signature" }, { status: 400 });
-  if ((event as { livemode?: boolean }).livemode) {
-    return NextResponse.json({ error: "live events are not accepted yet" }, { status: 400 });
+  // Only events from the mode the site is in count (a test payment never
+  // pays a real invoice, and the other way round).
+  if (!eventMatchesMode((event as { livemode?: boolean }).livemode, currentStripeMode())) {
+    return NextResponse.json({ error: "event mode doesn't match this site's Stripe mode" }, { status: 400 });
   }
 
   const db = createAdminClient();
