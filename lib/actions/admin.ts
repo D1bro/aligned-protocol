@@ -87,9 +87,18 @@ export type ClientSummary = {
 export async function getClientSummaries(): Promise<ClientSummary[] | null> {
   await requireStaff();
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("admin_client_list");
-  if (error) return null;
-  return (data ?? []) as ClientSummary[];
+  // The database returns at most 1,000 rows per request, so fetch in pages:
+  // with many guests, members further down the list were being cut off.
+  const PAGE = 1000;
+  const all: ClientSummary[] = [];
+  for (let from = 0; from < 50 * PAGE; from += PAGE) {
+    const { data, error } = await supabase.rpc("admin_client_list").range(from, from + PAGE - 1);
+    if (error) return null;
+    all.push(...((data ?? []) as ClientSummary[]));
+    if ((data ?? []).length < PAGE) break;
+  }
+  // A row can shift between pages if someone is active mid-fetch; list each person once.
+  return [...new Map(all.map((c) => [c.id, c])).values()];
 }
 
 export type StaffMember = { id: string; full_name: string | null; email: string | null; role: StaffRole };
