@@ -33,7 +33,7 @@ export function ClearIntro({
     <div className="page au-page">
       {welcome ? (
         <p className="clear-welcome" role="status">
-          <b>Your profile is ready.</b> Your snapshot, notes and starting point are saved. Next, build your first plan.
+          <b>Saved to your profile.</b> Your snapshot, notes and starting point are kept together. Next, build your plan.
         </p>
       ) : null}
       <div className="eyebrow"><span className="eydot" /> CLEAR — your plan</div>

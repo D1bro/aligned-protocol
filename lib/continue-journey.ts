@@ -9,8 +9,10 @@ export type PlanProgress = "none" | "chosen" | "in_progress" | "done";
 
 export function nextAfterJoining(p: { hasAudit: boolean; plan: PlanProgress }): string {
   if (!p.hasAudit) return "/";
-  if (p.plan === "chosen") return "/clear?welcome=1";
-  if (p.plan === "in_progress") return "/clear";
+  // ?latest=1: the plan for this newest audit, even if an older goal is
+  // still their main one.
+  if (p.plan === "chosen") return "/clear?latest=1&welcome=1";
+  if (p.plan === "in_progress") return "/clear?latest=1";
   return "/";
 }
 
