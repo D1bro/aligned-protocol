@@ -42,7 +42,7 @@ export const HOW = [
 // live site shows his photo but not the text; previews show the text marked
 // as a draft. Drafted only from Duane's own words on duanebryan.com/about.
 export const ABOUT_DUANE = {
-  approved: false,
+  approved: true, // approved by Duane, 19 October 2026
   heading: "A welcome from Duane",
   paragraphs: [
     "I help people get clear, get aligned and move forward, because I know what it feels like to look like you’re holding it together on the outside while knowing something has to change on the inside.",
