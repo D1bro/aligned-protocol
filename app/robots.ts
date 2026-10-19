@@ -13,6 +13,8 @@ export default function robots(): MetadataRoute.Robots {
         "/audit/",
         "/home",
         "/clear",
+        "/alignment",
+        "/alignment-preview",
         "/details",
         "/goals",
         "/summary",

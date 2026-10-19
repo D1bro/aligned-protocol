@@ -10,6 +10,7 @@ import { getCurrentProfile } from "@/lib/session";
 import { getMyDetails } from "@/lib/actions/details";
 import { greetingName } from "@/lib/details";
 import { DetailsPrompt } from "@/components/profile/DetailsPrompt";
+import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
 import { ProfileSteps, type Step } from "@/components/profile/ProfileSteps";
@@ -44,6 +45,7 @@ export default async function ProfilePage() {
           ten minutes, and gives you a snapshot and a clear place to start.
         </p>
         <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
+        <DailyAlignmentCard />
         {offerDetails ? <DetailsPrompt /> : null}
       </div>
     );
@@ -154,6 +156,7 @@ export default async function ProfilePage() {
         {identity.available ? <IdentityStatement initial={identity.text} /> : null}
       </header>
 
+      <DailyAlignmentCard />
       <div className="profile-grid">
         <section className="next-action" aria-labelledby="next-action-h">
           <div className="eyebrow">

@@ -7,6 +7,7 @@ import { LifeMap } from "@/components/audit/LifeMap";
 import { getLessonProgress } from "@/lib/actions/learn";
 import { getMainGoal } from "@/lib/actions/goals";
 import { PATHS } from "@/lib/learn-content";
+import { AlignmentReviews } from "@/components/profile/AlignmentReviews";
 
 type Event = { date: string; kind: "audit" | "goal" | "done" | "checkin" | "lesson"; title: string; detail?: string };
 
@@ -29,9 +30,10 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
     return (
       <div className="page au-page">
         <div className="eyebrow"><span className="eydot" /> My journey</div>
-        <h1 className="au-latest-h">Your journey starts with the audit.</h1>
-        <p className="lead">Once you&rsquo;ve taken it, this page shows how your life map changes over time.</p>
+        <h1 className="au-latest-h">Your journey, at your pace.</h1>
+        <p className="lead">Keep your weekly reflections here. Once you take the audit, you can also see how your life map changes over time.</p>
         <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
+        <AlignmentReviews />
       </div>
     );
   }
@@ -100,6 +102,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
           : `This is your first snapshot. After your next audit, around ${formatDate(nextAuditDue(latest.completed_at))}, you’ll see what’s moved.`}
       </p>
 
+      <AlignmentReviews />
       <div className="journey-stats">
         <div><b>{audits.length}</b><span>{audits.length === 1 ? "audit" : "audits"}</span></div>
         <div><b>{latest.total_score ?? 0}</b><span>latest, out of 100</span></div>

@@ -33,6 +33,12 @@ const PUBLIC_PATHS = [
 const GUEST_PATHS = ["/audit"];
 
 export async function updateSession(request: NextRequest) {
+  // A deliberately fictional, development-only design preview. This bypass
+  // applies to this exact preview route, never a member route or production.
+  if (request.nextUrl.pathname === "/alignment-preview" &&
+      process.env.NODE_ENV !== "production" && process.env.ALIGNED_ALIGNMENT_PREVIEW === "1") {
+    return NextResponse.next({ request });
+  }
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(env.supabaseUrl, env.supabaseAnonKey, {
