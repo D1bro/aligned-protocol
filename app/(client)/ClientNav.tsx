@@ -6,7 +6,7 @@ import { MobileNav, NavLinks, type MobileNavLink } from "@/components/ui/MobileN
 
 export const CLIENT_LINKS: MobileNavLink[] = [
   { group: "You", href: "/", label: "My profile", icon: "▦", match: (p) => p === "/" },
-  { group: "You", href: "/alignment", label: "Daily alignment", icon: "◌", match: (p) => p.startsWith("/alignment") },
+  { group: "You", href: "/alignment", label: "Daily Alignment", icon: "◌", match: (p) => p.startsWith("/alignment") },
   { group: "You", href: "/audit", label: "The Aligned Audit", icon: "◎", match: (p) => p.startsWith("/audit") },
   { group: "You", href: "/clear", label: "My plan", icon: "◈", match: (p) => p.startsWith("/clear") || p.startsWith("/goals") },
   { group: "You", href: "/summary", label: "My journey", icon: "◑", match: (p) => p.startsWith("/summary") },

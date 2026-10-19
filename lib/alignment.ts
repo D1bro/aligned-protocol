@@ -144,3 +144,64 @@ export function checkWeeklyAlignment(raw: Partial<Record<keyof WeeklyAlignmentIn
   return { ok: true, values: { week_start: base.values.date, timezone: base.values.timezone,
     helped: texts.helped, adjustment: texts.adjustment, next_priority: texts.next_priority } };
 }
+
+// The weekly account for one question, as plain counts. No overall score:
+// blank answers, days with nothing saved and days still to come are kept
+// apart, and "No challenge arose" is never part of the answered total.
+export type ScoreField = "wellbeing" | "meaningful_action" | "participation" | "values_choice";
+export const SCORE_FIELDS: ScoreField[] = ["wellbeing", "meaningful_action", "participation", "values_choice"];
+export type WeekCounts = {
+  yes: number;
+  partly: number;
+  not_today: number;
+  not_needed: number; // only ever counted for values_choice
+  answered: number; // yes + partly + not_today
+  blank: number; // saved entries with this question left blank
+  unrecorded: number; // today or earlier, with no saved entry
+  upcoming: number; // later this week; never "missed"
+};
+export function summariseWeek(
+  days: { entry_date: string; wellbeing?: AlignmentScore | null; meaningful_action?: AlignmentScore | null; participation?: AlignmentScore | null; values_choice?: AlignmentScore | null }[],
+  anyDateInWeek: string,
+  today: string
+): Record<ScoreField, WeekCounts> {
+  const byDate = new Map(days.map((d) => [d.entry_date, d]));
+  const result = {} as Record<ScoreField, WeekCounts>;
+  for (const field of SCORE_FIELDS) {
+    const c: WeekCounts = { yes: 0, partly: 0, not_today: 0, not_needed: 0, answered: 0, blank: 0, unrecorded: 0, upcoming: 0 };
+    for (const date of weekDates(anyDateInWeek)) {
+      if (date > today) { c.upcoming++; continue; }
+      const entry = byDate.get(date);
+      if (!entry) { c.unrecorded++; continue; }
+      const v = entry[field] ?? null;
+      if (v === null) c.blank++;
+      else if (v === "not_needed") c.not_needed++;
+      else { c[v]++; c.answered++; }
+    }
+    result[field] = c;
+  }
+  return result;
+}
+
+// Plain words for one question's counts, e.g. "Yes 2 · Partly 1 · Not today 1".
+export function describeCounts(c: WeekCounts): { answers: string; days: string } {
+  const answers = c.answered ? `Yes ${c.yes} · Partly ${c.partly} · Not today ${c.not_today}` : "No answers saved";
+  const parts = [
+    `${c.answered} answered ${c.answered === 1 ? "day" : "days"}`,
+    c.blank ? `${c.blank} saved but left blank` : "",
+    c.unrecorded ? `${c.unrecorded} unrecorded ${c.unrecorded === 1 ? "day" : "days"}` : "",
+    c.upcoming ? `${c.upcoming} still to come` : "",
+  ].filter(Boolean);
+  return { answers, days: parts.join(" · ") };
+}
+
+// Saving is for today and earlier only: a reflection on a day that hasn't
+// happened yet isn't one. Weeks likewise stop at the current week.
+export function isFutureDay(date: string, timezone: string, now = new Date()): boolean {
+  return date > localDate(timezone, now);
+}
+export function isFutureWeek(mondayDate: string, timezone: string, now = new Date()): boolean {
+  return mondayDate > weekStart(localDate(timezone, now));
+}
+
+export const ALIGNMENT_EXPORT_SCHEMA = { name: "aligned.daily-alignment", version: 1 } as const;

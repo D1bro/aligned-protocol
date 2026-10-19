@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   addCalendarDays, checkDailyAlignment, checkWeeklyAlignment, isAlignmentDate,
   isAlignmentSchemaMissing, isAlignmentTimeZone, localDate, normalizeTimeZone, weekStart,
+  isFutureDay, isFutureWeek, ALIGNMENT_EXPORT_SCHEMA,
   type AlignmentDaily, type AlignmentWeekly, type AlignmentData, type AlignmentResult,
   type DailyAlignmentInput, type WeeklyAlignmentInput,
 } from "@/lib/alignment";
@@ -74,6 +75,9 @@ export async function saveDailyAlignment(input: Partial<Record<keyof DailyAlignm
   const { supabase, userId } = await requireMember();
   const checked = checkDailyAlignment(input);
   if (!checked.ok) return checked;
+  if (isFutureDay(checked.values.entry_date, checked.values.timezone)) {
+    return { ok: false, field: "entry_date", message: "You can save today or an earlier day. Your draft is still here." };
+  }
   if (checked.values.goal_id) {
     const goal = await supabase.from("goals").select("id").eq("id", checked.values.goal_id).eq("client_id", userId).maybeSingle();
     if (goal.error) return { ok: false, message: "Couldn’t check your goal. Your draft is still here; please try again." };
@@ -91,6 +95,9 @@ export async function saveWeeklyAlignment(input: Partial<Record<keyof WeeklyAlig
   const { supabase, userId } = await requireMember();
   const checked = checkWeeklyAlignment(input);
   if (!checked.ok) return checked;
+  if (isFutureWeek(checked.values.week_start, checked.values.timezone)) {
+    return { ok: false, field: "week_start", message: "You can review this week or an earlier one. Your draft is still here." };
+  }
   const { data, error } = await supabase.from("alignment_weekly_reviews")
     .upsert({ ...checked.values, client_id: userId }, { onConflict: "client_id,week_start" }).select(WEEKLY_COLUMNS).single();
   if (isAlignmentSchemaMissing(error)) return { ok: false, message: unavailable };
@@ -103,24 +110,27 @@ type ChangeResult = { ok: true } | { ok: false; message: string };
 export async function deleteDailyAlignment(date: string): Promise<ChangeResult> {
   const { supabase, userId } = await requireMember();
   if (!isAlignmentDate(date)) return { ok: false, message: "Choose a valid calendar date." };
-  const { error } = await supabase.from("daily_alignments").delete().eq("client_id", userId).eq("entry_date", date);
+  const { data, error } = await supabase.from("daily_alignments").delete().eq("client_id", userId).eq("entry_date", date).select("id");
   if (isAlignmentSchemaMissing(error)) return { ok: false, message: unavailable };
   if (error) return { ok: false, message: "Couldn’t delete this daily entry. Please try again." };
+  if (!data?.length) return { ok: false, message: "There was no saved entry for this day to delete." };
   refreshAlignment();
   return { ok: true };
 }
 export async function deleteWeeklyAlignment(date: string): Promise<ChangeResult> {
   const { supabase, userId } = await requireMember();
   if (!isAlignmentDate(date) || weekStart(date) !== date) return { ok: false, message: "Choose the Monday at the start of this week." };
-  const { error } = await supabase.from("alignment_weekly_reviews").delete().eq("client_id", userId).eq("week_start", date);
+  const { data, error } = await supabase.from("alignment_weekly_reviews").delete().eq("client_id", userId).eq("week_start", date).select("id");
   if (isAlignmentSchemaMissing(error)) return { ok: false, message: unavailable };
   if (error) return { ok: false, message: "Couldn’t delete this weekly review. Please try again." };
+  if (!data?.length) return { ok: false, message: "There was no saved review for this week to delete." };
   refreshAlignment();
   return { ok: true };
 }
 
 export async function exportAlignmentData(): Promise<
-  { ok: true; data: { daily: AlignmentDaily[]; weekly: AlignmentWeekly[]; exported_at: string } } | { ok: false; message: string }
+  | { ok: true; data: { schema: typeof ALIGNMENT_EXPORT_SCHEMA; exported_at: string; daily: AlignmentDaily[]; weekly: AlignmentWeekly[] } }
+  | { ok: false; message: string }
 > {
   const { supabase, userId } = await requireMember();
   // Supabase caps each response. Explicit pages ensure export includes history
@@ -141,5 +151,17 @@ export async function exportAlignmentData(): Promise<
       if (rows.length < pageSize) break;
     }
   }
-  return { ok: true, data: { daily, weekly, exported_at: new Date().toISOString() } };
+  return { ok: true, data: { schema: ALIGNMENT_EXPORT_SCHEMA, exported_at: new Date().toISOString(), daily, weekly } };
+}
+
+// For the My profile card: has today's entry actually been saved? Uses the
+// time zone from Your details when set (else UTC, said plainly on the card).
+export async function getTodayAlignment(): Promise<{ available: boolean; saved: boolean; date: string; timezone: string }> {
+  const { supabase, userId } = await requireMember();
+  const { data: profile, error: pErr } = await supabase.from("profiles").select("timezone").eq("id", userId).single();
+  const timezone = normalizeTimeZone(pErr ? null : profile?.timezone);
+  const date = localDate(timezone);
+  const { data, error } = await supabase.from("daily_alignments").select("id").eq("client_id", userId).eq("entry_date", date).maybeSingle();
+  if (error) return { available: false, saved: false, date, timezone };
+  return { available: true, saved: !!data, date, timezone };
 }

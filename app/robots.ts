@@ -14,7 +14,6 @@ export default function robots(): MetadataRoute.Robots {
         "/home",
         "/clear",
         "/alignment",
-        "/alignment-preview",
         "/details",
         "/goals",
         "/summary",

@@ -133,3 +133,16 @@ test("alignment migration can be rerun without deleting saved data or broadening
   await asUser(db, admin);
   assert.equal(await val(db, `select count(*)::int from public.daily_alignments`), 0);
 });
+
+test("removing a member (deleting their sign-in) also removes their private entries", async () => {
+  const leaver = await makeUser(db, "leaver.alignment@example.com");
+  await asUser(db, leaver);
+  await db.query(`insert into public.daily_alignments (client_id, entry_date, timezone, priority) values ($1, '2026-10-19', 'Europe/London', 'x')`, [leaver]);
+  await db.query(`insert into public.alignment_weekly_reviews (client_id, week_start, timezone, helped) values ($1, '2026-10-19', 'Europe/London', 'y')`, [leaver]);
+  // What the console's Remove client does: delete the auth user, which
+  // cascades through profiles even though the service role has no grant here.
+  await asOwner(db);
+  await db.query(`delete from auth.users where id = $1`, [leaver]);
+  assert.equal(await val(db, `select count(*)::int from public.daily_alignments where client_id = $1`, [leaver]), 0);
+  assert.equal(await val(db, `select count(*)::int from public.alignment_weekly_reviews where client_id = $1`, [leaver]), 0);
+});

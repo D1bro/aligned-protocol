@@ -86,3 +86,39 @@ test("missing migration is distinct from empty records or network/permission fai
   assert.equal(isAlignmentSchemaMissing({ code: "42501" }), false);
   assert.equal(isAlignmentSchemaMissing({ code: "PGRST000" }), false);
 });
+
+import { summariseWeek, describeCounts, isFutureDay, isFutureWeek } from "../lib/alignment.ts";
+
+test("weekly counts keep answers, blanks, unrecorded and upcoming days apart, with no overall score", () => {
+  // Week of Mon 19 Oct 2026; "today" is Thursday 22nd.
+  const days = [
+    { entry_date: "2026-10-19", wellbeing: "yes" as const, values_choice: "not_needed" as const },
+    { entry_date: "2026-10-20", wellbeing: "partly" as const, values_choice: "yes" as const },
+    { entry_date: "2026-10-21", wellbeing: null, values_choice: null },
+  ];
+  const w = summariseWeek(days, "2026-10-21", "2026-10-22");
+  assert.deepEqual(w.wellbeing, { yes: 1, partly: 1, not_today: 0, not_needed: 0, answered: 2, blank: 1, unrecorded: 1, upcoming: 3 });
+  assert.equal(w.values_choice.not_needed, 1, "No challenge arose counted separately");
+  assert.equal(w.values_choice.answered, 1, "and excluded from the answered total");
+  assert.equal(w.meaningful_action.blank, 3, "saved entries with this question blank");
+  assert.deepEqual(describeCounts(w.wellbeing), { answers: "Yes 1 · Partly 1 · Not today 0", days: "2 answered days · 1 saved but left blank · 1 unrecorded day · 3 still to come" });
+});
+
+test("a week with nothing saved is fine, and a finished week has nothing still to come", () => {
+  const w = summariseWeek([], "2026-10-12", "2026-10-22");
+  assert.deepEqual(w.participation, { yes: 0, partly: 0, not_today: 0, not_needed: 0, answered: 0, blank: 0, unrecorded: 7, upcoming: 0 });
+  assert.deepEqual(describeCounts(w.participation), { answers: "No answers saved", days: "0 answered days · 7 unrecorded days" });
+});
+
+test("the week of the October 2026 clock change still has seven distinct days", () => {
+  const w = summariseWeek([{ entry_date: "2026-10-25", wellbeing: "not_today" as const }], "2026-10-25", "2026-11-01");
+  assert.equal(w.wellbeing.not_today + w.wellbeing.unrecorded, 7);
+});
+
+test("future days and weeks are judged in the member's own time zone", () => {
+  const now = new Date("2026-10-19T22:30:00Z"); // 23:30 on the 19th in London (BST), 00:30 on the 20th in Paris (CEST)
+  assert.equal(isFutureDay("2026-10-20", "Europe/London", now), true);
+  assert.equal(isFutureDay("2026-10-20", "Europe/Paris", now), false);
+  assert.equal(isFutureWeek("2026-10-26", "Europe/London", now), true);
+  assert.equal(isFutureWeek("2026-10-19", "Europe/London", now), false);
+});

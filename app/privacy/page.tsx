@@ -35,6 +35,7 @@ export default function PrivacyPage() {
         <li><b>If you take the audit without an account:</b> a temporary guest sign-in stored in your browser, and the scores and notes you enter.</li>
         <li><b>Your account:</b> your name and email address, and a password (stored securely by our sign-in provider; we never see it).</li>
         <li><b>Your audit, plan and progress:</b> scores, notes, your chosen focus, your CLEAR plan, goals, check-ins, lesson progress and reflections (which you can keep private).</li>
+        <li><b>Daily Alignment (optional):</b> only what you choose to save — your daily priority, value, act of care, reflections, four optional answers and weekly reviews. These are private to you: your coach can&rsquo;t see them. You can export or delete them yourself at any time.</li>
         <li><b>Your details (optional):</b> preferred name, phone number, town or city, country and time zone.</li>
         <li><b>Coaching (if you work with Duane):</b> session dates and times, Duane&rsquo;s private notes, conversation transcripts (only with your agreement), session summaries, agreed actions, your updates and anything you choose to share before a session.</li>
         <li><b>Billing (if you pay for coaching):</b> billing name and postal address, invoices, payments, credit notes and refunds. Card payments are handled by Stripe; we never see or store your card number.</li>
