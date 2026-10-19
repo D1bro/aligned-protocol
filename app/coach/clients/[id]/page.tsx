@@ -13,6 +13,7 @@ import { SessionsTab } from "./SessionsTab";
 import { CoachNotesTab } from "./CoachNotesTab";
 import { formatSessionTime } from "@/lib/time";
 import { ClientSettings } from "./ClientSettings";
+import { RemoveGuestButton } from "../guests/GuestActions";
 import { ResetPasswordButton } from "./ResetPasswordButton";
 import { BillingTab } from "./BillingTab";
 import { getClientBilling } from "@/lib/actions/billing";
@@ -294,7 +295,15 @@ export default async function ClientProfilePage({
         <section className="admin-card" aria-label="Settings">
           <h2>Settings</h2>
           <ClientSettings clientId={client.id} role={client.role} coachId={client.coach_id} staff={staff} isSelf={client.id === viewer.id} />
-          {client.email ? <ResetPasswordButton clientId={client.id} /> : null}
+          {client.email ? <ResetPasswordButton clientId={client.id} /> : (
+            <div className="admin-settings" style={{ borderTop: "1px solid var(--bdr2)", paddingTop: "1rem" }}>
+              {p.enquiries.length || p.coaching.sessions.length ? (
+                <p className="admin-hint">This guest asked about coaching, so they can&rsquo;t be removed.</p>
+              ) : (
+                <RemoveGuestButton id={client.id} after="/coach/clients/guests" label="Remove this guest" />
+              )}
+            </div>
+          )}
         </section>
       ) : null}
     </div>
