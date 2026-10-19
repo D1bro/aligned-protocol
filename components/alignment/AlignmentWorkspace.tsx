@@ -340,7 +340,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
                 <input className="alignment-field" id={`${id}-priority`} maxLength={500} placeholder="For example: spend twenty minutes on the project proposal before opening messages." value={daily.priority ?? ""} disabled={disabled} onChange={(e) => updateDay({ priority: orNull(e.target.value) })} />
                 {linkedGoal ? (
                   <p className="alignment-small alignment-goal">
-                    Linked to your goal in My plan: <b>{linkedGoal.goal_title}</b>.{" "}
+                    Linked to your goal in My plan: <b>{linkedGoal.goal_title?.replace(/\.$/, "")}</b>{" "}
                     <button className="alignment-secondary" type="button" disabled={disabled} onClick={() => updateDay({ goal_id: null })}>Remove link</button>
                   </p>
                 ) : mainGoal?.goal_title ? (
