@@ -2,8 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { nextCheckInDue } from "@/lib/audit-schedule";
 import { sendEmail, SITE_URL } from "@/lib/email";
-
-const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+import { renderEmail, renderText, type Block } from "@/lib/email-layout";
 
 // Daily job (vercel.json "crons"): email everyone whose monthly check-in is
 // due, once per check-in. Vercel calls it with "Authorization: Bearer
@@ -53,19 +52,20 @@ export async function GET(request: NextRequest) {
     const link = `${SITE_URL}/clear/check-in`;
     const off = `${SITE_URL}/api/reminders/unsubscribe?t=${p.email_token}`;
     const goal = g.goal_title?.trim() ?? "";
+    const blocks: Block[] = [
+      { p: first ? `Hi ${first},` : "Hi," },
+      { p: `It’s time for your monthly check-in on ${area}.` },
+      ...(goal ? [{ quote: goal } as Block] : []),
+      { p: "Two minutes: did you do it, where the area is now, and what next." },
+      { button: { href: link, label: "Check in now" } },
+      { smallLink: { lead: "You’re getting this because you set a goal in the Aligned Protocol.", label: "Stop these reminders", href: off } },
+    ];
+    const heading = `Your monthly check-in: ${area}`;
     const result = await sendEmail({
       to: p.email,
-      subject: `Your monthly check-in: ${area}`,
-      text: `${first ? `Hi ${first},` : "Hi,"}\n\nIt's time for your monthly check-in on ${area}.\n\nYour action: ${goal}\n\nTwo minutes: did you do it, where the area is now, and what next.\n\nCheck in: ${link}\n\n— Aligned Protocol\n\nStop these reminders: ${off}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#1b1b22;line-height:1.6">
-<p style="letter-spacing:3px;font-size:12px;color:#9a7a3c;margin:0 0 16px">ALIGNED PROTOCOL</p>
-<p>${first ? `Hi ${esc(first)},` : "Hi,"}</p>
-<p>It&rsquo;s time for your monthly check-in on <strong>${esc(area)}</strong>.</p>
-<p style="border-left:3px solid #D3A758;padding-left:12px;color:#444">${esc(goal)}</p>
-<p>Two minutes: did you do it, where the area is now, and what next.</p>
-<p><a href="${link}" style="display:inline-block;background:#D3A758;color:#100F18;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:bold">Check in now</a></p>
-<p style="font-size:12px;color:#888;margin-top:32px">You&rsquo;re getting this because you set a goal in the Aligned Protocol. <a href="${off}" style="color:#888">Stop these reminders</a>.</p>
-</div>`,
+      subject: heading,
+      text: renderText({ heading, blocks }),
+      html: renderEmail({ preheader: "Two minutes on how your goal is going.", heading, blocks }),
     });
     if (!result.ok) { skip(result.reason); continue; }
     await admin.from("reminder_log").insert({ client_id: g.client_id, goal_id: g.id, kind: "checkin", due_date: dueDate });
