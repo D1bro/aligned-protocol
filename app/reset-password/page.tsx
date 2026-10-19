@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { SiteHeader } from "@/components/site/SiteHeader";
 
-export const metadata = { title: "Reset password — Aligned" };
+export const metadata = { title: "Reset password" };
 
 // Standalone landing for anyone who reaches /reset-password directly (e.g. a
 // bookmarked link) rather than through the login page's "Forgot password?"
 // tab — that tab is the normal way in, this is just a safety net.
 export default function ResetPasswordPage() {
   return (
-    <div className="center-page auth-bg">
+    <div className="site">
+      <SiteHeader cta={{ href: "/audit", label: "Take the free audit" }} />
+      <main className="center-page auth-bg auth-with-head">
       <div className="wrap">
         <div className="card auth-card">
           <div className="auth-card-title">Reset your password</div>
@@ -18,6 +21,7 @@ export default function ResetPasswordPage() {
           <Link href="/login" className="btn btn-p btn-block">Back to sign in</Link>
         </div>
       </div>
+      </main>
     </div>
   );
 }
