@@ -13,6 +13,8 @@ import { SessionsTab } from "./SessionsTab";
 import { CoachNotesTab } from "./CoachNotesTab";
 import { formatSessionTime } from "@/lib/time";
 import { ClientSettings } from "./ClientSettings";
+import { getClientContact } from "@/lib/actions/details";
+import { localTimeLabel } from "@/lib/details";
 import { RemoveGuestButton } from "../guests/GuestActions";
 import { RemoveClient } from "./RemoveClient";
 import { getRemovalCheck } from "@/lib/actions/remove-client";
@@ -48,7 +50,7 @@ export default async function ClientProfilePage({
   const { id } = await params;
   const sp = await searchParams;
   const tab: Tab = (TABS.map((t) => t[0]) as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "overview";
-  const [p, areas] = await Promise.all([getClientProfile(id), getLifeAreas()]);
+  const [p, areas, contact] = await Promise.all([getClientProfile(id), getLifeAreas(), getClientContact(id)]);
   const { viewer, client, summary } = p;
   const isAdmin = viewer.role === "admin";
   const staff = isAdmin && tab === "settings" ? await getStaff() : [];
@@ -103,6 +105,23 @@ export default async function ClientProfilePage({
           </p>
         </div>
       </header>
+
+      {contact && client.email ? (
+        <details className="cp-contact">
+          <summary>Contact and location</summary>
+          {contact.preferred_name || contact.phone || contact.town || contact.country || contact.timezone ? (
+            <dl>
+              {contact.preferred_name ? <><dt>Preferred name</dt><dd>{contact.preferred_name}</dd></> : null}
+              {contact.phone ? <><dt>Phone</dt><dd><a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}>{contact.phone}</a></dd></> : null}
+              {contact.town || contact.country ? <><dt>Location</dt><dd>{[contact.town, contact.country].filter(Boolean).join(", ")}</dd></> : null}
+              {contact.timezone ? <><dt>Time zone</dt><dd>{localTimeLabel(contact.timezone) ? `Their time now: ${localTimeLabel(contact.timezone)}` : contact.timezone}</dd></> : null}
+            </dl>
+          ) : (
+            <p>{firstName === "them" ? "They haven’t" : `${firstName} hasn’t`} added contact details yet.</p>
+          )}
+          <p>From their Your details page. Session times stay as booked; this is for reference.</p>
+        </details>
+      ) : null}
 
       <div className="cp-facts">
         <div><span>Current focus</span><b>{str(mainGoal?.focus_area) ?? "—"}</b></div>
