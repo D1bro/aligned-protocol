@@ -20,3 +20,4 @@ supabase/test-setup/*.local.md
 
 # Test emails saved locally instead of sent (EMAIL_OUTBOX_DIR)
 /.outbox/
+review-screenshots/

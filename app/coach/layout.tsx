@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/session";
 import { Logo } from "@/components/ui/Logo";
 import { CoachNav, CoachMobileNav } from "./CoachNav";
+
+export const metadata: Metadata = { title: "Console", robots: { index: false, follow: false } };
 
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
