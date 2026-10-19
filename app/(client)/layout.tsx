@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/session";
 import { Logo } from "@/components/ui/Logo";
 import { ClientNav, ClientMobileNav } from "./ClientNav";
+
+// Member pages are personal: keep them out of search results. The audit
+// welcome page opts back in (app/(client)/audit/page.tsx).
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();

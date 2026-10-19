@@ -19,15 +19,23 @@ export function ClearIntro({
   score,
   plan,
   nextAuditDue,
+  welcome = false,
 }: {
   area: LifeArea;
   score: number;
   plan: ClearPlan;
   nextAuditDue: Date;
+  // Arrived straight from creating a profile (lib/continue-journey.ts).
+  welcome?: boolean;
 }) {
   const target = Math.min(10, score + 1);
   return (
     <div className="page au-page">
+      {welcome ? (
+        <p className="clear-welcome" role="status">
+          <b>Your profile is ready.</b> Your snapshot, notes and starting point are saved. Next, build your first plan.
+        </p>
+      ) : null}
       <div className="eyebrow"><span className="eydot" /> CLEAR — your plan</div>
       <h1 className="au-latest-h">Turn your snapshot into one clear step.</h1>
       <p className="lead">

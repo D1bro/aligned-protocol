@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { beginAudit, getInProgressAudit, getAuditWithResponses, getLifeAreas, getRecentCompletedAudits } from "@/lib/actions/audit";
@@ -12,6 +13,13 @@ import { LifeMap } from "@/components/audit/LifeMap";
 
 // Demonstration values for the labelled example — never a real person's answers.
 const EXAMPLE_SCORES = [8, 8, 8, 4, 8, 5, 8, 5, 6, 8];
+
+export const metadata: Metadata = {
+  title: "The Aligned audit",
+  description: "Ten honest questions about ten areas of your life. Score how things feel today, add notes, and see a clear snapshot of where to start. Free, about ten minutes.",
+  alternates: { canonical: "/audit" },
+  robots: { index: true, follow: true },
+};
 
 // Entry point. Someone mid-audit is sent back to their first unanswered
 // area. Someone who has already finished an audit sees their latest one and

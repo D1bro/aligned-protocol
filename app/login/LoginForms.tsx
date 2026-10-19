@@ -6,20 +6,23 @@ import { signIn, signUp, requestPasswordReset } from "@/lib/actions/auth";
 import { Notice } from "@/components/ui/Notice";
 import { PasswordStrength } from "@/components/ui/PasswordStrength";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { ProfileOffer } from "@/components/site/ProfileOffer";
+import { PROFILE_OFFER } from "@/lib/site-copy";
 
 type Tab = "signin" | "signup" | "reset";
 
-export function LoginForms() {
+export function LoginForms({ hasSnapshot = false, startingPointSaved = false }: { hasSnapshot?: boolean; startingPointSaved?: boolean }) {
   const searchParams = useSearchParams();
   // Arriving here from "Create a free account to save this" on the audit
   // results page — jump straight to the signup tab instead of sign-in.
-  const fromAudit = searchParams.get("signup") === "1";
+  const fromAudit = searchParams.get("signup") === "1" || hasSnapshot;
+  const startOnSignup = searchParams.get("signup") === "1";
   // Arrived from an email confirmation link that couldn't sign them in
   // directly (e.g. opened on another device) — the email is confirmed.
   const confirmed = searchParams.get("confirmed") === "1";
   // An email link that had already been used or had run out (/auth/confirm).
   const expired = searchParams.get("link") === "expired";
-  const [tab, setTab] = useState<Tab>(fromAudit ? "signup" : "signin");
+  const [tab, setTab] = useState<Tab>(startOnSignup ? "signup" : "signin");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
@@ -75,6 +78,9 @@ export function LoginForms() {
           {confirmed ? (
             <Notice type="ok">Your email is confirmed. Sign in to see your snapshot and starting point.</Notice>
           ) : null}
+          {hasSnapshot ? (
+            <Notice type="ok">Signing in adds the snapshot you&rsquo;ve just taken to your profile, alongside your earlier audits.</Notice>
+          ) : null}
           {expired ? (
             <Notice type="err">That email link has already been used or has expired. Sign in below, or use &ldquo;Forgot password?&rdquo; to get a new link.</Notice>
           ) : null}
@@ -103,12 +109,19 @@ export function LoginForms() {
 
       {tab === "signup" && (
         <div className="card auth-card">
-          <div className="auth-card-title">Create your account</div>
-          <p className="auth-card-sub">
-            {fromAudit
-              ? "Save your Aligned Audit results and continue your journey."
-              : "Join The Aligned Protocol and start your journey."}
-          </p>
+          {fromAudit ? (
+            <>
+              {startingPointSaved ? (
+                <p className="auth-saved" role="status">✓ Your snapshot and starting point are saved on this device.</p>
+              ) : null}
+              <ProfileOffer showButton={false} headingLevel={2} />
+            </>
+          ) : (
+            <>
+              <div className="auth-card-title">Create your free profile</div>
+              <p className="auth-card-sub">Start with the Aligned audit, then build your plan.</p>
+            </>
+          )}
           <form action={handleSignUp}>
             <div className="field">
               <label className="lbl" htmlFor="name">Full Name</label>
@@ -133,7 +146,7 @@ export function LoginForms() {
               <PasswordStrength password={signupPassword} />
             </div>
             <button className="btn btn-p btn-block auth-submit" disabled={pending}>
-              {pending ? "Creating account…" : "Create Account"}
+              {pending ? "Creating your profile…" : PROFILE_OFFER.button}
             </button>
           </form>
           <Notice type="err">{error}</Notice>

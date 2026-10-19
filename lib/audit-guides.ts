@@ -69,6 +69,44 @@ export const AREA_GUIDES: Record<number, AreaGuide> = {
   10: { ...clip("area-10", "10-self-respect-identity", "Self-Respect & Identity", "Self-Respect & Identity · Duane’s guide", 10.6), prompt: "Are your everyday choices aligned with the person you say you are?" },
 };
 
+// Films for the rest of the site, by internal production code (never shown
+// to visitors). The audit films above are A00 (INTRO_GUIDE), A01–A10
+// (AREA_GUIDES) and F02 (CLOSING_GUIDE). For the slots below, `file` is null
+// until the film exists; pages then show their text fallback instead of a
+// player. To add one: upload <file>-<version>.mp4 to the video folder, put
+// <file>-<version>.jpg in public/media/audit/posters/ and <file>-<version>.vtt
+// in public/media/audit/captions/, then set `file` (and `version`) here.
+// docs/FILMS.md has the step-by-step.
+type FilmSpec = { file: string | null; version?: string; title: string; label: string; durationSeconds?: number };
+
+function film(s: FilmSpec): GuideClip | null {
+  if (!s.file) return null;
+  const slug = `${s.file}-${s.version ?? "v1"}`;
+  return {
+    id: s.file,
+    title: s.title,
+    label: s.label,
+    src: VIDEO_BASE ? `${VIDEO_BASE}/${slug}.mp4` : null,
+    poster: `${MEDIA}/posters/${slug}.jpg`,
+    captions: `${MEDIA}/captions/${slug}.vtt`,
+    durationSeconds: s.durationSeconds ?? 0,
+  };
+}
+
+export const FILMS = {
+  F01: film({ file: null, title: "Welcome from Duane", label: "A welcome from Duane" }),
+  F02: CLOSING_GUIDE,
+  F03: film({ file: null, title: "A worked example", label: "Worked example · from snapshot to action" }),
+  F04: film({ file: null, title: "Your profile", label: "Getting started with your profile" }),
+  F05: film({ file: null, title: "Your goal check-in", label: "How the goal check-in works" }),
+  L01: film({ file: null, title: "Seeing where you are", label: "Academy · lesson 1" }),
+  L02: film({ file: null, title: "Choosing one place to start", label: "Academy · lesson 2" }),
+  L03: film({ file: null, title: "What matters here", label: "Academy · lesson 3" }),
+  L04: film({ file: null, title: "From clarity to one step", label: "Academy · lesson 4" }),
+  M01: film({ file: null, title: "Musing 1", label: "Duane’s Musings" }),
+  M02: film({ file: null, title: "Musing 2", label: "Duane’s Musings" }),
+} satisfies Record<string, GuideClip | null>;
+
 // Short labels for the life map, where full area names don't fit.
 export const AREA_SHORT_NAMES: Record<number, string> = {
   1: "Health",

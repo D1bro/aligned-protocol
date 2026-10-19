@@ -4,8 +4,22 @@ import { env } from "@/lib/env";
 
 // /api/cron and /api/reminders check their own secret or token; the Stripe
 // webhook checks Stripe's signature.
-// /auth/confirm checks the one-time token in each sign-in email link.
-const PUBLIC_PATHS = ["/login", "/reset-password", "/auth/confirm", "/api/cron", "/api/reminders", "/api/stripe/webhook"];
+// /auth/confirm checks the one-time token in each sign-in email link. The
+// homepage, search-engine files and site icons are for everyone.
+const PUBLIC_PATHS = [
+  "/login",
+  "/reset-password",
+  "/auth/confirm",
+  "/home",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/icon",
+  "/apple-icon",
+  "/opengraph-image",
+  "/api/cron",
+  "/api/reminders",
+  "/api/stripe/webhook",
+];
 
 // Anyone can start and finish the audit without an account. A real (but
 // temporary, nameless) account is created behind the scenes via Supabase's
@@ -85,12 +99,17 @@ export async function updateSession(request: NextRequest) {
   if (!user || user.is_anonymous) {
     const url = request.nextUrl.clone();
     // The plain homepage is the front door for anyone without a real
-    // account yet — send them straight into the audit (the actual point of
-    // entry for a new visitor) instead of a sign-in form they have no use
-    // for. Every other protected page still sends them to sign in, since by
-    // then they're looking for something specific that only an existing
-    // account has.
-    url.pathname = path === "/" ? "/audit" : "/login";
+    // account yet: it shows the public homepage (still at "/"), with a
+    // "continue" button for a guest part-way through the audit. Every other
+    // protected page sends them to sign in, since by then they're looking
+    // for something only an existing account has.
+    if (path === "/") {
+      url.pathname = "/home";
+      const rewrite = NextResponse.rewrite(url, { request });
+      response.cookies.getAll().forEach((cookie) => rewrite.cookies.set(cookie));
+      return rewrite;
+    }
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 

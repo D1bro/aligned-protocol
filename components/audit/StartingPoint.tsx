@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveStartingPoint } from "@/lib/actions/clear";
+import { PROFILE_OFFER } from "@/lib/site-copy";
 
 export type StartArea = { id: string; name: string; score: number; note: string | null };
 
@@ -106,7 +107,7 @@ export function StartingPoint({
 
       <div className="au-start-actions">
         <button type="button" className="btn btn-p" onClick={submit} disabled={pending}>
-          {pending ? "Saving…" : isGuest ? "Save my starting point" : `Start with ${chosen.name} →`}
+          {pending ? "Saving…" : isGuest ? PROFILE_OFFER.button : `Start with ${chosen.name} →`}
         </button>
         <button type="button" className="au-text-link as-btn" onClick={() => setPicking((p) => !p)} aria-expanded={picking}>
           {picking ? "Keep this area" : "I’d rather start somewhere else"}
@@ -114,7 +115,8 @@ export function StartingPoint({
       </div>
       {isGuest ? (
         <p className="au-start-note">
-          Creates a free account that keeps your snapshot, your notes and this starting point together on your profile.
+          Saves this starting point, then creates your free profile to keep it with your snapshot and notes.{" "}
+          {PROFILE_OFFER.next}
         </p>
       ) : null}
       {error ? <p className="au-status err" role="alert">{error}</p> : null}

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Sora, DM_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SITE } from "@/lib/site-copy";
 import "./globals.css";
 
 const sora = Sora({
@@ -18,9 +19,9 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Aligned",
-  description:
-    "Ten honest questions about where your life stands right now — and a clear snapshot of where to focus first.",
+  metadataBase: new URL(SITE.url),
+  title: { default: "Aligned", template: "%s · Aligned" },
+  description: SITE.description,
 };
 
 export const viewport: Viewport = {

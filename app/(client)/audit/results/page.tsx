@@ -9,6 +9,7 @@ import { AREA_GUIDES, AREA_SHORT_NAMES, CLOSING_GUIDE } from "@/lib/audit-guides
 import type { SnapshotArea } from "@/components/audit/SnapshotView";
 import type { StartArea } from "@/components/audit/StartingPoint";
 import { ResultsBody } from "@/components/audit/ResultsBody";
+import { ProfileOffer } from "@/components/site/ProfileOffer";
 
 export default async function ResultsPage() {
   const audit = await getLatestCompletedAudit();
@@ -131,12 +132,8 @@ export default async function ResultsPage() {
           {isGuest ? (
             <li className="primary">
               <span className="au-step-n">02</span>
-              <h3>Build your profile</h3>
-              <p>
-                A free account keeps your snapshot, your notes and your starting point together, and opens CLEAR — a
-                short guided plan that turns your starting point into one clear goal.
-              </p>
-              <Link href="/login?signup=1" className="btn btn-p">Create my free profile</Link>
+              {/* Until the starting point is saved, the button goes to the question (where saving happens). */}
+              <ProfileOffer headingLevel={3} href={plan ? "/login?signup=1" : "#step-up"} />
             </li>
           ) : planCard?.stage === "done" ? (
             <li className="primary">
