@@ -1327,3 +1327,5 @@ h3.profile-offer-h { font-size: 19px; }
 .cp-contact dd { color: var(--text); overflow-wrap: anywhere; }
 .cp-contact p { margin-top: .6rem; font-size: 12px; color: var(--text3); }
 .details-sec input[aria-invalid=true], .details-sec select[aria-invalid=true], .details-sec textarea[aria-invalid=true] { border-color: var(--lo); }
+/* Sign-in pages under the public header */
+.auth-with-head { min-height: calc(100vh - 65px); }

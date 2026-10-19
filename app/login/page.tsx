@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForms } from "./LoginForms";
+import { SiteHeader } from "@/components/site/SiteHeader";
 
 export const metadata = { title: "Sign in", robots: { index: false, follow: true } };
 
@@ -29,10 +30,13 @@ async function guestWork(): Promise<{ hasSnapshot: boolean; startingPointSaved: 
 export default async function LoginPage() {
   const work = await guestWork();
   return (
-    <div className="center-page auth-bg">
-      <Suspense fallback={null}>
-        <LoginForms hasSnapshot={work.hasSnapshot} startingPointSaved={work.startingPointSaved} />
-      </Suspense>
+    <div className="site">
+      <SiteHeader cta={{ href: "/audit", label: "Take the free audit" }} />
+      <main className="center-page auth-bg auth-with-head">
+        <Suspense fallback={null}>
+          <LoginForms hasSnapshot={work.hasSnapshot} startingPointSaved={work.startingPointSaved} />
+        </Suspense>
+      </main>
     </div>
   );
 }
