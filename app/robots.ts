@@ -13,6 +13,7 @@ export default function robots(): MetadataRoute.Robots {
         "/audit/",
         "/home",
         "/clear",
+        "/details",
         "/goals",
         "/summary",
         "/coaching",

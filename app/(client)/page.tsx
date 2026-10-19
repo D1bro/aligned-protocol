@@ -7,6 +7,9 @@ import { getIdentityStatement } from "@/lib/actions/preferences";
 import { getLessonProgress } from "@/lib/actions/learn";
 import { PATHS } from "@/lib/learn-content";
 import { getCurrentProfile } from "@/lib/session";
+import { getMyDetails } from "@/lib/actions/details";
+import { greetingName } from "@/lib/details";
+import { DetailsPrompt } from "@/components/profile/DetailsPrompt";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
 import { ProfileSteps, type Step } from "@/components/profile/ProfileSteps";
@@ -19,20 +22,29 @@ const filled = (v: string | null | undefined) => !!v?.trim();
 // Order: welcome, one next action, real progress, learning, then the wider
 // audit context. The full plan lives on My plan; the history on My journey.
 export default async function ProfilePage() {
-  const profile = await getCurrentProfile();
-  const firstName = profile?.full_name?.split(" ")[0];
+  const [profile, details] = await Promise.all([getCurrentProfile(), getMyDetails()]);
+  const firstName = greetingName({ preferred_name: details.preferred_name, full_name: profile?.full_name }) ?? undefined;
   const audit = await getLatestCompletedAudit();
+  // The optional invitation to add details: only once 0016 is in, only if
+  // they've added nothing yet, and never after "Later".
+  const offerDetails =
+    details.available && !details.promptDismissed && !details.preferred_name && !details.phone && !details.town && !details.country && !details.timezone;
+  const editDetails = <Link href="/details" className="au-text-link profile-edit">Edit my details</Link>;
 
   if (!audit) {
     return (
       <div className="page au-page">
-        <div className="eyebrow"><span className="eydot" /> My profile</div>
+        <div className="profile-topline">
+          <div className="eyebrow"><span className="eydot" /> My profile</div>
+          {editDetails}
+        </div>
         <h1 className="au-latest-h">{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
         <p className="lead">
           Start with the Aligned audit: ten honest questions about where your life stands right now. It takes about
           ten minutes, and gives you a snapshot and a clear place to start.
         </p>
         <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
+        {offerDetails ? <DetailsPrompt /> : null}
       </div>
     );
   }
@@ -133,7 +145,10 @@ export default async function ProfilePage() {
   return (
     <div className="page au-page profile-v2">
       <header className="profile-welcome">
-        <div className="eyebrow"><span className="eydot" /> My profile</div>
+        <div className="profile-topline">
+          <div className="eyebrow"><span className="eydot" /> My profile</div>
+          {editDetails}
+        </div>
         <h1 className="au-latest-h">{firstName ? `Welcome back, ${firstName}.` : "Welcome back."}</h1>
         <p className="profile-sub">Start from where you are today.</p>
         {identity.available ? <IdentityStatement initial={identity.text} /> : null}
@@ -188,6 +203,7 @@ export default async function ProfilePage() {
         </section>
 
         <div className="profile-side">
+          {offerDetails ? <DetailsPrompt /> : null}
           <section className="profile-card" aria-labelledby="progress-h">
             <h2 id="progress-h">Your progress</h2>
             <ProfileSteps steps={steps} />
