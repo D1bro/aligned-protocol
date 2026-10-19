@@ -3,9 +3,8 @@ import { requireStaff, getClientSummaries, getStaff } from "@/lib/actions/admin"
 import { getMyClients } from "@/lib/actions/coach";
 import { formatDate } from "@/lib/audit-schedule";
 import { AddClientForm } from "../AddClientForm";
-import { buildView, filterPeople, stageOf, STAGES, VIEW_LABELS, type ViewKey } from "@/lib/console-views";
-
-const VIEWS: ViewKey[] = ["audits", "plans", "checkins", "lessons"];
+import { buildView, filterPeople, stageOf, STAGES, type ViewKey } from "@/lib/console-views";
+import { ClientTabs, VIEWS } from "./ClientTabs";
 
 function qs(params: Record<string, string | undefined>) {
   const u = new URLSearchParams();
@@ -47,14 +46,7 @@ export default async function ClientsPage({
   }
 
   const needle = q.trim().toLowerCase();
-  const tabs = (
-    <nav className="admin-tabs" aria-label="Lists">
-      <Link href="/coach/clients" aria-current={!view ? "page" : undefined}>People</Link>
-      {VIEWS.map((v) => (
-        <Link key={v} href={`/coach/clients?view=${v}`} aria-current={view === v ? "page" : undefined}>{VIEW_LABELS[v]}</Link>
-      ))}
-    </nav>
-  );
+  const tabs = <ClientTabs current={view ?? "people"} isAdmin={me.role === "admin"} />;
 
   // A list behind one of the Overview numbers.
   if (view) {
@@ -138,6 +130,7 @@ export default async function ClientsPage({
         <button type="submit" className="btn btn-g">Filter</button>
         {q || coach !== "all" || stage || guests ? <Link href="/coach/clients" className="au-text-link">Clear</Link> : null}
         <a href={`/coach/clients/export${qs({ q, coach: coach === "all" ? undefined : coach, stage, guests })}`} className="au-text-link">Export CSV</a>
+        {me.role === "admin" ? <Link href="/coach/clients/guests" className="au-text-link">Manage guests</Link> : null}
       </form>
 
       {shown.length ? (
