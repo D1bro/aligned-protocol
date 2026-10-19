@@ -6,7 +6,6 @@ import { MobileNav, NavLinks, type MobileNavLink } from "@/components/ui/MobileN
 
 export const CLIENT_LINKS: MobileNavLink[] = [
   { group: "You", href: "/", label: "My profile", icon: "▦", match: (p) => p === "/" },
-  { group: "You", href: "/alignment", label: "Daily Alignment", icon: "◌", match: (p) => p.startsWith("/alignment") },
   { group: "You", href: "/audit", label: "The Aligned Audit", icon: "◎", match: (p) => p.startsWith("/audit") },
   { group: "You", href: "/clear", label: "My plan", icon: "◈", match: (p) => p.startsWith("/clear") || p.startsWith("/goals") },
   { group: "You", href: "/summary", label: "My journey", icon: "◑", match: (p) => p.startsWith("/summary") },
@@ -19,7 +18,9 @@ export const CLIENT_LINKS: MobileNavLink[] = [
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "◆", match: () => false };
-const linksFor = (staff: boolean) => (staff ? [...CLIENT_LINKS, STAFF_LINK] : CLIENT_LINKS);
+// Daily Alignment is Tier 2; until that exists only staff have it (lib/alignment.ts).
+const ALIGNMENT_LINK: MobileNavLink = { group: "You", href: "/alignment", label: "Daily Alignment", icon: "◌", match: (p) => p.startsWith("/alignment") };
+const linksFor = (staff: boolean) => (staff ? [CLIENT_LINKS[0], ALIGNMENT_LINK, ...CLIENT_LINKS.slice(1), STAFF_LINK] : CLIENT_LINKS);
 
 export function ClientNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
   const pathname = usePathname();

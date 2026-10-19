@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   addCalendarDays, checkDailyAlignment, checkWeeklyAlignment, isAlignmentDate,
   isAlignmentSchemaMissing, isAlignmentTimeZone, localDate, normalizeTimeZone, weekStart,
-  isFutureDay, isFutureWeek, ALIGNMENT_EXPORT_SCHEMA,
+  isFutureDay, isFutureWeek, ALIGNMENT_EXPORT_SCHEMA, canUseDailyAlignment,
   type AlignmentDaily, type AlignmentWeekly, type AlignmentData, type AlignmentResult,
   type DailyAlignmentInput, type WeeklyAlignmentInput,
 } from "@/lib/alignment";
@@ -20,6 +20,9 @@ async function requireMember() {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (!user || user.is_anonymous) redirect("/login");
   if (error) throw new Error("Couldn’t verify your sign-in. Please try again.");
+  // Tier 2 only (lib/alignment.ts): refused here, not just hidden on screen.
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (!canUseDailyAlignment(profile?.role)) redirect("/");
   return { supabase, userId: user.id };
 }
 function refreshAlignment() {

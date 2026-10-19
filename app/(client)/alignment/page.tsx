@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import { getCurrentProfile } from "@/lib/session";
 import { AlignmentLive } from "@/components/alignment/AlignmentLive";
 import { createClient } from "@/lib/supabase/server";
+import { canUseDailyAlignment } from "@/lib/alignment";
 
 export const metadata: Metadata = { title: "Daily Alignment", robots: { index: false, follow: false } };
 
 export default async function AlignmentPage({ searchParams }: { searchParams: Promise<{ date?: string; view?: string }> }) {
   const profile = await getCurrentProfile();
   if (!profile || profile.isAnonymous) redirect("/login");
+  if (!canUseDailyAlignment(profile.role)) redirect("/");
   // The details migration may not yet be present. Read this optional column
   // separately so older profiles still have a clear device/UTC fallback.
   const supabase = await createClient();

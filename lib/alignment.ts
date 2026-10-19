@@ -205,3 +205,10 @@ export function isFutureWeek(mondayDate: string, timezone: string, now = new Dat
 }
 
 export const ALIGNMENT_EXPORT_SCHEMA = { name: "aligned.daily-alignment", version: 1 } as const;
+
+// Who can use Daily Alignment. It's a Tier 2 feature: until Tier 2 exists,
+// only staff accounts (coaches and admins, practising on their own private
+// records) have it. Swap this one rule for the Tier 2 check when it's built.
+export function canUseDailyAlignment(role: string | null | undefined): boolean {
+  return role === "coach" || role === "admin";
+}

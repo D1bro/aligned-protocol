@@ -11,6 +11,7 @@ import { getMyDetails } from "@/lib/actions/details";
 import { greetingName } from "@/lib/details";
 import { DetailsPrompt } from "@/components/profile/DetailsPrompt";
 import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
+import { canUseDailyAlignment } from "@/lib/alignment";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
 import { ProfileSteps, type Step } from "@/components/profile/ProfileSteps";
@@ -97,8 +98,6 @@ export default async function ProfilePage() {
   const when = goal?.action_when?.trim() || goal?.frequency?.trim() || null;
   const practised = checkIns.filter((c) => c.did_it !== "not_yet");
   const goalsDone = allGoals.filter((g) => g.status === "completed").length;
-  // A plan is set: a current planned goal, a finished plan, or a goal already completed.
-  const hasSetPlan = planned || planState.stage === "done" || goalsDone > 0;
 
   const auditDue = nextAuditDue(audit.completed_at);
   const auditDays = daysUntil(auditDue);
@@ -198,9 +197,8 @@ export default async function ProfilePage() {
         </figure>
       </section>
 
-      {/* Daily Alignment only once there's a plan to work from: straight
-          after a first audit, the page leads to the map and the plan. */}
-      {hasSetPlan ? <DailyAlignmentCard /> : null}
+      {/* Daily Alignment is Tier 2: staff only until Tier 2 exists. */}
+      {canUseDailyAlignment(profile?.role) ? <DailyAlignmentCard /> : null}
       <div className="profile-grid">
         <section className="next-action" aria-labelledby="next-action-h">
           <div className="eyebrow">

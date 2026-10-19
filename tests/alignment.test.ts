@@ -122,3 +122,12 @@ test("future days and weeks are judged in the member's own time zone", () => {
   assert.equal(isFutureWeek("2026-10-26", "Europe/London", now), true);
   assert.equal(isFutureWeek("2026-10-19", "Europe/London", now), false);
 });
+
+import { canUseDailyAlignment } from "../lib/alignment.ts";
+
+test("Daily Alignment is Tier 2: staff only until Tier 2 exists", () => {
+  assert.equal(canUseDailyAlignment("admin"), true);
+  assert.equal(canUseDailyAlignment("coach"), true);
+  assert.equal(canUseDailyAlignment("client"), false);
+  assert.equal(canUseDailyAlignment(null), false);
+});
