@@ -9,4 +9,4 @@ Paste each into Supabase -> Authentication -> Emails -> Templates.
 | Confirm sign up | Confirm your email for the Aligned Protocol | `confirmation.html` |
 | Reset password | Reset your Aligned Protocol password | `recovery.html` |
 | Magic link | Your Aligned Protocol sign-in link | `magic_link.html` |
-| Change email address | Confirm your new email address | `email_change.html` |
+| Change email address | Confirm your email for the Aligned Protocol | `email_change.html` |

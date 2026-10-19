@@ -11,7 +11,11 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { renderEmail, type Block } from "../lib/email-layout.ts";
 import { buildMessage } from "../lib/messages.ts";
 
-const LINK = "{{ .ConfirmationURL }}";
+// Links go through the-aligned.com/auth/confirm (app/auth/confirm/route.ts),
+// so they match the sending domain and work on any device. `next` is where
+// the person lands once the link has signed them in.
+const link = (type: string, next: string) =>
+  `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=${type}&next=${encodeURIComponent(next)}`;
 
 type Template = { file: string; name: string; subject: string; heading: string; preheader: string; blocks: Block[]; footerNote?: string };
 
@@ -25,7 +29,7 @@ export const TEMPLATES: Template[] = [
     blocks: [
       { p: "Hello," },
       { p: "Duane has set up your personal space in the Aligned Protocol — the place we’ll work from together, between our conversations." },
-      { button: { href: LINK, label: "Accept and choose your password" } },
+      { button: { href: link("invite", "/reset-password/confirm?welcome=1"), label: "Accept and choose your password" } },
       { p: "Here’s what happens next:" },
       {
         steps: [
@@ -48,7 +52,7 @@ export const TEMPLATES: Template[] = [
     blocks: [
       { p: "Welcome to the Aligned Protocol." },
       { p: "Please confirm this is your email address, and your account will be ready to use." },
-      { button: { href: LINK, label: "Confirm my email" } },
+      { button: { href: link("email", "/"), label: "Confirm my email" } },
       { signOff: "Duane" },
     ],
     footerNote: "If you didn’t create an account, you can ignore this email.",
@@ -61,7 +65,7 @@ export const TEMPLATES: Template[] = [
     preheader: "Use this link to set a new password.",
     blocks: [
       { p: "We received a request to reset the password for your Aligned Protocol account." },
-      { button: { href: LINK, label: "Choose a new password" } },
+      { button: { href: link("recovery", "/reset-password/confirm"), label: "Choose a new password" } },
       { small: "This link works once. If it has expired, ask for a new one from the sign-in page." },
     ],
     footerNote: "If you didn’t ask for this, you can ignore this email. Your password won’t change.",
@@ -74,21 +78,26 @@ export const TEMPLATES: Template[] = [
     preheader: "Your one-time sign-in link.",
     blocks: [
       { p: "Here’s your link to sign in. It works once." },
-      { button: { href: LINK, label: "Sign me in" } },
+      { button: { href: link("email", "/"), label: "Sign me in" } },
     ],
     footerNote: "If you didn’t ask for this, you can ignore this email.",
   },
   {
     file: "email_change.html",
     name: "Change email address",
-    subject: "Confirm your new email address",
-    heading: "Confirm your new email",
-    preheader: "Confirm the new email address for your account.",
+    // Also what a guest gets when they save their audit by creating an
+    // account (their sign-in gains an email), so it reads right either way.
+    subject: "Confirm your email for the Aligned Protocol",
+    heading: "Confirm your email",
+    preheader: "One click and your account is ready.",
     blocks: [
-      { p: "You asked to change the email address on your Aligned Protocol account from {{ .Email }} to {{ .NewEmail }}." },
-      { button: { href: LINK, label: "Confirm my new email" } },
+      {
+        p: "{{ if .Email }}You asked to change the email address on your Aligned Protocol account from {{ .Email }} to {{ .NewEmail }}.{{ else }}Thanks for taking the Aligned Audit. Confirm this is your email address and your results will be saved to your new account.{{ end }}",
+      },
+      { button: { href: link("email_change", "/"), label: "Confirm my email" } },
+      { signOff: "Duane" },
     ],
-    footerNote: "If you didn’t ask for this, please reply to let us know.",
+    footerNote: "If you didn’t ask for this, you can ignore this email.",
   },
 ];
 
@@ -110,7 +119,11 @@ const out = process.argv[2];
 if (out) {
   const sampleLink = "https://www.the-aligned.com/coaching";
   const fill = (html: string) =>
-    html.replaceAll(LINK, "https://www.the-aligned.com").replaceAll("{{ .Email }}", "sam@example.com").replaceAll("{{ .NewEmail }}", "sam.new@example.com");
+    html
+      .replaceAll("{{ .SiteURL }}", "https://www.the-aligned.com")
+      .replaceAll("{{ .TokenHash }}", "sample")
+      // The email-change wording a guest would see when saving their audit.
+      .replace(/\{\{ if \.Email \}\}.*?\{\{ else \}\}(.*?)\{\{ end \}\}/g, "$1");
   const items: { title: string; subject: string; html: string }[] = [
     ...TEMPLATES.map((t) => ({
       title: `Sign-in email · ${t.name}`,

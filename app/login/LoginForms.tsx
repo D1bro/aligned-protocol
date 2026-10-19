@@ -17,6 +17,8 @@ export function LoginForms() {
   // Arrived from an email confirmation link that couldn't sign them in
   // directly (e.g. opened on another device) — the email is confirmed.
   const confirmed = searchParams.get("confirmed") === "1";
+  // An email link that had already been used or had run out (/auth/confirm).
+  const expired = searchParams.get("link") === "expired";
   const [tab, setTab] = useState<Tab>(fromAudit ? "signup" : "signin");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -72,6 +74,9 @@ export function LoginForms() {
           <p className="auth-card-sub">Sign in to your Aligned Protocol account.</p>
           {confirmed ? (
             <Notice type="ok">Your email is confirmed. Sign in to see your snapshot and starting point.</Notice>
+          ) : null}
+          {expired ? (
+            <Notice type="err">That email link has already been used or has expired. Sign in below, or use &ldquo;Forgot password?&rdquo; to get a new link.</Notice>
           ) : null}
           <form action={handleSignIn}>
             <div className="field">
