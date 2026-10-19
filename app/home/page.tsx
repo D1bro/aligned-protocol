@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getLifeAreas, getInProgressAudit, getLatestCompletedAudit } from "@/lib/actions/audit";
 import { AREA_SHORT_NAMES, FILMS } from "@/lib/audit-guides";
 import { MUSINGS, PATHS } from "@/lib/learn-content";
-import { ABOUT_DUANE, AFTER_REGISTERING, EXAMPLE, FAQS, HERO, HOW, SITE } from "@/lib/site-copy";
+import { ABOUT_DUANE, AFTER_REGISTERING, EXAMPLE, FAQS, HERO, HOW, JOURNAL, LEGAL, SITE } from "@/lib/site-copy";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { ProfileOffer } from "@/components/site/ProfileOffer";
@@ -142,29 +143,37 @@ export default async function HomePage() {
         {/* 4. Duane */}
         <section id="about" className="home-sec" aria-labelledby="about-h">
           <div className="home-in home-about">
+            <Film clip={FILMS.F01} caption="A welcome from Duane.">
+              <figure className="home-portrait">
+                <Image
+                  src={ABOUT_DUANE.photo.src}
+                  width={ABOUT_DUANE.photo.width}
+                  height={ABOUT_DUANE.photo.height}
+                  alt={ABOUT_DUANE.photo.alt}
+                  sizes="(max-width: 900px) 90vw, 440px"
+                />
+              </figure>
+            </Film>
             <div>
               <div className="eyebrow"><span className="eydot" /> About Duane</div>
               <h2 id="about-h">{ABOUT_DUANE.heading}</h2>
-              {/* Until Duane's own words arrive, previews show the placeholder as a
-                  reminder; the live site leaves it out. */}
+              {/* Until Duane approves the wording, previews show it marked as a
+                  draft; the live site leaves the text out. */}
               {ABOUT_DUANE.approved || !isLive
                 ? <>
-                    {ABOUT_DUANE.approved ? null : <span className="draft-tag">Draft · awaiting approved copy</span>}
+                    {ABOUT_DUANE.approved ? null : <span className="draft-tag">Draft · awaiting approval</span>}
                     {ABOUT_DUANE.paragraphs.map((p) => (
                       <p key={p} className="home-lead">{p}</p>
                     ))}
                   </>
                 : null}
+              <p className="home-small home-about-films">
+                Duane also guides you through the audit itself: each of the ten areas has a short film.
+              </p>
+              <div className="home-cta">
+                <a href={ABOUT_DUANE.storyUrl} className="au-text-link">Read Duane&rsquo;s full story ↗</a>
+              </div>
             </div>
-            <Film clip={FILMS.F01} caption="A welcome from Duane.">
-              <figure className="home-film-fallback">
-                <p>
-                  Duane guides you through the audit itself: each of the ten areas has a short film explaining what
-                  you&rsquo;re scoring.
-                </p>
-                <Link href="/audit" className="au-text-link">Start with the introduction</Link>
-              </figure>
-            </Film>
           </div>
         </section>
 
@@ -198,6 +207,17 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
+            <div className="home-journal">
+              <h3>From Duane&rsquo;s journal</h3>
+              <ul className="learn-cards">
+                {JOURNAL.articles.map((a) => (
+                  <li key={a.url}>
+                    <a href={a.url}><b>{a.title}</b><span>{a.summary}</span><em>Read on duanebryan.com ↗</em></a>
+                  </li>
+                ))}
+              </ul>
+              <a href={JOURNAL.url} className="au-text-link">All journal articles ↗</a>
+            </div>
             {published.lessons.length || published.musings.length ? (
               <ul className="learn-cards home-learn">
                 {published.lessons.map((l) => (
@@ -242,6 +262,7 @@ export default async function HomePage() {
           <span>Alignment is the foundation. Action is the transformation.</span>
           <span>
             Aligned Media · <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a> · <Link href="/login">Sign in</Link>
+            {LEGAL.confirmed ? <> · <a href={LEGAL.privacy}>Privacy</a> · <a href={LEGAL.terms}>Terms</a></> : null}
           </span>
         </div>
       </footer>

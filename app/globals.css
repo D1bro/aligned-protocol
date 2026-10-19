@@ -1329,3 +1329,13 @@ h3.profile-offer-h { font-size: 19px; }
 .details-sec input[aria-invalid=true], .details-sec select[aria-invalid=true], .details-sec textarea[aria-invalid=true] { border-color: var(--lo); }
 /* Sign-in pages under the public header */
 .auth-with-head { min-height: calc(100vh - 65px); }
+
+/* Homepage: Duane's photo and journal */
+.home-portrait { border-radius: 18px; overflow: hidden; border: 1px solid var(--bdr2); max-width: 440px; justify-self: center; width: 100%; box-shadow: var(--shadow-md); }
+.home-portrait img { display: block; width: 100%; height: auto; }
+.home-about { grid-template-columns: .85fr 1.15fr; }
+.home-about-films { margin-top: .4rem; }
+.home-journal { margin-top: 2.2rem; }
+.home-journal h3 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 18px; color: var(--text); margin-bottom: .8rem; }
+.home-journal .learn-cards { margin-bottom: .9rem; }
+@media (max-width: 900px) { .home-about { grid-template-columns: 1fr; } .home-portrait { max-width: 340px; } }

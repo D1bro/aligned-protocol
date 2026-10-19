@@ -37,12 +37,39 @@ export const HOW = [
   { title: "Review", text: "A monthly goal check-in records what happened, so you can keep going, adjust or move on. Revisit all ten areas every few months." },
 ];
 
-// Set approved: true once Duane has supplied his own introduction. Until
-// then the section is clearly marked as a draft.
+// Set approved: true once Duane has approved the wording. Until then the
+// live site shows the photo and the link to his story, but not the text;
+// previews show the text marked as a draft. Drafted from Duane's own words
+// on duanebryan.com/about.
 export const ABOUT_DUANE = {
   approved: false,
   heading: "A welcome from Duane",
-  paragraphs: ["Awaiting Duane’s approved introduction: three to five sentences in his own words."],
+  paragraphs: [
+    "I help people get clear, get aligned and move forward, because I know what it feels like to look like you’re holding it together on the outside while knowing something has to change on the inside.",
+    "At 42, after businesses and relationships had fallen apart, I decided to change my life properly: not perform change, live it. At 43 I went back to university to study psychology at master’s level, to put language to what I’d been living.",
+    "The Aligned Protocol is what came out of that. Supportive, but not soft. Clear, but not cold. Not motivation: evidence.",
+  ],
+  photo: { src: "/media/duane/duane-portrait.jpg", width: 900, height: 1350, alt: "Duane Bryan, smiling, sitting outside at a table with his laptop" },
+  storyUrl: "https://www.duanebryan.com/about",
+};
+
+// Duane's published journal on duanebryan.com, linked from Explore.
+export const JOURNAL = {
+  url: "https://www.duanebryan.com/journal",
+  articles: [
+    { title: "How to Stop Drifting", summary: "3 steps to break the cycle and start building a life you respect.", url: "https://www.duanebryan.com/journal/how-to-stop-drifting" },
+    { title: "Why Discipline Creates Freedom", summary: "Discipline isn’t restriction. It’s the path to options.", url: "https://www.duanebryan.com/journal/why-discipline-creates-freedom" },
+    { title: "Evidence Builds Self-Belief", summary: "Why proof, not positivity, creates real confidence.", url: "https://www.duanebryan.com/journal/evidence-builds-self-belief" },
+  ],
+};
+
+// Privacy policy and terms live on duanebryan.com. Set confirmed: true once
+// Duane has checked they cover this site (accounts, audits, coaching notes
+// and payments); until then the footer leaves them out.
+export const LEGAL = {
+  confirmed: false,
+  privacy: "https://www.duanebryan.com/privacy-policy",
+  terms: "https://www.duanebryan.com/terms-and-conditions",
 };
 
 // The free-profile offer, word for word on the homepage, the results page
