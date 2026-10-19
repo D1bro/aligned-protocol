@@ -1177,3 +1177,13 @@ a.admin-row:hover { background: var(--bg3); }
 .em-preview { margin-top: .4rem; }
 .em-body { white-space: pre-wrap; font-family: var(--font-dm-sans), 'DM Sans', sans-serif; font-size: 13px; line-height: 1.6; color: var(--text2); background: var(--bg); border: 1px solid var(--bdr2); border-radius: 10px; padding: .8rem 1rem; max-height: 320px; overflow: auto; }
 .desk-email { margin-top: 1.2rem; display: grid; gap: .5rem; }
+
+/* Console: remove a client */
+.rc-wrap { border-top: 1px solid var(--bdr2); padding-top: 1rem; margin-top: 1rem; }
+.rc-panel { display: grid; gap: .8rem; border: 1px solid rgba(239,100,100,.35); border-radius: 12px; padding: 1rem 1.1rem; background: rgba(239,100,100,.04); }
+.rc-warn { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.rc-warn b { color: var(--text); }
+.rc-label { display: grid; gap: .4rem; font-size: 13px; color: var(--text2); }
+.rc-label b { color: var(--text); overflow-wrap: anywhere; }
+.rc-label input { max-width: 360px; }
+.rc-actions { display: flex; flex-wrap: wrap; gap: .6rem; }

@@ -14,6 +14,8 @@ import { CoachNotesTab } from "./CoachNotesTab";
 import { formatSessionTime } from "@/lib/time";
 import { ClientSettings } from "./ClientSettings";
 import { RemoveGuestButton } from "../guests/GuestActions";
+import { RemoveClient } from "./RemoveClient";
+import { getRemovalCheck } from "@/lib/actions/remove-client";
 import { ResetPasswordButton } from "./ResetPasswordButton";
 import { BillingTab } from "./BillingTab";
 import { getClientBilling } from "@/lib/actions/billing";
@@ -50,6 +52,7 @@ export default async function ClientProfilePage({
   const { viewer, client, summary } = p;
   const isAdmin = viewer.role === "admin";
   const staff = isAdmin && tab === "settings" ? await getStaff() : [];
+  const removal = isAdmin && tab === "settings" && client.email ? await getRemovalCheck(client.id) : null;
   const billing = tab === "billing" || tab === "sessions" ? await getClientBilling(id) : null;
   const jobs = tab === "billing" || tab === "sessions" ? await getMessageJobs(id) : [];
 
@@ -295,7 +298,18 @@ export default async function ClientProfilePage({
         <section className="admin-card" aria-label="Settings">
           <h2>Settings</h2>
           <ClientSettings clientId={client.id} role={client.role} coachId={client.coach_id} staff={staff} isSelf={client.id === viewer.id} />
-          {client.email ? <ResetPasswordButton clientId={client.id} /> : (
+          {client.email ? (
+            <>
+              <ResetPasswordButton clientId={client.id} />
+              {removal ? (
+                removal.reason ? (
+                  <p className="admin-hint rc-wrap" style={{ fontSize: "13px" }}>{removal.reason}</p>
+                ) : (
+                  <RemoveClient clientId={client.id} email={client.email} name={name} />
+                )
+              ) : null}
+            </>
+          ) : (
             <div className="admin-settings" style={{ borderTop: "1px solid var(--bdr2)", paddingTop: "1rem" }}>
               {p.enquiries.length || p.coaching.sessions.length ? (
                 <p className="admin-hint">This guest asked about coaching, so they can&rsquo;t be removed.</p>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/actions/admin";
+import { withBillingRecords } from "@/lib/billing-records";
 import { idleGuests, isProtected, latest, type GuestRow } from "@/lib/guests";
 
 // Guest management for admins (/coach/clients/guests). Guests have no email,
@@ -53,15 +54,12 @@ async function loadGuests(admin: Admin, only?: Set<string>): Promise<GuestRow[]>
   const audits = await rowsFor<{ id: string; client_id: string; status: string; total_score: number | null; completed_at: string | null; created_at: string }>(
     admin, "audits", "id, client_id, status, total_score, completed_at, created_at", "client_id", gids);
   const responses = await rowsFor<{ audit_id: string; created_at: string }>(admin, "audit_responses", "audit_id, created_at", "audit_id", audits.map((a) => a.id));
-  const [enquiries, sessions, invoices, receipts, credits] = await Promise.all([
+  const [enquiries, sessions, billing] = await Promise.all([
     rowsFor<{ client_id: string }>(admin, "coaching_enquiries", "client_id", "client_id", gids),
     rowsFor<{ client_id: string }>(admin, "coaching_sessions", "client_id", "client_id", gids),
-    rowsFor<{ client_id: string }>(admin, "invoices", "client_id", "client_id", gids),
-    rowsFor<{ client_id: string }>(admin, "receipts", "client_id", "client_id", gids),
-    rowsFor<{ client_id: string }>(admin, "credit_notes", "client_id", "client_id", gids),
+    withBillingRecords(admin, gids),
   ]);
   const coaching = new Set([...enquiries, ...sessions].map((r) => r.client_id));
-  const billing = new Set([...invoices, ...receipts, ...credits].map((r) => r.client_id));
 
   const answersByAudit = new Map<string, { n: number; last: string | null }>();
   for (const r of responses) {
