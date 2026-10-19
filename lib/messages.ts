@@ -3,6 +3,8 @@
 // email says something is ready and links to the member area, where it's
 // behind sign-in. Every email can carry a short personal note from the coach.
 
+import { renderEmail, renderText, type Block } from "./email-layout.ts";
+
 export type Message = { subject: string; text: string; html: string };
 
 export type MessageInput =
@@ -47,83 +49,109 @@ export type MessageInput =
       note?: string | null;
     };
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+type Part = Block | null | undefined | false | "";
 
-// Paragraphs of plain text -> the same email as text and simple HTML.
-function compose(subject: string, paras: (string | null | undefined | false)[], link: { href: string; label: string }, signOff: string): Message {
-  const body = paras.filter((p): p is string => typeof p === "string" && p.trim().length > 0);
-  const text = [...body, `${link.label}: ${link.href}`, signOff].join("\n\n");
-  const html = [
-    `<div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1c1c1f;max-width:560px">`,
-    ...body.map((p) => `<p style="margin:0 0 14px">${esc(p).replace(/\n/g, "<br>")}</p>`),
-    `<p style="margin:20px 0"><a href="${esc(link.href)}" style="background:#D3A758;color:#100F18;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">${esc(link.label)}</a></p>`,
-    `<p style="margin:0 0 14px">${esc(signOff).replace(/\n/g, "<br>")}</p>`,
-    `</div>`,
-  ].join("");
-  return { subject, text, html };
+// The shared Aligned look (lib/email-layout.ts), as HTML and plain text.
+function compose(subject: string, heading: string, preheader: string, parts: Part[], footerNote?: string): Message {
+  const blocks = parts.filter((b): b is Block => Boolean(b));
+  return {
+    subject,
+    html: renderEmail({ preheader, heading, blocks, footerNote }),
+    text: renderText({ heading, blocks, footerNote }),
+  };
 }
 
-const noteBlock = (note?: string | null) => (note?.trim() ? note.trim().slice(0, 1000) : null);
+// A personal note from the coach, shown set apart in the email.
+const noteBlock = (note?: string | null): Part => (note?.trim() ? { quote: note.trim().slice(0, 1000) } : null);
 
 export function buildMessage(m: MessageInput): Message {
   switch (m.kind) {
     case "summary_shared":
       return compose(
         "Your session notes are ready",
+        "Your session notes are ready",
+        `Notes and next steps from our session on ${m.sessionLabel}.`,
         [
-          `Hi ${m.firstName},`,
-          `The notes from our session on ${m.sessionLabel} are ready in your member area, with the next steps we agreed.`,
+          { p: `Hi ${m.firstName},` },
+          { p: `The notes from our session on ${m.sessionLabel} are ready in your member area, with the next steps we agreed.` },
           noteBlock(m.note),
-          "You can let me know how each step is going from the same page.",
-        ],
-        { href: m.link, label: "Read your session notes" },
-        m.coachName
+          { button: { href: m.link, label: "Read your session notes" } },
+          { p: "You can let me know how each step is going from the same page." },
+          { signOff: m.coachName },
+        ]
       );
     case "session_update": {
-      const where = m.location?.trim() ? `\nWhere: ${m.location.trim()}` : "";
-      const details = `${m.when}, ${m.durationMinutes} minutes${where}`;
-      const lines: Record<typeof m.change, [string, string]> = {
-        confirmed: ["Your coaching session is confirmed", `Our next session is confirmed:\n${details}`],
-        proposed: ["A proposed time for your next session", `I’d like to suggest this time for our next session:\n${details}\n\nReply to let me know if it works.`],
-        rescheduled: [
-          "Your coaching session has moved",
-          `Our session${m.previousWhen ? ` on ${m.previousWhen}` : ""} has moved to:\n${details}`,
-        ],
-        cancelled: ["Your coaching session is cancelled", `Our session on ${m.when} is cancelled.`],
+      const details = [`${m.when}`, `${m.durationMinutes} minutes`, ...(m.location?.trim() ? [`Where: ${m.location.trim()}`] : [])];
+      const copy: Record<typeof m.change, { subject: string; heading: string; intro: string; outro?: string }> = {
+        confirmed: { subject: "Your coaching session is confirmed", heading: "Your session is confirmed", intro: "Our next session is confirmed:" },
+        proposed: {
+          subject: "A proposed time for your next session",
+          heading: "A time for our next session",
+          intro: "I’d like to suggest this time for our next session:",
+          outro: "Reply to let me know if it works.",
+        },
+        rescheduled: {
+          subject: "Your coaching session has moved",
+          heading: "Your session has moved",
+          intro: `Our session${m.previousWhen ? ` on ${m.previousWhen}` : ""} has moved to:`,
+        },
+        cancelled: { subject: "Your coaching session is cancelled", heading: "Your session is cancelled", intro: `Our session on ${m.when} is cancelled.` },
       };
-      const [subject, main] = lines[m.change];
-      return compose(subject, [`Hi ${m.firstName},`, main, noteBlock(m.note)], { href: m.link, label: "See your coaching page" }, m.coachName);
+      const c = copy[m.change];
+      return compose(c.subject, c.heading, m.change === "cancelled" ? c.intro : `${c.intro} ${m.when}`, [
+        { p: `Hi ${m.firstName},` },
+        { p: c.intro },
+        m.change !== "cancelled" && { box: details },
+        c.outro && { p: c.outro },
+        noteBlock(m.note),
+        { button: { href: m.link, label: "See your coaching page" } },
+        { signOff: m.coachName },
+      ]);
     }
     case "invoice_issued": {
-      const bank =
-        m.owed && m.bank?.accountName && m.bank.sortCode && m.bank.accountNumber
-          ? `To pay by bank transfer:\nAccount name: ${m.bank.accountName}\nSort code: ${m.bank.sortCode}\nAccount number: ${m.bank.accountNumber}\nReference: ${m.number}`
-          : null;
       const status = !m.owed
         ? `Invoice ${m.number} for ${m.total} has been paid in full — thank you. You can view and download it in your member area.`
         : m.partPaid
           ? `Invoice ${m.number} for ${m.total} has ${m.owed} still to pay, due by ${m.due}. You can view and download it in your member area.`
           : `Invoice ${m.number} for ${m.total} is ready, due by ${m.due}. You can view and download it in your member area.`;
+      const bank =
+        m.owed && m.bank?.accountName && m.bank.sortCode && m.bank.accountNumber
+          ? ["To pay by bank transfer:", `Account name: ${m.bank.accountName}`, `Sort code: ${m.bank.sortCode}`, `Account number: ${m.bank.accountNumber}`, `Reference: ${m.number}`]
+          : null;
       return compose(
         `Invoice ${m.number} from ${m.supplierName}`,
-        [`Hi ${m.firstName},`, status, bank, m.owed && m.cardPayments ? "You can also pay by card from your member area." : null, noteBlock(m.note)],
-        { href: m.link, label: "View your invoice" },
-        `Thank you,\n${m.supplierName}`
+        m.owed ? `Invoice ${m.number}` : `Invoice ${m.number} — paid`,
+        m.owed ? `${m.owed} due by ${m.due}.` : `Paid in full — thank you.`,
+        [
+          { p: `Hi ${m.firstName},` },
+          { p: status },
+          bank && { box: bank },
+          m.owed && m.cardPayments && { p: "You can also pay by card from your member area." },
+          noteBlock(m.note),
+          { button: { href: m.link, label: "View your invoice" } },
+          { signOff: `Thank you,\n${m.supplierName}` },
+        ]
       );
     }
     case "payment_received":
       return compose(
-        `Payment received — thank you`,
+        "Payment received — thank you",
+        "Payment received — thank you",
+        `We received your payment of ${m.amount}.`,
         [
-          `Hi ${m.firstName},`,
-          `Thank you — we received your payment of ${m.amount} on ${m.receivedOn}.`,
-          m.applied.length ? m.applied.map((a) => `${a.amount} paid towards invoice ${a.number}`).join("\n") : null,
-          m.refunded?.length ? m.refunded.map((r) => `${r.amount} refunded to you on ${r.on}`).join("\n") : null,
-          m.unapplied ? `${m.unapplied} hasn’t been put towards an invoice yet. We’ll be in touch about it.` : null,
+          { p: `Hi ${m.firstName},` },
+          { p: `Thank you — we received your payment of ${m.amount} on ${m.receivedOn}.` },
+          (m.applied.length > 0 || (m.refunded?.length ?? 0) > 0) && {
+            box: [
+              ...m.applied.map((a) => `${a.amount} paid towards invoice ${a.number}`),
+              ...(m.refunded ?? []).map((r) => `${r.amount} refunded to you on ${r.on}`),
+            ],
+          },
+          m.unapplied && { p: `${m.unapplied} hasn’t been put towards an invoice yet. We’ll be in touch about it.` },
           noteBlock(m.note),
-        ],
-        { href: m.link, label: "See your invoices" },
-        `Thank you,\n${m.supplierName}`
+          { button: { href: m.link, label: "See your invoices" } },
+          { signOff: `Thank you,\n${m.supplierName}` },
+        ]
       );
   }
 }

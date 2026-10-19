@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SITE_URL } from "@/lib/email";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -104,8 +105,11 @@ export async function addClient(formData: FormData): Promise<ActionResult> {
   if (!fullName || !email) return { ok: false, message: "Enter a name and email." };
 
   const admin = createAdminClient();
+  // The invite link lands on the set-password page, so a new client chooses
+  // a password straight away instead of arriving signed in without one.
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { full_name: fullName, role: "client" },
+    redirectTo: `${SITE_URL}/reset-password/confirm?welcome=1`,
   });
   if (error) return { ok: false, message: error.message };
 

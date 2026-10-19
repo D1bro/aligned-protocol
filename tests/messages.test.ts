@@ -21,7 +21,7 @@ test("session emails say what changed", () => {
   const base = { kind: "session_update" as const, firstName: "Sam", coachName: "C", when: "Tue, 27 Oct 2026, 19:30 GMT", durationMinutes: 60, location: "Zoom", link: "https://x.test" };
   assert.equal(buildMessage({ ...base, change: "confirmed" }).subject, "Your coaching session is confirmed");
   const moved = buildMessage({ ...base, change: "rescheduled", previousWhen: "Mon, 26 Oct 2026, 18:00 GMT" });
-  assert.match(moved.text, /Mon, 26 Oct 2026, 18:00 GMT has moved to:\nTue, 27 Oct 2026, 19:30 GMT/);
+  assert.match(moved.text, /Mon, 26 Oct 2026, 18:00 GMT has moved to:\n\nTue, 27 Oct 2026, 19:30 GMT/);
   assert.match(moved.text, /Where: Zoom/);
   assert.match(buildMessage({ ...base, change: "cancelled" }).text, /is cancelled/);
 });
