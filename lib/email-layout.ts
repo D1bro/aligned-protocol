@@ -81,7 +81,7 @@ export function renderEmail(input: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page}"><tr><td align="center" style="padding:28px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;font-family:${FONT}">
 <tr><td align="center" style="background:${C.band};border-radius:16px 16px 0 0;padding:26px 24px 20px">
-<img src="${LOGO_URL}" width="104" height="104" alt="Aligned Protocol" style="display:block;width:104px;height:104px;border:0">
+<img src="${LOGO_URL}" width="104" height="104" alt="Aligned" style="display:block;width:104px;height:104px;border:0">
 </td></tr>
 <tr><td style="background:${C.card};padding:34px 36px 30px;border-radius:0 0 16px 16px">
 <h1 style="margin:0 0 18px;font-size:24px;line-height:1.3;font-weight:700;color:${C.ink};letter-spacing:-0.2px">${esc(input.heading)}</h1>
@@ -89,7 +89,7 @@ ${input.blocks.map(block).join("\n")}
 </td></tr>
 <tr><td align="center" style="padding:22px 20px 6px;font-size:13px;line-height:1.6;color:${C.ink3}">
 <em style="color:${C.ink2}">${esc(MOTTO)}</em><br>
-Aligned Media · <a href="https://www.the-aligned.com" style="color:${C.ink3}">the-aligned.com</a>
+Aligned · <a href="https://www.the-aligned.com" style="color:${C.ink3}">the-aligned.com</a>
 ${input.footerNote ? `<br><span style="font-size:12px">${nl(input.footerNote)}</span>` : ""}
 </td></tr>
 </table>
@@ -110,6 +110,6 @@ export function renderText(input: { heading: string; blocks: Block[]; footerNote
     else if ("smallLink" in b) parts.push(`${b.smallLink.lead} ${b.smallLink.label}: ${b.smallLink.href}`);
     else parts.push(b.signOff);
   }
-  parts.push(`— ${MOTTO}\nAligned Media · www.the-aligned.com${input.footerNote ? `\n${input.footerNote}` : ""}`);
+  parts.push(`— ${MOTTO}\nAligned · www.the-aligned.com${input.footerNote ? `\n${input.footerNote}` : ""}`);
   return parts.join("\n\n");
 }

@@ -15,7 +15,7 @@ import { LifeMap } from "@/components/audit/LifeMap";
 const EXAMPLE_SCORES = [8, 8, 8, 4, 8, 5, 8, 5, 6, 8];
 
 export const metadata: Metadata = {
-  title: "The Aligned audit",
+  title: "The Aligned Audit",
   description: "Ten honest questions about ten areas of your life. Score how things feel today, add notes, and see a clear snapshot of where to start. Free, about ten minutes.",
   alternates: { canonical: "/audit" },
   robots: { index: true, follow: true },
@@ -62,7 +62,7 @@ export default async function AuditEntryPage({ searchParams }: { searchParams: P
               <div className="au-brand-sub">PROTOCOL</div>
             </div>
           </div>
-          <div className="eyebrow"><span className="eydot" /> The Aligned audit</div>
+          <div className="eyebrow"><span className="eydot" /> The Aligned Audit</div>
           <h1 className="au-hero-h">
             Ten honest questions.
             <br />
@@ -148,7 +148,7 @@ async function LatestAudit({
 
   return (
     <div className="page au-page">
-      <div className="eyebrow"><span className="eydot" /> Your Aligned audit</div>
+      <div className="eyebrow"><span className="eydot" /> Your Aligned Audit</div>
       <h1 className="au-latest-h">Your latest snapshot</h1>
       <p className="lead">
         Taken {formatDate(audit.completed_at)} · Overall {total} / 100

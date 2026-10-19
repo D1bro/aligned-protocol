@@ -6,7 +6,7 @@ Paste each into Supabase -> Authentication -> Emails -> Templates.
 | Supabase template | Subject | File |
 |---|---|---|
 | Invite user | Your invitation to the Aligned Protocol | `invite.html` |
-| Confirm sign up | Confirm your email for the Aligned Protocol | `confirmation.html` |
-| Reset password | Reset your Aligned Protocol password | `recovery.html` |
-| Magic link | Your Aligned Protocol sign-in link | `magic_link.html` |
-| Change email address | Confirm your email for the Aligned Protocol | `email_change.html` |
+| Confirm sign up | Confirm your email for Aligned | `confirmation.html` |
+| Reset password | Reset your Aligned password | `recovery.html` |
+| Magic link | Your Aligned sign-in link | `magic_link.html` |
+| Change email address | Confirm your email for Aligned | `email_change.html` |

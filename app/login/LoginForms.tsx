@@ -74,7 +74,7 @@ export function LoginForms({ hasSnapshot = false, startingPointSaved = false }: 
       {tab === "signin" && (
         <div className="card auth-card">
           <div className="auth-card-title">Welcome back</div>
-          <p className="auth-card-sub">Sign in to your Aligned Protocol account.</p>
+          <p className="auth-card-sub">Sign in to your Aligned account.</p>
           {confirmed ? (
             <Notice type="ok">Your email is confirmed. Sign in to see your snapshot and starting point.</Notice>
           ) : null}
@@ -119,7 +119,7 @@ export function LoginForms({ hasSnapshot = false, startingPointSaved = false }: 
           ) : (
             <>
               <div className="auth-card-title">Create your free profile</div>
-              <p className="auth-card-sub">Start with the Aligned audit, then build your plan.</p>
+              <p className="auth-card-sub">Start with the Aligned Audit, then build your plan.</p>
             </>
           )}
           <form action={handleSignUp}>

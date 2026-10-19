@@ -40,7 +40,7 @@ export default async function ProfilePage() {
         </div>
         <h1 className="au-latest-h">{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
         <p className="lead">
-          Start with the Aligned audit: ten honest questions about where your life stands right now. It takes about
+          Start with the Aligned Audit: ten honest questions about where your life stands right now. It takes about
           ten minutes, and gives you a snapshot and a clear place to start.
         </p>
         <Link href="/audit" className="btn btn-p">Begin my audit →</Link>

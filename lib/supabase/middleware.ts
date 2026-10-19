@@ -11,6 +11,8 @@ const PUBLIC_PATHS = [
   "/reset-password",
   "/auth/confirm",
   "/home",
+  "/privacy",
+  "/terms",
   "/robots.txt",
   "/sitemap.xml",
   "/icon",

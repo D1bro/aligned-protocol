@@ -5,6 +5,7 @@ export const SITE = {
   name: "Aligned",
   url: "https://www.the-aligned.com",
   contactEmail: "hello@the-aligned.com",
+  owner: "Aligned",
   title: "Aligned — see where you stand and choose what matters next",
   description:
     "Ten honest questions about where your life stands today. See your snapshot, choose one area to focus on, and turn it into an action you can practise and review. Free.",
@@ -37,12 +38,33 @@ export const HOW = [
   { title: "Review", text: "A monthly goal check-in records what happened, so you can keep going, adjust or move on. Revisit all ten areas every few months." },
 ];
 
-// Set approved: true once Duane has supplied his own introduction. Until
-// then the section is clearly marked as a draft.
+// Set approved: true once Duane has approved the wording. Until then the
+// live site shows his photo but not the text; previews show the text marked
+// as a draft. Drafted only from Duane's own words on duanebryan.com/about.
 export const ABOUT_DUANE = {
-  approved: false,
+  approved: true, // approved by Duane, 19 October 2026
   heading: "A welcome from Duane",
-  paragraphs: ["Awaiting Duane’s approved introduction: three to five sentences in his own words."],
+  paragraphs: [
+    "I help people get clear, get aligned and move forward, because I know what it feels like to look like you’re holding it together on the outside while knowing something has to change on the inside.",
+    "At 42, after businesses and relationships had fallen apart, I decided to change my life properly: not perform change, live it. At 43 I went back to university to study psychology at master’s level, to put language to what I’d been living.",
+    "The Aligned Protocol is what came out of that. Supportive, but not soft. Clear, but not cold. Not motivation: evidence.",
+  ],
+  // "Read Duane's story", opened on the homepage itself.
+  story: [
+    "There was a point where everything I had built on the outside no longer matched what I felt on the inside. Businesses had failed. Relationships had failed. I had lost parts of my identity, and I was tired of pretending I was fine.",
+    "When I needed to change my mind, I started with my body. I stopped drinking. I got clean. I changed my routine. I trained properly — using my body as the first place to build evidence that I could follow through on what I said I wanted.",
+    "If I was going to tell people they could turn things around, I had to look at my own obstacles first: drinking, co-dependency, mental health, old relationship patterns and the ways I got in my own way. That became part of the foundation for the Aligned Protocol.",
+    "Going back to study psychology gave language to things I had always felt: overthinking, emotional regulation, identity, behaviour and change. I’m not interested in theory for its own sake — only the kind of insight that helps you take the next step.",
+  ],
+  photo: { src: "/media/duane/duane-portrait.jpg", width: 900, height: 1350, alt: "Duane Bryan, smiling, sitting outside at a table with his laptop" },
+};
+
+// The privacy policy and terms on this site (/privacy, /terms). Drafts until
+// Duane (ideally with a solicitor) approves them: previews show them marked
+// as drafts; the live site hides them and their footer links.
+export const LEGAL = {
+  approved: false,
+  updated: "October 2026",
 };
 
 // The free-profile offer, word for word on the homepage, the results page
