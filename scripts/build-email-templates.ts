@@ -46,11 +46,11 @@ export const TEMPLATES: Template[] = [
   {
     file: "confirmation.html",
     name: "Confirm sign up",
-    subject: "Confirm your email for the Aligned Protocol",
+    subject: "Confirm your email for Aligned",
     heading: "Confirm your email",
     preheader: "One click and your account is ready.",
     blocks: [
-      { p: "Welcome to the Aligned Protocol." },
+      { p: "Welcome to Aligned." },
       { p: "Please confirm this is your email address, and your account will be ready to use." },
       { button: { href: link("email", "/"), label: "Confirm my email" } },
       { signOff: "Duane" },
@@ -60,11 +60,11 @@ export const TEMPLATES: Template[] = [
   {
     file: "recovery.html",
     name: "Reset password",
-    subject: "Reset your Aligned Protocol password",
+    subject: "Reset your Aligned password",
     heading: "Choose a new password",
     preheader: "Use this link to set a new password.",
     blocks: [
-      { p: "We received a request to reset the password for your Aligned Protocol account." },
+      { p: "We received a request to reset the password for your Aligned account." },
       { button: { href: link("recovery", "/reset-password/confirm"), label: "Choose a new password" } },
       { small: "This link works once. If it has expired, ask for a new one from the sign-in page." },
     ],
@@ -73,8 +73,8 @@ export const TEMPLATES: Template[] = [
   {
     file: "magic_link.html",
     name: "Magic link",
-    subject: "Your Aligned Protocol sign-in link",
-    heading: "Sign in to the Aligned Protocol",
+    subject: "Your Aligned sign-in link",
+    heading: "Sign in to Aligned",
     preheader: "Your one-time sign-in link.",
     blocks: [
       { p: "Here’s your link to sign in. It works once." },
@@ -87,12 +87,12 @@ export const TEMPLATES: Template[] = [
     name: "Change email address",
     // Also what a guest gets when they save their audit by creating an
     // account (their sign-in gains an email), so it reads right either way.
-    subject: "Confirm your email for the Aligned Protocol",
+    subject: "Confirm your email for Aligned",
     heading: "Confirm your email",
     preheader: "One click and your account is ready.",
     blocks: [
       {
-        p: "{{ if .Email }}You asked to change the email address on your Aligned Protocol account from {{ .Email }} to {{ .NewEmail }}.{{ else }}Thanks for taking the Aligned Audit. Confirm this is your email address and your results will be saved to your new account.{{ end }}",
+        p: "{{ if .Email }}You asked to change the email address on your Aligned account from {{ .Email }} to {{ .NewEmail }}.{{ else }}Thanks for taking the Aligned Audit. Confirm this is your email address and your results will be saved to your new account.{{ end }}",
       },
       { button: { href: link("email_change", "/"), label: "Confirm my email" } },
       { signOff: "Duane" },

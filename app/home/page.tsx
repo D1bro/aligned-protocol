@@ -5,11 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getLifeAreas, getInProgressAudit, getLatestCompletedAudit } from "@/lib/actions/audit";
 import { AREA_SHORT_NAMES, FILMS } from "@/lib/audit-guides";
 import { MUSINGS, PATHS } from "@/lib/learn-content";
-import { ABOUT_DUANE, AFTER_REGISTERING, EXAMPLE, FAQS, HERO, HOW, JOURNAL, LEGAL, SITE } from "@/lib/site-copy";
+import { ABOUT_DUANE, AFTER_REGISTERING, EXAMPLE, FAQS, HERO, HOW, SITE } from "@/lib/site-copy";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { ProfileOffer } from "@/components/site/ProfileOffer";
 import { Film } from "@/components/site/Film";
+import { SiteFooter } from "@/components/site/SiteFooter";
 
 // The public homepage. Visitors without a profile (including guests part-way
 // through the audit) see it at "/" — middleware shows this page there — while
@@ -170,9 +171,12 @@ export default async function HomePage() {
               <p className="home-small home-about-films">
                 Duane also guides you through the audit itself: each of the ten areas has a short film.
               </p>
-              <div className="home-cta">
-                <a href={ABOUT_DUANE.storyUrl} className="au-text-link">Read Duane&rsquo;s full story ↗</a>
-              </div>
+              {ABOUT_DUANE.approved || !isLive ? (
+                <details className="home-story">
+                  <summary>Read Duane&rsquo;s story</summary>
+                  {ABOUT_DUANE.story.map((p) => <p key={p}>{p}</p>)}
+                </details>
+              ) : null}
             </div>
           </div>
         </section>
@@ -207,17 +211,6 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
-            <div className="home-journal">
-              <h3>From Duane&rsquo;s journal</h3>
-              <ul className="learn-cards">
-                {JOURNAL.articles.map((a) => (
-                  <li key={a.url}>
-                    <a href={a.url}><b>{a.title}</b><span>{a.summary}</span><em>Read on duanebryan.com ↗</em></a>
-                  </li>
-                ))}
-              </ul>
-              <a href={JOURNAL.url} className="au-text-link">All journal articles ↗</a>
-            </div>
             {published.lessons.length || published.musings.length ? (
               <ul className="learn-cards home-learn">
                 {published.lessons.map((l) => (
@@ -257,15 +250,7 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="site-foot">
-        <div className="home-in site-foot-in">
-          <span>Alignment is the foundation. Action is the transformation.</span>
-          <span>
-            Aligned Media · <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a> · <Link href="/login">Sign in</Link>
-            {LEGAL.confirmed ? <> · <a href={LEGAL.privacy}>Privacy</a> · <a href={LEGAL.terms}>Terms</a></> : null}
-          </span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
