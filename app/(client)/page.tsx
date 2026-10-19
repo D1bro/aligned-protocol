@@ -33,19 +33,34 @@ export default async function ProfilePage() {
   const editDetails = <Link href="/details" className="au-text-link profile-edit">Edit my details</Link>;
 
   if (!audit) {
+    const mapAreas = await getLifeAreas();
     return (
-      <div className="page au-page">
-        <div className="profile-topline">
-          <div className="eyebrow"><span className="eydot" /> My profile</div>
-          {editDetails}
-        </div>
-        <h1 className="au-latest-h">{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
-        <p className="lead">
-          Start with the Aligned Audit: ten honest questions about where your life stands right now. It takes about
-          ten minutes, and gives you a snapshot and a clear place to start.
-        </p>
-        <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
-        <DailyAlignmentCard />
+      <div className="page au-page profile-v2">
+        <section className="profile-top" aria-labelledby="profile-top-h">
+          <div className="profile-top-text">
+            <div className="profile-topline">
+              <div className="eyebrow"><span className="eydot" /> My profile</div>
+              {editDetails}
+            </div>
+            <h1 id="profile-top-h" className="au-latest-h">{firstName ? `Welcome, ${firstName}.` : "Welcome."}</h1>
+            <p className="lead">
+              Start with the Aligned Audit: ten honest questions about where your life stands right now. It takes about
+              ten minutes, and gives you your life map and a clear place to start.
+            </p>
+            <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
+          </div>
+          <figure className="profile-top-map profile-top-map-empty">
+            <div className="au-chart">
+              <LifeMap
+                scores={mapAreas.map(() => 0)}
+                names={mapAreas.map((a) => a.name)}
+                labels={mapAreas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+                title="Your life map, waiting for your first audit"
+              />
+            </div>
+            <figcaption>Your life map appears here after your first audit.</figcaption>
+          </figure>
+        </section>
         {offerDetails ? <DetailsPrompt /> : null}
       </div>
     );
@@ -82,6 +97,8 @@ export default async function ProfilePage() {
   const when = goal?.action_when?.trim() || goal?.frequency?.trim() || null;
   const practised = checkIns.filter((c) => c.did_it !== "not_yet");
   const goalsDone = allGoals.filter((g) => g.status === "completed").length;
+  // A plan is set: a current planned goal, a finished plan, or a goal already completed.
+  const hasSetPlan = planned || planState.stage === "done" || goalsDone > 0;
 
   const auditDue = nextAuditDue(audit.completed_at);
   const auditDays = daysUntil(auditDue);
@@ -146,17 +163,44 @@ export default async function ProfilePage() {
 
   return (
     <div className="page au-page profile-v2">
-      <header className="profile-welcome">
-        <div className="profile-topline">
-          <div className="eyebrow"><span className="eydot" /> My profile</div>
-          {editDetails}
+      {/* The top of the page: who you are, and your life map, together. */}
+      <section className="profile-top" aria-labelledby="profile-top-h">
+        <div className="profile-top-text">
+          <div className="profile-topline">
+            <div className="eyebrow"><span className="eydot" /> My profile</div>
+            {editDetails}
+          </div>
+          <h1 id="profile-top-h" className="au-latest-h">{firstName ? `Welcome back, ${firstName}.` : "Welcome back."}</h1>
+          <p className="profile-sub">Start from where you are today.</p>
+          {identity.available ? <IdentityStatement initial={identity.text} /> : null}
+          <dl className="profile-top-facts">
+            <div><dt>Latest audit</dt><dd>{audit.total_score ?? 0}/100 <span>· {formatDate(audit.completed_at)}</span></dd></div>
+            <div><dt>Strongest</dt><dd>{strongest.map((s) => `${s.name} ${s.score}`).join(" · ")}</dd></div>
+            <div><dt>Next whole-life audit</dt><dd>{auditDays <= 0 ? "Now — it’s been about three months" : `Around ${formatDate(auditDue)}`}</dd></div>
+          </dl>
+          <div className="profile-links">
+            <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
+            <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
+          </div>
         </div>
-        <h1 className="au-latest-h">{firstName ? `Welcome back, ${firstName}.` : "Welcome back."}</h1>
-        <p className="profile-sub">Start from where you are today.</p>
-        {identity.available ? <IdentityStatement initial={identity.text} /> : null}
-      </header>
+        <figure className="profile-top-map">
+          <div className="au-chart">
+            <LifeMap
+              scores={scores}
+              names={areas.map((a) => a.name)}
+              labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+              highlightIndex={areaIdx === -1 ? null : areaIdx}
+            />
+          </div>
+          <figcaption>
+            Your whole-life map, self-reported.{area ? ` Highlighted: ${area.name}, the area you’re working on.` : ""}
+          </figcaption>
+        </figure>
+      </section>
 
-      <DailyAlignmentCard />
+      {/* Daily Alignment only once there's a plan to work from: straight
+          after a first audit, the page leads to the map and the plan. */}
+      {hasSetPlan ? <DailyAlignmentCard /> : null}
       <div className="profile-grid">
         <section className="next-action" aria-labelledby="next-action-h">
           <div className="eyebrow">
@@ -238,38 +282,6 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      <section className="profile-map" aria-labelledby="profile-map-h">
-        <div className="au-chart">
-          <LifeMap
-            scores={scores}
-            names={areas.map((a) => a.name)}
-            labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-            highlightIndex={areaIdx === -1 ? null : areaIdx}
-          />
-        </div>
-        <div className="profile-map-side">
-          <h2 id="profile-map-h">Your whole-life audit</h2>
-          <p className="au-small">
-            Latest audit {formatDate(audit.completed_at)} · {audit.total_score ?? 0}/100. Scores are self-reported: how
-            each area felt to you that day.{area ? " The highlighted area is the one you’re working on." : ""}
-          </p>
-          <p className="profile-strengths">
-            <span>Strongest</span>
-            {strongest.map((s) => `${s.name} ${s.score}`).join(" · ")}
-          </p>
-          <div className="profile-review">
-            <span>Suggested next whole-life audit</span>
-            <b>{auditDays <= 0 ? "Now — it’s been about three months" : `Around ${formatDate(auditDue)}`}</b>
-            <em>
-              About every three months is a useful rhythm. You can revisit earlier after a meaningful change.
-            </em>
-          </div>
-          <div className="profile-links">
-            <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
-            <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
