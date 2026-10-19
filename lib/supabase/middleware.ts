@@ -4,7 +4,8 @@ import { env } from "@/lib/env";
 
 // /api/cron and /api/reminders check their own secret or token; the Stripe
 // webhook checks Stripe's signature.
-const PUBLIC_PATHS = ["/login", "/reset-password", "/api/cron", "/api/reminders", "/api/stripe/webhook"];
+// /auth/confirm checks the one-time token in each sign-in email link.
+const PUBLIC_PATHS = ["/login", "/reset-password", "/auth/confirm", "/api/cron", "/api/reminders", "/api/stripe/webhook"];
 
 // Anyone can start and finish the audit without an account. A real (but
 // temporary, nameless) account is created behind the scenes via Supabase's
@@ -33,7 +34,8 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // Email confirmation links come back as ?code=… (to the Site URL). Swap the
+  // Older email links (sent before /auth/confirm) come back as ?code=… to the
+  // Site URL, and still work until they expire. Swap the
   // code for a session so the person arrives signed in — before anything
   // below would mint a fresh guest session instead. The exchange only works
   // in the browser that created the account; anywhere else the email is
