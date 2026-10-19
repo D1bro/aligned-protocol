@@ -44,6 +44,8 @@ async function auditAction(): Promise<{ href: string; label: string; returning: 
   return fresh;
 }
 
+const isLive = process.env.VERCEL_ENV === "production";
+
 export default async function HomePage() {
   const [areas, cta] = await Promise.all([getLifeAreas(), auditAction()]);
   const focusArea = areas[EXAMPLE.focusIndex];
@@ -143,10 +145,16 @@ export default async function HomePage() {
             <div>
               <div className="eyebrow"><span className="eydot" /> About Duane</div>
               <h2 id="about-h">{ABOUT_DUANE.heading}</h2>
-              {ABOUT_DUANE.approved ? null : <span className="draft-tag">Draft · awaiting approved copy</span>}
-              {ABOUT_DUANE.paragraphs.map((p) => (
-                <p key={p} className="home-lead">{p}</p>
-              ))}
+              {/* Until Duane's own words arrive, previews show the placeholder as a
+                  reminder; the live site leaves it out. */}
+              {ABOUT_DUANE.approved || !isLive
+                ? <>
+                    {ABOUT_DUANE.approved ? null : <span className="draft-tag">Draft · awaiting approved copy</span>}
+                    {ABOUT_DUANE.paragraphs.map((p) => (
+                      <p key={p} className="home-lead">{p}</p>
+                    ))}
+                  </>
+                : null}
             </div>
             <Film clip={FILMS.F01} caption="A welcome from Duane.">
               <figure className="home-film-fallback">
