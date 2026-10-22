@@ -107,7 +107,7 @@ export default async function ResultsPage() {
             </p>
           )}
         </div>
-        <GuideVideo clip={CLOSING_GUIDE} caption="A word from Duane on what to do with your snapshot." />
+        <GuideVideo clip={CLOSING_GUIDE} caption="Duane on reading your snapshot and choosing where to start · about 3 minutes" />
       </div>
 
       <ResultsBody

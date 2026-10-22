@@ -38,22 +38,28 @@ export type AreaGuide = GuideClip & {
 // older video, poster or caption file under the same URL.
 const MEDIA_VERSION = "v7";
 
-function clip(id: string, name: string, title: string, label: string, durationSeconds: number, withVideo = true): GuideClip {
-  const slug = `${name}-${MEDIA_VERSION}`;
+// `version` overrides MEDIA_VERSION for a film re-cut on its own; `captions:
+// false` is for films with captions already in the picture (no separate track).
+function clip(
+  id: string, name: string, title: string, label: string, durationSeconds: number,
+  { withVideo = true, version = MEDIA_VERSION, captions = true }: { withVideo?: boolean; version?: string; captions?: boolean } = {},
+): GuideClip {
+  const slug = `${name}-${version}`;
   return {
     id,
     title,
     label,
     src: withVideo && VIDEO_BASE ? `${VIDEO_BASE}/${slug}.mp4` : null,
     poster: `${MEDIA}/posters/${slug}.jpg`,
-    captions: `${MEDIA}/captions/${slug}.vtt`,
+    captions: captions ? `${MEDIA}/captions/${slug}.vtt` : null,
     durationSeconds,
   };
 }
 
 export const INTRO_GUIDE: GuideClip = clip("introduction", "00-introduction", "Introduction and scoring guide", "How the audit works", 36.3);
 
-export const CLOSING_GUIDE: GuideClip = clip("closing", "11-snapshot-and-next-step", "Your snapshot and next step", "Your snapshot and next step", 14.13);
+// v8 (Oct 2026): the full after-audit talk, 2 min 51, branded, captions in the picture.
+export const CLOSING_GUIDE: GuideClip = clip("closing", "11-snapshot-and-next-step", "Your snapshot and next step", "Your snapshot and next step", 171, { version: "v8", captions: false });
 
 // Keyed by life_areas.sort_order (1–10), the same order as the audit and the video.
 export const AREA_GUIDES: Record<number, AreaGuide> = {
