@@ -95,7 +95,7 @@ export default async function ClearPage({
     return (
       <div className="page au-page">
         <div className="eyebrow"><span className="eydot" /> CLEAR — choose where to start</div>
-        <h1>Which area do you want to develop first?</h1>
+        <h1>Which area do you want to develop <em>first?</em></h1>
         <p className="lead">
           Pick the one that, if it improved, would make the others easier too. It doesn&rsquo;t have to be your lowest
           score — but if you choose a different area, it&rsquo;s worth noticing why.

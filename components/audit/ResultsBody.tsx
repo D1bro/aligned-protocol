@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { GuideClip } from "@/lib/audit-guides";
-import { GuideVideo } from "./GuideVideo";
 import { StartingPoint, type StartArea } from "./StartingPoint";
 import { SnapshotView, type SnapshotArea } from "./SnapshotView";
 import { PlanCard, type PlanCardProps } from "./PlanCard";
 
-// Snapshot first, then the starting point. Keeps the two in step: whichever area the
+// Snapshot first, then the starting point (Duane's video sits above, in the
+// page heading). Keeps the two in step: whichever area the
 // person chooses to start with is the one highlighted on the map and list.
 export function ResultsBody({
   auditId,
@@ -17,7 +16,6 @@ export function ResultsBody({
   initialAnswer,
   isGuest,
   total,
-  video,
   planCard,
   children,
 }: {
@@ -28,7 +26,6 @@ export function ResultsBody({
   initialAnswer: string;
   isGuest: boolean;
   total: number;
-  video: GuideClip;
   // Set once CLEAR has started: shown instead of the starting-point question.
   planCard?: PlanCardProps | null;
   // Rendered between the snapshot and the starting point.
@@ -59,7 +56,6 @@ export function ResultsBody({
             isGuest={isGuest}
           />
         )}
-        <GuideVideo clip={video} caption="A word from Duane on what to do with your snapshot." />
       </section>
     </>
   );

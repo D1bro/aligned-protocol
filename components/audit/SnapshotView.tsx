@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { LifeMap } from "./LifeMap";
+import { AreaBadge } from "@/components/ui/Icon";
 
-export type SnapshotArea = { name: string; short: string; score: number; note: string | null; prompt: string | null };
+export type SnapshotArea = { name: string; short: string; score: number; note: string | null; prompt: string | null; order: number };
 
 // The snapshot: the life map beside a list of all ten areas, each with its own
-// bar, and a panel showing the person's own notes for whichever area they pick.
+// icon and bar, and a panel showing the person's own notes for whichever area they pick.
 // Opens on the highlighted area (their starting point).
 export function SnapshotView({
   areas,
@@ -43,16 +44,20 @@ export function SnapshotView({
         <ol className="au-list">
           {areas.map((a, i) => (
             <li key={a.name}>
-              <button type="button" aria-pressed={i === active} onClick={() => setActive(i)}>
-                <span className="au-list-row">
-                  <span className="au-list-name">
-                    {a.name}
-                    {i === highlightIndex ? <span className="au-focus-tag">{highlightLabel}</span> : null}
+              <button type="button" aria-pressed={i === active} onClick={() => setActive(i)} className={i === highlightIndex ? "focus" : undefined}>
+                <span className="au-list-n" aria-hidden="true">{i + 1}</span>
+                <AreaBadge order={a.order} size={15} />
+                <span className="au-list-main">
+                  <span className="au-list-row">
+                    <span className="au-list-name">
+                      {a.name}
+                      {i === highlightIndex ? <span className="au-focus-tag">{highlightLabel}</span> : null}
+                    </span>
+                    <span className="au-list-score">{a.score}/10</span>
                   </span>
-                  <span className="au-list-score">{a.score}/10</span>
-                </span>
-                <span className="au-bar-track" aria-hidden="true">
-                  <span className={i === highlightIndex ? "au-bar-fill focus" : "au-bar-fill"} style={{ width: `${a.score * 10}%` }} />
+                  <span className="au-bar-track" aria-hidden="true">
+                    <span className={i === highlightIndex ? "au-bar-fill focus" : "au-bar-fill"} style={{ width: `${a.score * 10}%` }} />
+                  </span>
                 </span>
               </button>
             </li>

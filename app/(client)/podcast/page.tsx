@@ -6,7 +6,7 @@ export default function PodcastPage() {
   return (
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> The Aligned Podcast</div>
-      <h1 className="au-latest-h">Listen and reflect.</h1>
+      <h1 className="au-latest-h">Listen and <em>reflect.</em></h1>
       <p className="lead">
         Conversations on alignment, identity and change. Each episode ends with one question to take into your week.
       </p>
