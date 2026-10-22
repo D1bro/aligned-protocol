@@ -66,7 +66,7 @@ export default async function AuditEntryPage({ searchParams }: { searchParams: P
           <h1 className="au-hero-h">
             Ten honest questions.
             <br />
-            One clear starting point.
+            One clear <em>starting point.</em>
           </h1>
           <p className="lead">
             A guided look at ten areas of your life. Score how things are right now, add your notes, and see where to
@@ -149,7 +149,7 @@ async function LatestAudit({
   return (
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Your Aligned Audit</div>
-      <h1 className="au-latest-h">Your latest snapshot</h1>
+      <h1 className="au-latest-h">Your latest <em>snapshot</em></h1>
       <p className="lead">
         Taken {formatDate(audit.completed_at)} · Overall {total} / 100
         {change !== null ? ` · ${change >= 0 ? "+" : ""}${change} since your previous audit` : ""}

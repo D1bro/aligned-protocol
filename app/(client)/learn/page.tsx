@@ -11,7 +11,7 @@ export default async function AcademyPage() {
   return (
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Academy</div>
-      <h1 className="au-latest-h">Learn at your own pace.</h1>
+      <h1 className="au-latest-h">Learn at <em>your own pace.</em></h1>
       <p className="lead">{ACADEMY_INTRO}</p>
 
       {PATHS.map((path) => {

@@ -58,7 +58,7 @@ export function StartingPoint({
       {isLowest && lowest.length > 1 && !picking ? (
         <>
           <h2 className="au-start-h">
-            {lowest.length === 2 ? "Two areas are" : `${lowest.length} areas are`} asking for the most attention.
+            {lowest.length === 2 ? "Two areas are" : `${lowest.length} areas are`} asking for <em>the most attention.</em>
           </h2>
           <p className="au-start-sub">Both scored {lowestScore} out of 10, your lowest. Which feels like the place to start?</p>
           <div className="au-chips" role="group" aria-label="Choose your starting area">
@@ -71,7 +71,7 @@ export function StartingPoint({
         </>
       ) : isLowest ? (
         <>
-          <h2 className="au-start-h">{chosen.name} is asking for the most attention.</h2>
+          <h2 className="au-start-h">{chosen.name} is asking for <em>the most attention.</em></h2>
           <p className="au-start-sub">You scored it {chosen.score} out of 10, your lowest.</p>
         </>
       ) : (

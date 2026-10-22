@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/actions/auth";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { Icon, type IconName } from "@/components/ui/Icon";
 
-export type MobileNavLink = { href: string; label: string; icon: string; match: (p: string) => boolean; group?: string };
+export type MobileNavLink = { href: string; label: string; icon: IconName; match: (p: string) => boolean; group?: string };
 
 // The menu links, with a small heading wherever the group changes.
 export function NavLinks({ links, pathname, onNavigate }: { links: MobileNavLink[]; pathname: string; onNavigate?: () => void }) {
@@ -16,7 +17,7 @@ export function NavLinks({ links, pathname, onNavigate }: { links: MobileNavLink
         <div key={l.href}>
           {l.group && l.group !== links[i - 1]?.group ? <div className="ni-group">{l.group}</div> : null}
           <Link href={l.href} className={`ni ${l.match(pathname) ? "active" : ""}`} onClick={onNavigate}>
-            <span aria-hidden="true">{l.icon}</span>
+            <Icon name={l.icon} />
             {l.label}
           </Link>
         </div>
@@ -25,31 +26,94 @@ export function NavLinks({ links, pathname, onNavigate }: { links: MobileNavLink
   );
 }
 
+const initial = (name: string | null) => name?.trim().charAt(0).toUpperCase() || "A";
+
+// Who is signed in, at the foot of the menu, with sign out beside it.
+// `href` makes the name a link (members: to Your details).
+export function NavFooter({ fullName, sub, href, onNavigate }: { fullName: string | null; sub: string; href?: string; onNavigate?: () => void }) {
+  const who = (
+    <>
+      <span className="avatar" aria-hidden="true">{initial(fullName)}</span>
+      <span className="nav-user-text">
+        <b>{fullName ?? "Signed in"}</b>
+        <span>{sub}</span>
+      </span>
+    </>
+  );
+  return (
+    <div className="nav-user">
+      {href ? (
+        <Link href={href} className="nav-user-who" onClick={onNavigate}>{who}</Link>
+      ) : (
+        <div className="nav-user-who">{who}</div>
+      )}
+      <form action={signOut}>
+        <button type="submit" className="nav-signout" aria-label="Sign out" title="Sign out">
+          <Icon name="signout" size={17} />
+        </button>
+      </form>
+    </div>
+  );
+}
+
 // The sidebar (.sidebar) is hidden entirely under 768px — this is what
-// replaces it there: a slim top bar with a hamburger button that opens a
-// slide-in drawer holding the exact same links as the desktop sidebar.
-// Without this, phone-width visitors had no way to navigate the app at all.
-export function MobileNav({ links, fullName }: { links: MobileNavLink[]; fullName: string | null }) {
+// replaces it there: a slim top bar, and a drawer holding the exact same
+// links as the desktop sidebar. With `tabs`, phones also get a bottom tab bar
+// for the main pages, and its "More" opens the drawer; without, the top bar
+// has a menu button instead.
+export function MobileNav({
+  links,
+  fullName,
+  sub,
+  userHref,
+  tabs,
+}: {
+  links: MobileNavLink[];
+  fullName: string | null;
+  sub: string;
+  userHref?: string;
+  tabs?: MobileNavLink[];
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const inTabs = tabs?.some((t) => t.match(pathname)) ?? false;
 
   return (
     <>
       <div className="mob-bar">
-        <div className="mob-brand">
+        <Link href={tabs ? "/" : links[0].href} className="mob-brand" aria-label="Aligned, home">
           <BrandMark width={22} />
           <span className="mob-brand-text">ALIGNED</span>
-        </div>
-        <button
-          type="button"
-          className="mob-menu-btn"
-          onClick={() => setOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={open}
-        >
-          <span aria-hidden="true">☰</span>
-        </button>
+        </Link>
+        {tabs && userHref ? (
+          <Link href={userHref} className="avatar mob-avatar" aria-label="Your details">{initial(fullName)}</Link>
+        ) : (
+          <button
+            type="button"
+            className="mob-menu-btn"
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={open}
+          >
+            <span aria-hidden="true">☰</span>
+          </button>
+        )}
       </div>
+
+      {tabs ? (
+        <nav className="tabbar" aria-label="Main">
+          {tabs.map((t) => (
+            <Link key={t.href} href={t.href} className={t.match(pathname) ? "tab on" : "tab"} aria-current={t.match(pathname) ? "page" : undefined}>
+              <Icon name={t.icon} size={21} />
+              {t.label}
+            </Link>
+          ))}
+          <button type="button" className={!inTabs || open ? "tab on" : "tab"} onClick={() => setOpen(true)} aria-expanded={open}>
+            <Icon name="more" size={21} />
+            More
+          </button>
+        </nav>
+      ) : null}
 
       {open && (
         <div className="mob-drawer-overlay" onClick={() => setOpen(false)}>
@@ -61,16 +125,7 @@ export function MobileNav({ links, fullName }: { links: MobileNavLink[]; fullNam
               </button>
             </div>
             <NavLinks links={links} pathname={pathname} onNavigate={() => setOpen(false)} />
-            <form action={signOut} style={{ padding: "0 1.5rem" }}>
-              <button type="submit" className="ni" style={{ width: "100%", justifyContent: "flex-start" }}>
-                <span aria-hidden="true">⏻</span> Sign out
-              </button>
-            </form>
-            {fullName ? (
-              <div style={{ padding: ".75rem 1.5rem 1.25rem", fontSize: "11px", color: "var(--text3)" }}>
-                Signed in as {fullName}
-              </div>
-            ) : null}
+            <NavFooter fullName={fullName} sub={sub} href={userHref} onNavigate={() => setOpen(false)} />
           </nav>
         </div>
       )}

@@ -5,7 +5,8 @@ import { env } from "@/lib/env";
 // /api/cron and /api/reminders check their own secret or token; the Stripe
 // webhook checks Stripe's signature.
 // /auth/confirm checks the one-time token in each sign-in email link. The
-// homepage, search-engine files and site icons are for everyone.
+// homepage, search-engine files, site icons and the
+// home-screen app manifest are for everyone.
 const PUBLIC_PATHS = [
   "/login",
   "/reset-password",
@@ -17,6 +18,8 @@ const PUBLIC_PATHS = [
   "/sitemap.xml",
   "/icon",
   "/apple-icon",
+  "/app-icon",
+  "/manifest.webmanifest",
   "/opengraph-image",
   "/api/cron",
   "/api/reminders",

@@ -30,7 +30,7 @@ export default async function ClientLayout({ children }: { children: React.React
   }
 
   return (
-    <div className="shell">
+    <div className="shell has-tabs">
       <aside className="sidebar">
         <Logo subtitle="Protocol" />
         <ClientNav fullName={profile.full_name} staff={staff} />

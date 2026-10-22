@@ -13,6 +13,8 @@ import { DetailsPrompt } from "@/components/profile/DetailsPrompt";
 import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { LifeMap } from "@/components/audit/LifeMap";
+import { ScoreRing } from "@/components/ui/ScoreRing";
+import { AreaBadge, IconBadge } from "@/components/ui/Icon";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
 import { ProfileSteps, type Step } from "@/components/profile/ProfileSteps";
 import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
@@ -43,7 +45,7 @@ export default async function ProfilePage() {
               <div className="eyebrow"><span className="eydot" /> My profile</div>
               {editDetails}
             </div>
-            <h1 id="profile-top-h" className="au-latest-h">{firstName ? `Welcome, ${firstName}.` : "Welcome."}</h1>
+            <h1 id="profile-top-h" className="au-latest-h">{firstName ? <>Welcome, <em>{firstName}.</em></> : "Welcome."}</h1>
             <p className="lead">
               Start with the Aligned Audit: ten honest questions about where your life stands right now. It takes about
               ten minutes, and gives you your life map and a clear place to start.
@@ -169,21 +171,25 @@ export default async function ProfilePage() {
             <div className="eyebrow"><span className="eydot" /> My profile</div>
             {editDetails}
           </div>
-          <h1 id="profile-top-h" className="au-latest-h">{firstName ? `Welcome back, ${firstName}.` : "Welcome back."}</h1>
+          <h1 id="profile-top-h" className="au-latest-h">{firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
           <p className="profile-sub">Start from where you are today.</p>
           {identity.available ? <IdentityStatement initial={identity.text} /> : null}
-          <dl className="profile-top-facts">
-            <div><dt>Latest audit</dt><dd>{audit.total_score ?? 0}/100 <span>· {formatDate(audit.completed_at)}</span></dd></div>
-            <div><dt>Strongest</dt><dd>{strongest.map((s) => `${s.name} ${s.score}`).join(" · ")}</dd></div>
-            <div><dt>Next whole-life audit</dt><dd>{auditDays <= 0 ? "Now — it’s been about three months" : `Around ${formatDate(auditDue)}`}</dd></div>
-          </dl>
           <div className="profile-links">
             <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
             <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
           </div>
         </div>
         <figure className="profile-top-map">
-          <div className="au-chart">
+          <div className="au-chart profile-map-card">
+            <div className="profile-score">
+              <ScoreRing score={audit.total_score ?? 0} size={112} strokeWidth={9} labelSize={30} denomLabel="/100" />
+              <dl className="profile-score-facts">
+                <dt className="eyebrow">Whole-life score</dt>
+                <dd>Latest audit <b>{formatDate(audit.completed_at)}</b></dd>
+                <dd>Strongest <b>{strongest.map((s) => s.name).join(" · ")}</b></dd>
+                <dd>Next audit <b>{auditDays <= 0 ? "now" : `around ${formatDate(auditDue)}`}</b></dd>
+              </dl>
+            </div>
             <LifeMap
               scores={scores}
               names={areas.map((a) => a.name)}
@@ -207,7 +213,9 @@ export default async function ProfilePage() {
           {area && baseline !== null && target !== null ? (
             <p className="next-action-meta">Started at {baseline}/10 · working towards {target}</p>
           ) : null}
-          <h2 id="next-action-h">
+          <div className="next-action-head">
+            {area ? <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span> : null}
+            <h2 id="next-action-h">
             {planned
               ? goal!.action_text?.trim() || goal!.goal_title?.trim()
               : goal
@@ -219,7 +227,8 @@ export default async function ProfilePage() {
                     : planState.stage === "done"
                       ? "Goal done. What’s next?"
                       : `Turn ${area.name} into one clear goal`}
-          </h2>
+            </h2>
+          </div>
           {planned ? (
             <dl className="next-action-facts">
               {when ? (<><dt>When</dt><dd>{when}</dd></>) : null}
@@ -250,7 +259,7 @@ export default async function ProfilePage() {
         <div className="profile-side">
           {offerDetails ? <DetailsPrompt /> : null}
           <section className="profile-card" aria-labelledby="progress-h">
-            <h2 id="progress-h">Your progress</h2>
+            <h2 id="progress-h"><IconBadge name="journey" size={15} /> Your progress</h2>
             <ProfileSteps steps={steps} />
             {goalsDone ? (
               <p className="profile-won">
@@ -260,7 +269,7 @@ export default async function ProfilePage() {
           </section>
 
           <section className="profile-card" aria-labelledby="learning-h">
-            <h2 id="learning-h">{nextLesson ? "Continue learning" : "Academy"}</h2>
+            <h2 id="learning-h"><IconBadge name="book" size={15} /> {nextLesson ? "Continue learning" : "Academy"}</h2>
             <p className="profile-card-k">{path.title}</p>
             {nextLesson ? (
               <Link href={`/learn/${path.slug}/${nextLesson.slug}`} className="profile-lesson">

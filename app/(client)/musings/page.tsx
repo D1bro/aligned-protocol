@@ -6,7 +6,7 @@ export default function MusingsPage() {
   return (
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Duane&rsquo;s Musings</div>
-      <h1 className="au-latest-h">Something to sit with.</h1>
+      <h1 className="au-latest-h">Something to <em>sit with.</em></h1>
       <p className="lead">Short reflections on alignment, identity and change. Read one, then take its question with you.</p>
       <ul className="learn-cards">
         {MUSINGS.map((m) => (

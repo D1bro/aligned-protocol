@@ -254,7 +254,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
       <div className="page alignment-page">
         <header className="alignment-head">
           <div className="eyebrow"><span className="eydot" /> Daily Alignment</div>
-          <h1>Start from where you are today.</h1>
+          <h1>Start from where you are <em>today.</em></h1>
           <p className="alignment-lede">You do not need to feel ready to take one useful step. Use what helps; leave the rest.</p>
           <p className="alignment-help">Nothing is saved until you choose <b>Save privately</b>.</p>
         </header>

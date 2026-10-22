@@ -34,7 +34,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
     return (
       <div className="page au-page">
         <div className="eyebrow"><span className="eydot" /> My journey</div>
-        <h1 className="au-latest-h">{alignment ? "Your journey, at your pace." : "Your journey starts with the audit."}</h1>
+        <h1 className="au-latest-h">{alignment ? <>Your journey, at <em>your pace.</em></> : <>Your journey starts with <em>the audit.</em></>}</h1>
         <p className="lead">
           {alignment
             ? "Keep your weekly reflections here. Once you take the audit, you can also see how your life map changes over time."

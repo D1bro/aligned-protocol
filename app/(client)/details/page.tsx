@@ -16,7 +16,7 @@ export default async function DetailsPage() {
     <div className="page au-page details-page">
       <Link href="/" className="tb-back" style={{ marginBottom: "1rem", display: "inline-flex" }}>← My profile</Link>
       <div className="eyebrow"><span className="eydot" /> Your details</div>
-      <h1 className="au-latest-h">Your details</h1>
+      <h1 className="au-latest-h">Your <em>details</em></h1>
       <p className="lead">
         Everything here is optional apart from your name. Add what&rsquo;s useful, change or clear it whenever you like.
       </p>

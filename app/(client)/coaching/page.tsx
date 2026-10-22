@@ -32,7 +32,7 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
       <div className="eyebrow"><span className="eydot" /> Coaching</div>
       {coached ? <MemberCoaching data={coaching} /> : null}
       <MemberInvoices data={billing} justPaid={sp.paid === "1"} />
-      <h1 className="au-latest-h">{coached ? "About coaching" : "Work on it together."}</h1>
+      <h1 className="au-latest-h">{coached ? <>About <em>coaching</em></> : <>Work on it <em>together.</em></>}</h1>
       <p className="draft-tag">Draft</p>
       <p className="lead">
         Coaching here is led by you. You bring what matters; we work out the next step together. It builds on your

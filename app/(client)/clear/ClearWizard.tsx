@@ -334,18 +334,18 @@ export function ClearWizard({
         )}
         <span className="tb-label">{STEP_LABELS[step - 1]} — Step {step} of {TOTAL_STEPS}</span>
       </div>
-      <div className="au-progress" role="progressbar" aria-label="CLEAR progress" aria-valuemin={1} aria-valuemax={TOTAL_STEPS} aria-valuenow={step}>
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-          <span key={i} className={i < step ? "on" : undefined} />
+      <ol className="clear-stepper" role="progressbar" aria-label="CLEAR progress" aria-valuemin={1} aria-valuemax={TOTAL_STEPS} aria-valuenow={step} aria-valuetext={`Step ${step} of ${TOTAL_STEPS}: ${STEP_LABELS[step - 1]}`}>
+        {"CLEAR".split("").map((letter, i) => (
+          <li key={i} className={i + 1 === step ? "on" : i + 1 < step ? "done" : undefined} title={STEP_LABELS[i]}><span>{letter}</span></li>
         ))}
-      </div>
+      </ol>
 
       <div className="page au-page clear-step">
         <div className="eyebrow"><span className="eydot" /> CLEAR · {area.name}</div>
 
         {step === 1 && (
           <>
-            <h1 className="clear-h"><span className="clear-letter">C</span> Current reality</h1>
+            <h1 className="clear-h">Current <em>reality</em></h1>
             <div className="au-sum-card clear-from">
               <p className="au-detail-k">From your audit</p>
               <p className="au-latest-big">{area.name} <span>{score}/10</span></p>
@@ -372,7 +372,7 @@ export function ClearWizard({
 
         {step === 2 && (
           <>
-            <h1 className="clear-h"><span className="clear-letter">L</span> Life vision</h1>
+            <h1 className="clear-h">Life <em>vision</em></h1>
             <label className="au-start-q" htmlFor="l-vision">The direction: what would a 10 look like?</label>
             <p className="au-start-help">One or two sentences. This is where you&rsquo;re heading, not this quarter&rsquo;s target.</p>
             <textarea id="l-vision" rows={3} value={form.lifeVision} onChange={(e) => set("lifeVision", e.target.value)} onBlur={saveOnBlur} placeholder="At a 10, this area would feel…" />
@@ -388,7 +388,7 @@ export function ClearWizard({
 
         {step === 3 && (
           <>
-            <h1 className="clear-h"><span className="clear-letter">E</span> What&rsquo;s been in the way</h1>
+            <h1 className="clear-h">What&rsquo;s been <em>in the way</em></h1>
             <p className="au-start-help">
               {lowWellbeing
                 ? "Take this at your own pace. Tap any that fit — there’s no wrong answer, and you can keep it brief."
@@ -432,7 +432,7 @@ export function ClearWizard({
 
         {step === 4 && (
           <>
-            <h1 className="clear-h"><span className="clear-letter">A</span> One action</h1>
+            <h1 className="clear-h">One <em>action</em></h1>
             <label className="au-start-q" htmlFor="a-action">What will you do?</label>
             <p className="au-start-help">Start with a verb. Make it small enough that you&rsquo;d still do it on a bad week.</p>
             <textarea id="a-action" rows={2} value={form.action} onChange={(e) => set("action", e.target.value)} onBlur={saveOnBlur} placeholder="Check my bank and update my spending sheet" />
@@ -476,7 +476,7 @@ export function ClearWizard({
 
         {step === 5 && (
           <>
-            <h1 className="clear-h"><span className="clear-letter">R</span> Roadmap and review</h1>
+            <h1 className="clear-h">Roadmap and <em>review</em></h1>
             <label className="au-start-q" htmlFor="r-success">
               Success looks like <span className="clear-tag">Your {target}</span>
             </label>

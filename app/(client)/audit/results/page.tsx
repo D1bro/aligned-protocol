@@ -47,6 +47,7 @@ export default async function ResultsPage() {
     score: startAreas[i].score,
     note: startAreas[i].note,
     prompt: AREA_GUIDES[a.sort_order]?.prompt ?? null,
+    order: a.sort_order,
   }));
   const total = snapshot.reduce((sum, a) => sum + a.score, 0);
 
@@ -79,7 +80,7 @@ export default async function ResultsPage() {
     <div className="page au-results">
       <div className="au-results-head">
         <div className="eyebrow"><span className="eydot" /> Your Aligned snapshot</div>
-        <h1>Here&rsquo;s where you stand.</h1>
+        <h1>Here&rsquo;s where you <em>stand.</em></h1>
         <p className="lead">Ten areas. One honest picture. A clear place to start.</p>
         {isGuest ? null : (
           <p className="au-small">
