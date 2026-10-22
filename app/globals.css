@@ -1583,3 +1583,10 @@ a.nav-user-who:hover b { color: var(--gold); }
 .clear-stepper li.on span { border-color: var(--gold); background: var(--gold); color: #100F18; box-shadow: 0 0 0 4px rgba(211,167,88,.15); }
 .mob-bar-end { display: flex; align-items: center; gap: .6rem; }
 .mob-bar-end .avatar { width: 34px; height: 34px; }
+
+/* Results: score and Duane's video at the top, beside the heading */
+.au-results-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 2rem; align-items: start; }
+.au-results-intro { display: grid; gap: .5rem; justify-items: start; }
+.au-results-score { display: grid; grid-template-columns: auto 1fr; gap: 1.1rem; align-items: center; margin: .6rem 0 .3rem; }
+.au-start-grid { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
+@media (max-width: 900px) { .au-results-head { grid-template-columns: 1fr; gap: 1.25rem; } }

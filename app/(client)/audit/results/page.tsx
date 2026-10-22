@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLatestCompletedAudit, getAuditWithResponses, getLifeAreas } from "@/lib/actions/audit";
 import { getPlanState } from "@/lib/actions/clear";
-import { nextAuditDue } from "@/lib/audit-schedule";
+import { formatDate, nextAuditDue } from "@/lib/audit-schedule";
 import type { PlanCardProps } from "@/components/audit/PlanCard";
 import { createClient } from "@/lib/supabase/server";
 import { AREA_GUIDES, AREA_SHORT_NAMES, CLOSING_GUIDE } from "@/lib/audit-guides";
@@ -10,6 +10,8 @@ import type { SnapshotArea } from "@/components/audit/SnapshotView";
 import type { StartArea } from "@/components/audit/StartingPoint";
 import { ResultsBody } from "@/components/audit/ResultsBody";
 import { ProfileOffer } from "@/components/site/ProfileOffer";
+import { ScoreRing } from "@/components/ui/ScoreRing";
+import { GuideVideo } from "@/components/audit/GuideVideo";
 
 export default async function ResultsPage() {
   const audit = await getLatestCompletedAudit();
@@ -75,19 +77,37 @@ export default async function ResultsPage() {
       : null;
 
   const strongest = [...snapshot].sort((x, y) => y.score - x.score).slice(0, 3);
+  const lowestSnap = Math.min(...snapshot.map((a) => a.score));
 
   return (
     <div className="page au-results">
+      {/* The score and Duane's word on what to do with it come first. */}
       <div className="au-results-head">
-        <div className="eyebrow"><span className="eydot" /> Your Aligned snapshot</div>
-        <h1>Here&rsquo;s where you <em>stand.</em></h1>
-        <p className="lead">Ten areas. One honest picture. A clear place to start.</p>
-        {isGuest ? null : (
-          <p className="au-small">
-            Scores are self-reported.{" "}
-            <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link> (optional guide)
-          </p>
-        )}
+        <div className="au-results-intro">
+          <div className="eyebrow"><span className="eydot" /> Your Aligned snapshot</div>
+          <h1>Here&rsquo;s where you <em>stand.</em></h1>
+          <p className="lead">Ten areas. One honest picture. A clear place to start.</p>
+          <div className="au-results-score">
+            <ScoreRing score={total} size={112} strokeWidth={9} labelSize={30} denomLabel="/100" />
+            <dl className="profile-score-facts">
+              <dt className="eyebrow">Whole-life score</dt>
+              <dd>Taken <b>{formatDate(audit.completed_at)}</b></dd>
+              {strongest[0].score === lowestSnap ? (
+                <dd>All ten areas <b>{lowestSnap}/10</b></dd>
+              ) : (
+                <dd>Strongest <b>{strongest.map((a) => a.short).join(" · ")}</b></dd>
+              )}
+              {planArea !== -1 ? <dd>Starting point <b>{snapshot[planArea].short}</b></dd> : null}
+            </dl>
+          </div>
+          {isGuest ? null : (
+            <p className="au-small">
+              Scores are self-reported.{" "}
+              <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link> (optional guide)
+            </p>
+          )}
+        </div>
+        <GuideVideo clip={CLOSING_GUIDE} caption="A word from Duane on what to do with your snapshot." />
       </div>
 
       <ResultsBody
@@ -98,7 +118,6 @@ export default async function ResultsPage() {
         initialAnswer={plan?.step_up_answer ?? ""}
         isGuest={isGuest}
         total={total}
-        video={CLOSING_GUIDE}
         planCard={planCard}
       >
         <p className="au-strengths">
