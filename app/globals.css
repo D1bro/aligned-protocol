@@ -1581,3 +1581,5 @@ a.nav-user-who:hover b { color: var(--gold); }
 .clear-stepper span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1.3px solid var(--bdr2); background: var(--bg3); color: var(--text3); font: 600 13px var(--font-sora), 'Sora', sans-serif; }
 .clear-stepper li.done span { border-color: var(--gold); color: var(--gold); }
 .clear-stepper li.on span { border-color: var(--gold); background: var(--gold); color: #100F18; box-shadow: 0 0 0 4px rgba(211,167,88,.15); }
+.mob-bar-end { display: flex; align-items: center; gap: .6rem; }
+.mob-bar-end .avatar { width: 34px; height: 34px; }

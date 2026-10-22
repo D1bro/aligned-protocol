@@ -58,9 +58,9 @@ export function NavFooter({ fullName, sub, href, onNavigate }: { fullName: strin
 
 // The sidebar (.sidebar) is hidden entirely under 768px — this is what
 // replaces it there: a slim top bar, and a drawer holding the exact same
-// links as the desktop sidebar. With `tabs`, phones also get a bottom tab bar
-// for the main pages, and its "More" opens the drawer; without, the top bar
-// has a menu button instead.
+// links as the desktop sidebar, opened by the menu button. With `tabs`, phones
+// also get a bottom tab bar for the main pages (its "More" opens the same
+// drawer) and a profile button beside the menu button.
 export function MobileNav({
   links,
   fullName,
@@ -85,9 +85,10 @@ export function MobileNav({
           <BrandMark width={22} />
           <span className="mob-brand-text">ALIGNED</span>
         </Link>
-        {tabs && userHref ? (
-          <Link href={userHref} className="avatar mob-avatar" aria-label="Your details">{initial(fullName)}</Link>
-        ) : (
+        <div className="mob-bar-end">
+          {tabs && userHref ? (
+            <Link href={userHref} className="avatar mob-avatar" aria-label="Your details">{initial(fullName)}</Link>
+          ) : null}
           <button
             type="button"
             className="mob-menu-btn"
@@ -97,7 +98,7 @@ export function MobileNav({
           >
             <span aria-hidden="true">☰</span>
           </button>
-        )}
+        </div>
       </div>
 
       {tabs ? (
