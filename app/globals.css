@@ -1652,3 +1652,25 @@ a.nav-user-who:hover b { color: var(--gold); }
 .bs-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.1rem; border: 1px solid var(--bdr); border-radius: 14px; background: linear-gradient(160deg, rgba(211,167,88,.06), var(--bg2) 42%); }
 .bs-list h3 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; }
 @media (max-width: 640px) { .bs-list li { flex-direction: column; align-items: stretch; } }
+
+/* Console settings: team and access */
+.team-list { list-style: none; display: grid; gap: .6rem; margin-bottom: 1.5rem; }
+.team-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem 1.5rem; align-items: center; padding: .9rem 1.1rem; border: 1px solid var(--bdr2); border-radius: 12px; background: var(--bg2); }
+.team-who { display: grid; gap: .15rem; min-width: 0; }
+.team-who b { display: flex; align-items: center; gap: .5rem; }
+.team-who span { font-size: 13px; color: var(--text2); overflow-wrap: anywhere; }
+.team-you { font-size: 10px !important; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gold) !important; border: 1px solid var(--bdr); border-radius: 999px; padding: .05rem .45rem; }
+.team-controls { display: flex; flex-wrap: wrap; gap: .8rem 1.2rem; align-items: end; }
+.team-controls label, .team-add-row label { display: grid; gap: .3rem; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.team-controls select, .team-add-row select { width: auto; min-width: 170px; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.team-controls .team-check { display: flex; align-items: center; gap: .45rem; font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text); padding-bottom: .55rem; }
+.team-check input { width: 16px; height: 16px; }
+.team-check input:disabled + * , .team-check:has(input:disabled) { color: var(--text3); }
+.team-list li > p { grid-column: 1 / -1; font-size: 13px; }
+.team-list li > p:empty { display: none; }
+.team-add-row { display: flex; flex-wrap: wrap; gap: .8rem 1rem; align-items: end; }
+.team-add-row label:first-child { flex: 1 1 240px; }
+.team-add-row input { text-transform: none; letter-spacing: 0; font-weight: 400; }
+@media (max-width: 640px) {
+  .team-list li { grid-template-columns: 1fr; }
+}
