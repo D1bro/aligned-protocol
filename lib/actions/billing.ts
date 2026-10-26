@@ -9,6 +9,7 @@ import { looksLikeDuplicate, settingsGaps, todayUk } from "@/lib/billing-status"
 import { renderInvoicePdf, type InvoiceForPdf } from "@/lib/invoice-pdf";
 import { createCheckout, stripeStatus } from "@/lib/stripe";
 import { requestOrigin } from "@/lib/request-origin";
+import { loadBilling } from "@/lib/member-view";
 
 // Invoices, payments and session credits. Every change that touches money or
 // credits is a database function (migration 0014) that checks the caller can
@@ -599,38 +600,8 @@ export async function getMyBilling(): Promise<MyBilling> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const empty: MyBilling = { available: false, invoices: [], credits: NO_CREDITS, cardPayments: false };
-  if (!user) return empty;
-  const [{ data: invoices, error }, { data: pos }, { data: notices }] = await Promise.all([
-    supabase
-      .from("invoices")
-      .select("id, status, number, issue_date, due_date, total_pence, pdf_status, payment_instructions, credits_purchased, void_reason")
-      .eq("client_id", user.id)
-      .neq("status", "draft")
-      .order("sequence", { ascending: false }),
-    supabase.rpc("credit_position", { p_client: user.id }),
-    supabase.from("payment_notices").select("invoice_id, status").eq("client_id", user.id),
-  ]);
-  if (error) return empty;
-  const rows = await Promise.all(
-    (invoices ?? []).map(async (inv) => {
-      const { data } = await supabase.rpc("invoice_position", { p_invoice: inv.id });
-      const p = ((Array.isArray(data) ? data[0] : data) ?? { paid: 0, credited: 0, balance: inv.total_pence }) as { paid: number; credited: number; balance: number };
-      return {
-        ...(inv as MyBilling["invoices"][number]),
-        paid_pence: p.paid,
-        credited_pence: p.credited,
-        balance_pence: Math.max(p.balance, 0),
-        noticeSent: (notices ?? []).some((n) => n.invoice_id === inv.id && n.status === "new"),
-      };
-    })
-  );
-  return {
-    available: true,
-    invoices: rows,
-    credits: (Array.isArray(pos) ? pos[0] : pos) ?? NO_CREDITS,
-    cardPayments: stripeStatus().ready,
-  };
+  if (!user) return { available: false, invoices: [], credits: NO_CREDITS, cardPayments: false };
+  return loadBilling(supabase, user.id);
 }
 
 // "I've paid by bank transfer": tells Duane to check. Not proof of payment.

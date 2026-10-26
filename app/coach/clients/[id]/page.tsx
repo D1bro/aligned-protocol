@@ -106,6 +106,9 @@ export default async function ClientProfilePage({
             {p.coaching.relationship ? ` · Coaching: ${p.coaching.relationship.status}` : ""}
           </p>
         </div>
+        {client.role === "client" && client.email ? (
+          <Link href={`/coach/clients/${client.id}/preview`} className="btn btn-o cp-preview">See as client</Link>
+        ) : null}
       </header>
 
       {contact && client.email ? (

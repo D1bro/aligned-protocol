@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { loadCoaching } from "@/lib/member-view";
 
 // The member's side of coaching: their sessions, the summaries their coach
 // has shared, the steps agreed, their progress updates and preparation.
@@ -28,26 +29,8 @@ export type MemberCoaching = {
 
 export async function getMyCoaching(): Promise<MemberCoaching> {
   const { supabase, userId } = await me();
-  const empty: MemberCoaching = { available: false, sessions: [], summaries: [], commitments: [], updates: [], drafts: [], shares: [] };
-  if (!userId) return empty;
-  const [sessions, summaries, commitments, updates, drafts, shares] = await Promise.all([
-    supabase.from("coaching_sessions").select("id, scheduled_at, timezone, duration_minutes, state, location").eq("client_id", userId).order("scheduled_at", { ascending: false }),
-    supabase.from("session_summaries").select("id, session_id, revision, content, published_at").eq("client_id", userId).eq("status", "published").order("published_at", { ascending: false }),
-    supabase.from("session_commitments").select("id, summary_id, session_id, owner, body, due_date, status, goal_id").eq("client_id", userId).order("position"),
-    supabase.from("commitment_updates").select("id, commitment_id, progress, note, support_requested, created_at").eq("client_id", userId).order("created_at", { ascending: false }),
-    supabase.from("prep_drafts").select("id, session_id, content, updated_at").eq("client_id", userId),
-    supabase.from("prep_shares").select("id, session_id, content, shared_at").eq("client_id", userId).order("shared_at", { ascending: false }),
-  ]);
-  if (sessions.error) return empty;
-  return {
-    available: true,
-    sessions: (sessions.data ?? []) as MemberCoaching["sessions"],
-    summaries: (summaries.data ?? []) as MemberCoaching["summaries"],
-    commitments: (commitments.data ?? []) as MemberCoaching["commitments"],
-    updates: (updates.data ?? []) as MemberCoaching["updates"],
-    drafts: (drafts.data ?? []) as MemberCoaching["drafts"],
-    shares: (shares.data ?? []) as MemberCoaching["shares"],
-  };
+  if (!userId) return { available: false, sessions: [], summaries: [], commitments: [], updates: [], drafts: [], shares: [] };
+  return loadCoaching(supabase, userId, { drafts: true });
 }
 
 // "How's it going?" on an agreed step. Doesn't complete their goal.
