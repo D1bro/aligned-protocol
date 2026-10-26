@@ -5,7 +5,7 @@ import { MobileNav, NavFooter, NavLinks, type MobileNavLink } from "@/components
 
 type StaffRole = "coach" | "admin";
 
-// The console's menu. Overview and Site health are for admins; coaches see
+// The console's menu. Overview, Billing, Site health and Settings are for admins; coaches see
 // their own clients and coaching enquiries.
 const LINKS: (MobileNavLink & { adminOnly?: boolean })[] = [
   { group: "Console", href: "/coach", label: "Overview", icon: "pulse", match: (p) => p === "/coach", adminOnly: true },
@@ -13,6 +13,7 @@ const LINKS: (MobileNavLink & { adminOnly?: boolean })[] = [
   { group: "Console", href: "/coach/enquiries", label: "Enquiries", icon: "inbox", match: (p) => p.startsWith("/coach/enquiries") },
   { group: "Console", href: "/coach/billing", label: "Billing", icon: "receipt", match: (p) => p.startsWith("/coach/billing"), adminOnly: true },
   { group: "Console", href: "/coach/health", label: "Site health", icon: "console", match: (p) => p.startsWith("/coach/health"), adminOnly: true },
+  { group: "Console", href: "/coach/settings", label: "Settings", icon: "settings", match: (p) => p.startsWith("/coach/settings"), adminOnly: true },
   { group: "You", href: "/", label: "My member area", icon: "home", match: () => false },
 ];
 
