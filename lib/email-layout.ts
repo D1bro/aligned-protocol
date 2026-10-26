@@ -67,11 +67,15 @@ function block(b: Block): string {
   return `<p style="margin:8px 0 0;font-size:16px;line-height:1.6;color:${C.ink}">${nl(b.signOff)}</p>`;
 }
 
+// A coach's email ends with their name and role instead of the motto.
+export type Signature = { name: string; role: string };
+
 export function renderEmail(input: {
   preheader: string; // the grey preview line inboxes show after the subject
   heading: string;
   blocks: Block[];
   footerNote?: string; // why they're getting it, or what to do if it wasn't them
+  signature?: Signature;
 }): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -88,8 +92,11 @@ export function renderEmail(input: {
 ${input.blocks.map(block).join("\n")}
 </td></tr>
 <tr><td align="center" style="padding:22px 20px 6px;font-size:13px;line-height:1.6;color:${C.ink3}">
-<em style="color:${C.ink2}">${esc(MOTTO)}</em><br>
-Aligned · <a href="https://www.the-aligned.com" style="color:${C.ink3}">the-aligned.com</a>
+${input.signature
+  ? `<strong style="color:${C.ink2}">${esc(input.signature.name)}</strong><br>
+${esc(input.signature.role)} · <a href="https://www.the-aligned.com" style="color:${C.ink3}">the-aligned.com</a>`
+  : `<em style="color:${C.ink2}">${esc(MOTTO)}</em><br>
+Aligned · <a href="https://www.the-aligned.com" style="color:${C.ink3}">the-aligned.com</a>`}
 ${input.footerNote ? `<br><span style="font-size:12px">${nl(input.footerNote)}</span>` : ""}
 </td></tr>
 </table>
@@ -98,7 +105,7 @@ ${input.footerNote ? `<br><span style="font-size:12px">${nl(input.footerNote)}</
 }
 
 // The same email as plain text, for clients that don't show HTML.
-export function renderText(input: { heading: string; blocks: Block[]; footerNote?: string }): string {
+export function renderText(input: { heading: string; blocks: Block[]; footerNote?: string; signature?: Signature }): string {
   const parts: string[] = [input.heading];
   for (const b of input.blocks) {
     if ("p" in b) parts.push(b.p);
@@ -110,6 +117,7 @@ export function renderText(input: { heading: string; blocks: Block[]; footerNote
     else if ("smallLink" in b) parts.push(`${b.smallLink.lead} ${b.smallLink.label}: ${b.smallLink.href}`);
     else parts.push(b.signOff);
   }
-  parts.push(`— ${MOTTO}\nAligned · www.the-aligned.com${input.footerNote ? `\n${input.footerNote}` : ""}`);
+  const sig = input.signature ? `${input.signature.name}\n${input.signature.role} · www.the-aligned.com` : `— ${MOTTO}\nAligned · www.the-aligned.com`;
+  parts.push(`${sig}${input.footerNote ? `\n${input.footerNote}` : ""}`);
   return parts.join("\n\n");
 }

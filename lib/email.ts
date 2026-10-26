@@ -9,7 +9,15 @@ import path from "node:path";
 // For local testing only: with EMAIL_OUTBOX_DIR set (and not in production),
 // emails are written to that folder as .html/.txt files instead of being sent.
 
-type Outgoing = { to: string; subject: string; html: string; text: string; replyTo?: string | null };
+type Outgoing = { to: string; subject: string; html: string; text: string; replyTo?: string | null; from?: string };
+
+// Coaching emails come from the client's coach by name, at the shared
+// address, and replies go there too so they can be monitored.
+export const COACHING_ADDRESS = process.env.COACHING_EMAIL || "hello@the-aligned.com";
+export function coachingFrom(coachName: string | null | undefined): string {
+  const name = (coachName ?? "").replace(/[<>"\r\n,;]/g, "").trim().slice(0, 60);
+  return name ? `${name} <${COACHING_ADDRESS}>` : `Aligned <${COACHING_ADDRESS}>`;
+}
 type Sent = { ok: true; id: string | null } | { ok: false; reason: string };
 
 export function emailStatus(): { ready: boolean; mode: "resend" | "outbox" | "off"; reason?: string } {
@@ -25,14 +33,14 @@ export async function sendEmail(input: Outgoing): Promise<Sent> {
     const dir = process.env.EMAIL_OUTBOX_DIR!;
     const id = `${new Date().toISOString().replace(/[:.]/g, "-")}-${input.to.replace(/[^\w.@-]/g, "_")}`;
     await mkdir(dir, { recursive: true });
-    const head = `To: ${input.to}\nReply-To: ${input.replyTo ?? ""}\nSubject: ${input.subject}\n\n`;
+    const head = `From: ${input.from ?? process.env.REMINDER_FROM ?? ""}\nTo: ${input.to}\nReply-To: ${input.replyTo ?? ""}\nSubject: ${input.subject}\n\n`;
     await writeFile(path.join(dir, `${id}.txt`), head + input.text);
     await writeFile(path.join(dir, `${id}.html`), input.html);
     return { ok: true, id: `outbox:${id}` };
   }
   const key = process.env.RESEND_API_KEY;
-  const from = process.env.REMINDER_FROM;
-  if (!key || !from) return { ok: false, reason: "email not configured" };
+  if (!key || !process.env.REMINDER_FROM) return { ok: false, reason: "email not configured" };
+  const from = input.from ?? process.env.REMINDER_FROM;
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

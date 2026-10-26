@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/actions/admin";
-import { emailStatus, sendEmail } from "@/lib/email";
+import { COACHING_ADDRESS, coachingFrom, emailStatus, sendEmail } from "@/lib/email";
 import { buildMessage, clientFacingSummary, type MessageInput } from "@/lib/messages";
 import { requestOrigin } from "@/lib/request-origin";
-import { formatSessionTime } from "@/lib/time";
+import { formatSessionTime, sessionDayTime, sessionRef } from "@/lib/time";
 import { formatPence } from "@/lib/money";
 import { stripeStatus } from "@/lib/stripe";
 
@@ -16,9 +16,11 @@ import { stripeStatus } from "@/lib/stripe";
 // finds the same record instead of sending again.
 
 export type MessageKind = "summary_shared" | "session_update" | "invoice_issued" | "payment_received";
+// Sent automatically (the daily job), never from the console.
+export type JobKind = MessageKind | "session_reminder";
 export type MessageJob = {
   id: string;
-  kind: MessageKind;
+  kind: JobKind;
   dedupe_key: string;
   to_email: string;
   subject: string;
@@ -36,6 +38,8 @@ type Built = {
   clientId: string;
   to: string;
   replyTo: string | null;
+  // Coaching emails: "Coach Name <hello@…>"; others use the site's sender.
+  from?: string;
   dedupeKey: string;
   refs: { session_id?: string; summary_id?: string; invoice_id?: string; receipt_id?: string };
   input: MessageInput;
@@ -56,7 +60,14 @@ async function build(kind: MessageKind, refId: string, note: string | null, opts
   const origin = await requestOrigin();
   const { data: meProfile } = await supabase.from("profiles").select("email, full_name").eq("id", me.id).maybeSingle();
   const client = async (id: string) =>
-    (await supabase.from("profiles").select("id, full_name, email").eq("id", id).maybeSingle()).data as { id: string; full_name: string | null; email: string | null } | null;
+    (await supabase.from("profiles").select("id, full_name, email, coach_id").eq("id", id).maybeSingle()).data as
+      | { id: string; full_name: string | null; email: string | null; coach_id: string | null }
+      | null;
+  // Coaching emails come from the client's own coach, whoever presses Send.
+  const coachOf = async (c: { coach_id: string | null }) => {
+    const { data } = c.coach_id ? await supabase.from("profiles").select("full_name").eq("id", c.coach_id).maybeSingle() : { data: null };
+    return (data?.full_name as string | null | undefined)?.trim() || meProfile?.full_name?.trim() || "Your coach";
+  };
 
   if (kind === "summary_shared") {
     const { data: s } = await supabase.from("session_summaries").select("id, session_id, client_id, status, content").eq("id", refId).maybeSingle();
@@ -80,17 +91,21 @@ async function build(kind: MessageKind, refId: string, note: string | null, opts
       ? `${formatSessionTime(nextUp.scheduled_at, nextUp.timezone)} · ${nextUp.duration_minutes} minutes${nextUp.state === "proposed" ? " (proposed)" : ""}${nextUp.location ? `\n${nextUp.location}` : ""}`
       : null;
     const content = opts.includeSummary ? clientFacingSummary((s.content ?? {}) as Record<string, unknown>, nextLine) : null;
+    const coachName = await coachOf(c);
     return {
       clientId: c.id,
       to: c.email,
-      replyTo: meProfile?.email ?? null,
+      replyTo: COACHING_ADDRESS,
+      from: coachingFrom(coachName),
       dedupeKey: `summary:${s.id}`,
       refs: { summary_id: s.id, session_id: s.session_id },
       input: {
         kind,
         firstName: first(c.full_name),
         sessionLabel: sess ? formatSessionTime(sess.scheduled_at, sess.timezone).replace(/, \d{1,2}:\d{2} (GMT|BST)$/, "") : "our last session",
-        coachName: meProfile?.full_name?.trim() || "Your coach",
+        sessionRef: sess ? sessionRef(sess.scheduled_at, sess.timezone) : undefined,
+        nextSession: nextUp && nextUp.state === "confirmed" ? sessionDayTime(nextUp.scheduled_at, nextUp.timezone) : null,
+        coachName,
         link: `${origin}/coaching/sessions/${s.session_id}`,
         note,
         content,
@@ -118,17 +133,19 @@ async function build(kind: MessageKind, refId: string, note: string | null, opts
       sess.state === "cancelled" ? "cancelled" : latest?.kind === "rescheduled" ? "rescheduled" : sess.state === "proposed" ? "proposed" : "confirmed";
     const c = await client(sess.client_id);
     if (!c?.email) return { ok: false, message: "This client has no email address." };
+    const coachName = await coachOf(c);
     return {
       clientId: c.id,
       to: c.email,
-      replyTo: meProfile?.email ?? null,
+      replyTo: COACHING_ADDRESS,
+      from: coachingFrom(coachName),
       // One email per change: a later move or cancellation can be emailed too.
       dedupeKey: `session:${sess.id}:${latest?.id ?? sess.state}`,
       refs: { session_id: sess.id },
       input: {
         kind,
         firstName: first(c.full_name),
-        coachName: meProfile?.full_name?.trim() || "Your coach",
+        coachName,
         change,
         when: formatSessionTime(sess.scheduled_at, sess.timezone),
         previousWhen: change === "rescheduled" && latest?.from_at ? formatSessionTime(latest.from_at, sess.timezone) : null,
@@ -221,7 +238,16 @@ export async function previewMessage(kind: MessageKind, refId: string, note: str
   const b = await build(kind, refId, note.trim() || null, opts);
   if ("ok" in b) return b;
   const m = buildMessage(b.input);
-  return { ok: true as const, to: b.to, subject: m.subject, text: m.text, email: emailStatus() };
+  return {
+    ok: true as const,
+    to: b.to,
+    from: b.from ?? process.env.REMINDER_FROM ?? null,
+    replyTo: b.replyTo,
+    subject: m.subject,
+    text: m.text,
+    html: m.html,
+    email: emailStatus(),
+  };
 }
 
 export async function sendMessage(input: { kind: MessageKind; refId: string; note: string; again?: boolean; includeSummary?: boolean }): Promise<{ ok: true; message: string } | Fail> {
@@ -263,7 +289,7 @@ export async function sendMessage(input: { kind: MessageKind; refId: string; not
   }
   if (error || !job) return { ok: false, message: "Couldn’t prepare the email — nothing was sent. Try again." };
 
-  const sent = await sendEmail({ to: b.to, subject: m.subject, text: m.text, html: m.html, replyTo: b.replyTo });
+  const sent = await sendEmail({ to: b.to, subject: m.subject, text: m.text, html: m.html, replyTo: b.replyTo, from: b.from });
   await supabase
     .from("message_jobs")
     .update(

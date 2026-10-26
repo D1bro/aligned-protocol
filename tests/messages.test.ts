@@ -3,11 +3,45 @@ import assert from "node:assert/strict";
 import { buildMessage, clientFacingSummary } from "../lib/messages.ts";
 
 test("summary email links to the notes without including them", () => {
-  const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "Tue, 27 Oct 2026", coachName: "Test Coach", link: "https://x.test/coaching/sessions/1" });
-  assert.equal(m.subject, "Your session notes are ready");
-  assert.match(m.text, /Tue, 27 Oct 2026/);
+  const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "Tue, 27 Oct 2026", sessionRef: "Tuesday", nextSession: "Monday 9 November at 10:00", coachName: "Test Coach", link: "https://x.test/coaching/sessions/1" });
+  assert.equal(m.subject, "Notes from our session on Tuesday");
+  assert.match(m.text, /Thanks for Tuesday\. I’ve put the notes/);
+  assert.match(m.text, /prepare for our next session on Monday 9 November at 10:00\./);
+  assert.match(m.text, /See you then,\nTest\n/);
   assert.match(m.text, /https:\/\/x\.test\/coaching\/sessions\/1/);
   assert.match(m.html, /href="https:\/\/x\.test\/coaching\/sessions\/1"/);
+});
+
+test("an older session is named by date, and there's no 'see you then' without a booking", () => {
+  const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "Mon, 12 Oct 2026", sessionRef: "12 October", coachName: "Test Coach", link: "https://x.test" });
+  assert.equal(m.subject, "Notes from our session on 12 October");
+  assert.match(m.text, /Thanks for our session on 12 October\./);
+  assert.ok(!/See you then/.test(m.text));
+});
+
+test("coaching emails end with the coach's name and role, not the motto", () => {
+  const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "x", sessionRef: "Monday", coachName: "Test Coach", link: "https://x.test" });
+  assert.match(m.text, /Test Coach\nCoach, Aligned · www\.the-aligned\.com$/);
+  assert.ok(!/Alignment is the foundation/.test(m.text));
+  assert.match(m.html, /<strong[^>]*>Test Coach<\/strong><br>\s*Coach, Aligned/);
+  const inv = buildMessage({ kind: "payment_received", firstName: "Sam", supplierName: "Aligned Media", amount: "£1.00", receivedOn: "1 May", applied: [], unapplied: null, link: "https://x.test" });
+  assert.match(inv.text, /Alignment is the foundation/);
+});
+
+test("the day-before reminder has the time, the join link and their open steps", () => {
+  const m = buildMessage({
+    kind: "session_reminder", firstName: "Sam", coachName: "Test Coach", when: "Mon, 9 Nov 2026, 10:00 GMT", time: "10:00", durationMinutes: 60,
+    joinUrl: "https://meet.example.com/abc", place: null, steps: ["Ten minutes on Sunday"], link: "https://x.test/coaching",
+  });
+  assert.equal(m.subject, "Reminder: our session tomorrow at 10:00");
+  assert.match(m.text, /Mon, 9 Nov 2026, 10:00 GMT\n60 minutes\nWhere: Online/);
+  assert.match(m.text, /Join the call: https:\/\/meet\.example\.com\/abc/);
+  assert.match(m.text, /• Ten minutes on Sunday/);
+  assert.match(m.text, /See you tomorrow,\nTest/);
+  const inPerson = buildMessage({ kind: "session_reminder", firstName: "Sam", coachName: "C", when: "w", time: "09:00", durationMinutes: 45, joinUrl: null, place: "The studio", steps: [], link: "https://x.test/coaching" });
+  assert.match(inPerson.text, /Where: The studio/);
+  assert.ok(!/Join the call/.test(inPerson.text));
+  assert.ok(!/agreed last time/.test(inPerson.text));
 });
 
 test("personal notes are escaped in HTML and kept as written in text", () => {
@@ -102,7 +136,8 @@ test("only client-facing summary wording can reach an email", () => {
 
 test("without the tick, the summary email stays a link only", () => {
   const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "today", coachName: "C", link: "https://x.test" });
-  assert.equal(m.subject, "Your session notes are ready");
+  assert.equal(m.subject, "Notes from our session");
+  assert.match(m.text, /Thanks for our session\./);
   assert.ok(!m.text.includes("Your next steps"));
 });
 

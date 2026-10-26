@@ -4,7 +4,7 @@
 // to include its client-facing wording (exactly what the client sees in the
 // app, via clientFacingSummary). Every email can carry a short personal note.
 
-import { renderEmail, renderText, type Block } from "./email-layout.ts";
+import { renderEmail, renderText, type Block, type Signature } from "./email-layout.ts";
 
 export type Message = { subject: string; text: string; html: string };
 
@@ -51,7 +51,31 @@ export function clientFacingSummary(content: Record<string, unknown>, nextMeetin
 }
 
 export type MessageInput =
-  | { kind: "summary_shared"; firstName: string; sessionLabel: string; coachName: string; link: string; note?: string | null; content?: SummaryForEmail | null }
+  | {
+      kind: "summary_shared";
+      firstName: string;
+      sessionLabel: string;
+      // "Monday" for a session in the last few days, otherwise "26 October".
+      sessionRef?: string;
+      // "Monday 9 November at 10:00", when the next session is booked.
+      nextSession?: string | null;
+      coachName: string;
+      link: string;
+      note?: string | null;
+      content?: SummaryForEmail | null;
+    }
+  | {
+      kind: "session_reminder";
+      firstName: string;
+      coachName: string;
+      when: string;
+      time: string;
+      durationMinutes: number;
+      joinUrl: string | null;
+      place: string | null;
+      steps: string[];
+      link: string;
+    }
   | {
       kind: "session_update";
       firstName: string;
@@ -95,14 +119,19 @@ export type MessageInput =
 type Part = Block | null | undefined | false | "";
 
 // The shared Aligned look (lib/email-layout.ts), as HTML and plain text.
-function compose(subject: string, heading: string, preheader: string, parts: Part[], footerNote?: string): Message {
+function compose(subject: string, heading: string, preheader: string, parts: Part[], footerNote?: string, signature?: Signature): Message {
   const blocks = parts.filter((b): b is Block => Boolean(b));
   return {
     subject,
-    html: renderEmail({ preheader, heading, blocks, footerNote }),
-    text: renderText({ heading, blocks, footerNote }),
+    html: renderEmail({ preheader, heading, blocks, footerNote, signature }),
+    text: renderText({ heading, blocks, footerNote, signature }),
   };
 }
+
+// Coaching emails are signed by the coach: first name in the sign-off, full
+// name and role in the footer.
+const firstOf = (name: string) => name.trim().split(/\s+/)[0] || name;
+const coachSignature = (name: string): Signature => ({ name, role: "Coach, Aligned" });
 
 // A personal note from the coach, shown set apart in the email.
 const noteBlock = (note?: string | null): Part => (note?.trim() ? { quote: note.trim().slice(0, 1000) } : null);
@@ -135,24 +164,55 @@ export function buildMessage(m: MessageInput): Message {
             c.nextMeeting ? { p: c.nextMeeting } : null,
             { button: { href: m.link, label: "Open your session notes" } },
             { p: "You can let me know how each step is going from the same page." },
-            { signOff: m.coachName },
+            { signOff: firstOf(m.coachName) },
           ],
-          "This email contains your session notes. They're also kept in your member area, behind your sign-in."
+          "This email contains your session notes. They're also kept in your member area, behind your sign-in.",
+          coachSignature(m.coachName)
         );
       }
+      {
+        const ref = m.sessionRef ?? null;
+        const recent = !!ref && /day$/.test(ref);
+        return compose(
+          ref ? `Notes from our session on ${ref}` : "Notes from our session",
+          "Notes from our session",
+          "The notes and the next steps we agreed are in your member area.",
+          [
+            { p: `Hi ${m.firstName},` },
+            { p: `Thanks for ${recent ? ref : ref ? `our session on ${ref}` : "our session"}. I’ve put the notes from our session in your member area, with the next steps we agreed.` },
+            noteBlock(m.note),
+            { button: { href: m.link, label: "Open your session notes" } },
+            {
+              p: `When you’ve tried a step, you can tell me how it went from the same page. It helps me prepare for our next session${m.nextSession ? ` on ${m.nextSession}` : ""}.`,
+            },
+            { signOff: m.nextSession ? `See you then,\n${firstOf(m.coachName)}` : firstOf(m.coachName) },
+          ],
+          undefined,
+          coachSignature(m.coachName)
+        );
+      }
+    case "session_reminder": {
+      const where = m.joinUrl ? "Online — use the button below to join" : m.place;
       return compose(
-        "Your session notes are ready",
-        "Your session notes are ready",
-        `Notes and next steps from our session on ${m.sessionLabel}.`,
+        `Reminder: our session tomorrow at ${m.time}`,
+        "See you tomorrow",
+        `${m.when} · ${m.durationMinutes} minutes`,
         [
           { p: `Hi ${m.firstName},` },
-          { p: `The notes from our session on ${m.sessionLabel} are ready in your member area, with the next steps we agreed.` },
-          noteBlock(m.note),
-          { button: { href: m.link, label: "Read your session notes" } },
-          { p: "You can let me know how each step is going from the same page." },
-          { signOff: m.coachName },
-        ]
+          { p: "A quick reminder that our next session is tomorrow:" },
+          { box: [m.when, `${m.durationMinutes} minutes`, ...(where ? [`Where: ${where}`] : [])] },
+          m.joinUrl && { button: { href: m.joinUrl, label: "Join the call" } },
+          m.steps.length > 0 && { small: "The steps you agreed last time" },
+          m.steps.length > 0 && { box: m.steps.map((x) => `• ${x}`) },
+          { p: "Anything you’d like to bring? You can add it under “Before we meet” on your coaching page. It stays private until you share it." },
+          m.joinUrl ? { smallLink: { lead: "Your notes and next steps are on", label: "your coaching page", href: m.link } } : { button: { href: m.link, label: "Open your coaching page" } },
+          { p: "If the time no longer works, just reply to this email." },
+          { signOff: `See you tomorrow,\n${firstOf(m.coachName)}` },
+        ],
+        undefined,
+        coachSignature(m.coachName)
       );
+    }
     case "session_update": {
       const details = [`${m.when}`, `${m.durationMinutes} minutes`, ...(m.location?.trim() ? [`Where: ${m.location.trim()}`] : [])];
       const copy: Record<typeof m.change, { subject: string; heading: string; intro: string; outro?: string }> = {
@@ -178,8 +238,8 @@ export function buildMessage(m: MessageInput): Message {
         c.outro && { p: c.outro },
         noteBlock(m.note),
         { button: { href: m.link, label: "See your coaching page" } },
-        { signOff: m.coachName },
-      ]);
+        { signOff: firstOf(m.coachName) },
+      ], undefined, coachSignature(m.coachName));
     }
     case "invoice_issued": {
       const status = !m.owed

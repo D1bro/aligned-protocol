@@ -13,7 +13,15 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: 
 // shared summary, the coach can tick to include its client-facing wording.
 export function EmailButton({ kind, refId, label, last }: { kind: MessageKind; refId: string; label: string; last: Last }) {
   const router = useRouter();
-  const [preview, setPreview] = useState<null | { to: string; subject: string; text: string; ready: boolean; reason?: string }>(null);
+  const [preview, setPreview] = useState<null | {
+    to: string;
+    from: string | null;
+    replyTo: string | null;
+    subject: string;
+    html: string;
+    ready: boolean;
+    reason?: string;
+  }>(null);
   const [note, setNote] = useState("");
   const [includeSummary, setIncludeSummary] = useState(false);
   const [pending, setPending] = useState<null | "preview" | "send">(null);
@@ -26,12 +34,12 @@ export function EmailButton({ kind, refId, label, last }: { kind: MessageKind; r
     const r = await previewMessage(kind, refId, note, { includeSummary });
     setPending(null);
     if (!r.ok) return setMsg({ ok: false, text: r.message });
-    setPreview({ to: r.to, subject: r.subject, text: r.text, ready: r.email.ready, reason: r.email.reason });
+    setPreview({ to: r.to, from: r.from, replyTo: r.replyTo, subject: r.subject, html: r.html, ready: r.email.ready, reason: r.email.reason });
   }
 
   async function refreshPreview(nextNote: string, withSummary = includeSummary) {
     const r = await previewMessage(kind, refId, nextNote, { includeSummary: withSummary });
-    if (r.ok) setPreview((p) => (p ? { ...p, subject: r.subject, text: r.text } : p));
+    if (r.ok) setPreview((p) => (p ? { ...p, subject: r.subject, html: r.html } : p));
   }
 
   async function send() {
@@ -63,11 +71,14 @@ export function EmailButton({ kind, refId, label, last }: { kind: MessageKind; r
   }
   return (
     <div className="bl-form em-preview">
-      <p className="cs-meta">
-        To <b>{preview.to}</b> · Subject: <b>{preview.subject}</b>
-      </p>
+      <dl className="em-head">
+        {preview.from ? <><dt>From</dt><dd>{preview.from}</dd></> : null}
+        <dt>To</dt><dd>{preview.to}</dd>
+        {preview.replyTo ? <><dt>Replies to</dt><dd>{preview.replyTo}</dd></> : null}
+        <dt>Subject</dt><dd><b>{preview.subject}</b></dd>
+      </dl>
       {kind === "summary_shared" ? (
-        <label className="admin-check">
+        <label className="admin-check em-include">
           <input
             type="checkbox"
             checked={includeSummary}
@@ -79,7 +90,8 @@ export function EmailButton({ kind, refId, label, last }: { kind: MessageKind; r
           Include the summary in the email (only what they see in the app; never your private notes)
         </label>
       ) : null}
-      <pre className="em-body">{preview.text}</pre>
+      {/* Exactly what they'll receive, isolated from the console's styles and scripts. */}
+      <iframe className="em-frame" title="Email preview" sandbox="" srcDoc={preview.html} />
       <label className="sw-field">
         <span>Add a personal note (optional)</span>
         <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} onBlur={(e) => refreshPreview(e.target.value)} maxLength={1000} />

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { MemberCoaching as Data } from "@/lib/actions/member-coaching";
 import { formatDate } from "@/lib/audit-schedule";
-import { formatSessionTime } from "@/lib/time";
-import { ProgressReport } from "./ProgressReport";
+import { sessionDayTime } from "@/lib/time";
+import { stepStates, stepTally } from "@/lib/momentum";
+import { StepCheck } from "./StepCheck";
+import { MomentumStrip } from "./Momentum";
 import { PrepEditor } from "./PrepEditor";
 
 const PROGRESS: Record<string, string> = { tried: "Tried it", partly: "Partly", done: "Done", not_yet: "Not yet" };
@@ -15,8 +17,9 @@ type Content = {
   suggested_focus?: { area_id?: string; area_name?: string; goal?: string; why?: string };
 };
 
-// The member's coaching space: last session, next steps, preparation, and
-// links to their own audit and plan. Only what their coach has shared.
+// The member's coaching space: their momentum, the steps to tick off, the
+// last session, preparation, and links to their own audit and plan. Only what
+// their coach has shared.
 export function MemberCoaching({
   data,
   sessionsLeft = null,
@@ -33,7 +36,10 @@ export function MemberCoaching({
   const last = data.summaries[0] ?? null;
   const c = (last?.content ?? {}) as Content;
   const steps = last ? data.commitments.filter((x) => x.summary_id === last.id) : [];
-  const mine = steps.filter((x) => x.owner === "client");
+  const mine = steps.filter((x) => x.owner === "client" && x.status !== "dropped");
+  const states = stepStates(mine, data.updates);
+  const tally = stepTally(states);
+  const lastSession = last ? data.sessions.find((s) => s.id === last.session_id) ?? null : null;
   const theirs = steps.filter((x) => x.owner === "coach");
   const latestUpdate = (id: string) => data.updates.find((u) => u.commitment_id === id) ?? null;
   const draft = data.drafts.find((d) => d.session_id === (next?.id ?? null)) ?? data.drafts.find((d) => !d.session_id) ?? null;
@@ -44,38 +50,56 @@ export function MemberCoaching({
     <section className="mc" aria-labelledby="mc-h">
       <h2 id="mc-h" className="mc-title">Your coaching</h2>
 
-      <div className="mc-grid">
+      <MomentumStrip
+        next={next}
+        proposed={c.next_meeting?.text ?? null}
+        sessionsLeft={sessionsLeft}
+        states={states}
+        updates={data.updates}
+      />
+
+      {mine.length || theirs.length ? (
         <div className="admin-card">
-          <h3>Next meeting</h3>
-          {next ? (
-            <>
-              <p className="ov-big">{formatSessionTime(next.scheduled_at, next.timezone)}</p>
-              <p className="admin-card-sub">
-                {next.state === "confirmed" ? "Confirmed" : "Proposed — to be confirmed"} · {next.duration_minutes} minutes
-                {next.location ? ` · ${next.location}` : ""}
-              </p>
-            </>
-          ) : (
-            <p className="admin-card-sub">{c.next_meeting?.text ? `Proposed: ${c.next_meeting.text} (not booked yet)` : "Nothing booked yet."}</p>
-          )}
-          {sessionsLeft ? (
-            <p className={sessionsLeft.available ? "admin-card-sub" : "admin-card-sub bs-low"}>
-              {sessionsLeft.available
-                ? `${sessionsLeft.available} paid session${sessionsLeft.available === 1 ? "" : "s"} left to book`
-                : "No paid sessions left to book"}{" "}
-              · <Link href={sessionsLeft.href} className="au-text-link">Top up →</Link>
+          <div className="mc-steps-head">
+            <h3>Your next steps</h3>
+            {last ? (
+              <span className="admin-card-sub">
+                From your session on {lastSession ? sessionDayTime(lastSession.scheduled_at, lastSession.timezone).replace(/ at .*/, "") : formatDate(last.published_at)}
+              </span>
+            ) : null}
+          </div>
+          <ul className="mc-checks">
+            {mine.map((s, i) => {
+              const u = latestUpdate(s.id);
+              return (
+                <li key={s.id} className={states[i] === "done" ? "mc-check is-done" : "mc-check"}>
+                  <span className="mc-tick" aria-hidden="true">✓</span>
+                  <div>
+                    <p>{s.body}</p>
+                    <em>
+                      {s.due_date ? `By ${formatDate(s.due_date)} · ` : ""}
+                      {u ? `You said: ${PROGRESS[u.progress] ?? u.progress}, ${formatDate(u.created_at)}${u.note ? ` — “${u.note}”` : ""}` : "No update yet"}
+                    </em>
+                    <StepCheck key={u?.id ?? "none"} commitmentId={s.id} current={u?.progress ?? null} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {tally.total && tally.moved === tally.total ? (
+            <p className="mc-cele">
+              {tally.total === 1 ? "Your step has" : tally.total === 2 ? "Both steps have" : `All ${tally.total} steps have`} moved. Tell your coach how it went in{" "}
+              <a href="#before-we-meet" className="au-text-link">Before we meet</a>, so your next session starts where you are.
             </p>
           ) : null}
+          {theirs.length ? (
+            <>
+              <h4>What your coach will do</h4>
+              <ul>{theirs.map((s) => <li key={s.id}>{s.body}{s.status === "done" ? <em> · done</em> : null}</li>)}</ul>
+            </>
+          ) : null}
         </div>
-
-        <div className="admin-card">
-          <h3>Your audit and plan</h3>
-          <p className="admin-card-sub">Your coach works from the same audit and plan you see here.</p>
-          <p>
-            <Link href="/audit/results" className="au-text-link">My snapshot</Link> · <Link href="/clear" className="au-text-link">My plan</Link>
-          </p>
-        </div>
-      </div>
+      ) : null}
 
       <div className="admin-card mc-last">
         <h3>Our last session</h3>
@@ -118,36 +142,18 @@ export function MemberCoaching({
         )}
       </div>
 
-      {mine.length || theirs.length ? (
-        <div className="admin-card">
-          <h3>My next steps</h3>
-          <ul className="mc-steps">
-            {mine.map((s) => {
-              const u = latestUpdate(s.id);
-              return (
-                <li key={s.id}>
-                  <p>{s.body}{s.due_date ? <em> · by {formatDate(s.due_date)}</em> : null}</p>
-                  <em>
-                    {u ? `You said: ${PROGRESS[u.progress] ?? u.progress}, ${formatDate(u.created_at)}${u.note ? ` — “${u.note}”` : ""}` : "No update yet"}
-                  </em>
-                  <ProgressReport commitmentId={s.id} />
-                </li>
-              );
-            })}
-          </ul>
-          {theirs.length ? (
-            <>
-              <h4>What your coach will do</h4>
-              <ul>{theirs.map((s) => <li key={s.id}>{s.body}{s.status === "done" ? <em> · done</em> : null}</li>)}</ul>
-            </>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="admin-card">
+      <div className="admin-card" id="before-we-meet">
         <h3>Before we meet</h3>
         <p className="admin-card-sub">Write anything you&rsquo;d like to bring. It stays private until you share it.</p>
         <PrepEditor sessionId={next?.id ?? null} initial={draft?.content ?? ""} lastShared={lastShare ? formatDate(lastShare.shared_at) : null} />
+      </div>
+
+      <div className="admin-card">
+        <h3>Your audit and plan</h3>
+        <p className="admin-card-sub">Your coach works from the same audit and plan you see here.</p>
+        <p>
+          <Link href="/audit/results" className="au-text-link">My snapshot</Link> · <Link href="/clear" className="au-text-link">My plan</Link>
+        </p>
       </div>
 
       {earlier.length ? (
