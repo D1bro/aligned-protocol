@@ -18,6 +18,7 @@ import {
   saveCustomer,
   voidInvoice,
 } from "@/lib/actions/billing";
+import { draftInvoiceFromPackage } from "@/lib/actions/packages";
 import { formatPence, penceToInput } from "@/lib/money";
 import { todayUk } from "@/lib/billing-status";
 
@@ -427,6 +428,40 @@ export function NoShowCredit({ sessionId, clientId }: { sessionId: string; clien
         run={(v) => resolveNoShowCredit({ sessionId, use: true, reason: v.reason, clientId })}
       />
       <ActionForm open="Give it back" submit="Release the credit" tone="link" fields={[]} run={() => resolveNoShowCredit({ sessionId, use: false, reason: "", clientId })} />
+    </span>
+  );
+}
+
+// Start a draft invoice from one of the packages, to check and issue as usual.
+export function InvoiceFromPackage({ clientId, packages }: { clientId: string; packages: { id: string; label: string }[] }) {
+  const router = useRouter();
+  const [choice, setChoice] = useState("");
+  const [pending, setPending] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!packages.length) return null;
+  return (
+    <span className="bl-act">
+      <select value={choice} onChange={(e) => setChoice(e.target.value)} aria-label="Package">
+        <option value="">From a package…</option>
+        {packages.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+      </select>
+      <button
+        type="button"
+        className="btn btn-g"
+        disabled={pending || !choice}
+        onClick={async () => {
+          setPending(true);
+          setErr(null);
+          const r = await draftInvoiceFromPackage(clientId, choice);
+          setPending(false);
+          if (!r.ok) return setErr(r.message);
+          setChoice("");
+          router.refresh();
+        }}
+      >
+        {pending ? "Starting…" : "Draft invoice"}
+      </button>
+      {err ? <span className="clear-err" role="alert">{err}</span> : null}
     </span>
   );
 }

@@ -52,7 +52,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
       <h1>Invoices</h1>
       <p className="lead">
         Aligned Media · not VAT registered · GBP. Payments count only once recorded from the bank, or confirmed by Stripe.{" "}
-        <Link href="/coach/billing/settings">Billing settings</Link>
+        <Link href="/coach/billing/packages">Packages and deals</Link> · <Link href="/coach/billing/settings">Billing settings</Link>
       </p>
 
       <div className="admin-stats">

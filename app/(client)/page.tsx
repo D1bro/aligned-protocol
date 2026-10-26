@@ -12,6 +12,7 @@ import { greetingName } from "@/lib/details";
 import { DetailsPrompt } from "@/components/profile/DetailsPrompt";
 import { CoachingCard } from "@/components/profile/CoachingCard";
 import { getMyCoaching } from "@/lib/actions/member-coaching";
+import { getMyCredits } from "@/lib/actions/packages";
 import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { LifeMap } from "@/components/audit/LifeMap";
@@ -81,6 +82,7 @@ export default async function ProfilePage() {
     getIdentityStatement(),
     getMyCoaching(),
   ]);
+  const credits = coaching.sessions.length ? await getMyCredits() : null;
 
   const scoreByArea = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
   const scores = areas.map((a) => scoreByArea.get(a.id) ?? 0);
@@ -218,6 +220,7 @@ export default async function ProfilePage() {
         data={coaching}
         goals={allGoals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" }))}
         hasGoal={!!goal}
+        credits={credits}
       />
 
       {/* Daily Alignment is Tier 2: staff only until Tier 2 exists. */}
