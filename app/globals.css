@@ -1630,3 +1630,5 @@ a.nav-user-who:hover b { color: var(--gold); }
 .rf-verdict button { border: 1px solid var(--bdr2); background: none; color: var(--text2); border-radius: 999px; padding: .2rem .7rem; font: 500 12px var(--font-dm-sans), 'DM Sans', sans-serif; cursor: pointer; }
 .rf-verdict button.on { border-color: var(--gold); color: var(--gold); background: var(--gd2); }
 .rf-verdict input { flex: 1; min-width: 160px; padding: .35rem .6rem; font-size: 12.5px; }
+.cs-title-link { color: inherit; text-decoration: none; }
+.cs-title-link:hover b, .cs-title-link:focus-visible b { color: var(--gold); text-decoration: underline; text-underline-offset: 4px; }
