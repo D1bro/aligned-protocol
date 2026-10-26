@@ -1,5 +1,8 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { tidyDraft, type AiDraft } from "@/lib/ai-draft";
+
+export type { AiDraft, DraftAction } from "@/lib/ai-draft";
 
 // Drafts a session summary from a transcript, for the coach to review. Runs
 // on the server only. Nothing it returns is shared with the member until the
@@ -14,18 +17,6 @@ export function aiConfigured(): boolean {
 }
 
 export const AI_MODEL = "claude-opus-5-5";
-
-export type DraftAction = { text: string; due_date: string; goal_id: string; source_excerpt: string; source_time: string; uncertain: boolean };
-
-export type AiDraft = {
-  focus: string;
-  summary: string;
-  insights: string[];
-  client_actions: DraftAction[];
-  coach_actions: DraftAction[];
-  next_meeting: { mentioned: boolean; text: string; source_excerpt: string };
-  review_flags: string[];
-};
 
 const action = {
   type: "object",
@@ -54,17 +45,40 @@ const SCHEMA = {
     next_meeting: {
       type: "object",
       additionalProperties: false,
-      required: ["mentioned", "text", "source_excerpt"],
+      required: ["mentioned", "text", "source_excerpt", "date", "time", "duration_minutes"],
       properties: {
         mentioned: { type: "boolean" },
         text: { type: "string", description: "What was said about meeting again, as said. Never invent a date." },
         source_excerpt: { type: "string" },
+        date: { type: "string", description: "YYYY-MM-DD only if a specific calendar date was agreed (resolve 'next Tuesday' from the transcript date), otherwise empty." },
+        time: { type: "string", description: "HH:MM, 24-hour UK time, only if a specific time was agreed, otherwise empty." },
+        duration_minutes: { type: "integer", description: "Length agreed in minutes, or 0 if not discussed." },
       },
     },
     review_flags: {
       type: "array",
       items: { type: "string" },
       description: "Anything the coach should check: unclear speakers, unclear dates, interpretations, gaps in the transcript.",
+    },
+    coach_note: {
+      type: "string",
+      description:
+        "A private note for the coach only, never shown to the client: patterns, themes, tensions and questions worth exploring, in short paragraphs or lines. Label interpretations as interpretations.",
+    },
+    suggested_focus: {
+      type: "object",
+      additionalProperties: false,
+      required: ["area", "goal", "why"],
+      properties: {
+        area: { type: "string", description: "The one life area this session points to as the place to start: exactly one of the listed area names, or empty if unclear." },
+        goal: { type: "string", description: "A first goal in the client's own words, one short sentence, or empty. A suggestion, not a decision." },
+        why: { type: "string", description: "One or two sentences to the client ('you') on why, based on what they said." },
+      },
+    },
+    prep: {
+      type: "array",
+      items: { type: "string" },
+      description: "Up to 5 short things for the coach to check in on at the next session.",
     },
   },
 };
@@ -77,7 +91,9 @@ Write in plain UK English. Address the summary to the client as "you". Be warm a
 
 Only include what was actually said or agreed. Never invent commitments, dates, names or details. If a speaker, a date or what was agreed is unclear, keep the item but mark it uncertain and explain in review_flags. Label interpretations as interpretations in review_flags.
 
-Leave out anything that sounds like the coach's private reflection rather than something agreed together. Don't include health, family or other sensitive details beyond what the client would expect to see in their own summary.`;
+Leave out anything that sounds like the coach's private reflection rather than something agreed together. Don't include health, family or other sensitive details beyond what the client would expect to see in their own summary.
+
+The coach_note and prep are for the coach alone; put private reflections there, not in the summary. The suggested_focus is shared with the client as a suggestion they can accept or not: only suggest an area the conversation genuinely points to, and leave it empty otherwise.`;
 
 export async function draftFromTranscript(input: {
   transcript: string;
@@ -85,6 +101,8 @@ export async function draftFromTranscript(input: {
   transcriptDate: string | null;
   clientFirstName: string;
   goals: { id: string; title: string }[];
+  // The ten life area names, as the client sees them.
+  areas: string[];
 }): Promise<{ ok: true; draft: AiDraft; model: string } | { ok: false; message: string }> {
   if (!aiConfigured()) return { ok: false, message: "Automatic drafting isn't set up (no ANTHROPIC_API_KEY)." };
   const client = new Anthropic();
@@ -94,6 +112,7 @@ export async function draftFromTranscript(input: {
     input.transcriptDate ? `Transcript date: ${input.transcriptDate}` : "Transcript date: not given",
     input.speakerMap ? `Speakers: ${input.speakerMap}` : "Speakers: not mapped — flag any speaker you can't identify",
     input.goals.length ? `Client's current goals (id: title):\n${input.goals.map((g) => `${g.id}: ${g.title}`).join("\n")}` : "Client's current goals: none",
+    `Life areas: ${input.areas.join("; ")}`,
   ].join("\n");
 
   try {
@@ -123,12 +142,7 @@ export async function draftFromTranscript(input: {
     if (typeof parsed.summary !== "string" || !Array.isArray(parsed.client_actions)) {
       return { ok: false, message: "The AI returned something unexpected. Try again, or write it manually." };
     }
-    // Only keep goal links to this client's own goals.
-    const ids = new Set(input.goals.map((g) => g.id));
-    for (const a of [...parsed.client_actions, ...parsed.coach_actions]) {
-      if (!ids.has(a.goal_id)) a.goal_id = "";
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(a.due_date)) a.due_date = "";
-    }
+    tidyDraft(parsed, input.goals.map((g) => g.id), input.areas);
     return { ok: true, draft: parsed, model: response.model };
   } catch (error) {
     if (error instanceof Anthropic.RateLimitError) return { ok: false, message: "The AI service is busy. Try again in a minute." };

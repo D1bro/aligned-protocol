@@ -11,4 +11,5 @@ export const EMPTY_CONTENT: SummaryContent = {
   resources: [],
   next_meeting: { text: "" },
   points: [],
+  suggested_focus: { area_id: "", area_name: "", goal: "", why: "" },
 };
