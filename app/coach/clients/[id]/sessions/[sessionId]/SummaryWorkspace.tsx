@@ -377,8 +377,8 @@ export function SummaryWorkspace({
           <Status dirty={dirty} note={note} />
         </div>
         <p className="admin-card-sub">
-          Sharing puts it in {firstName}&rsquo;s Coaching page. Sending an email about it is a separate step, available once
-          email is set up. Private notes and transcripts are never included.
+          Sharing puts it in {firstName}&rsquo;s Coaching page. Emailing them is a separate step after sharing, where you
+          choose whether the email includes the summary. Private notes and transcripts are never included.
         </p>
       </div>
       <Preview content={content} firstName={firstName} goals={goals} nextBooking={nextBooking} />

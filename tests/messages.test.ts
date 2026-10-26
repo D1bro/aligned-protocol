@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildMessage } from "../lib/messages.ts";
+import { buildMessage, clientFacingSummary } from "../lib/messages.ts";
 
 test("summary email links to the notes without including them", () => {
   const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "Tue, 27 Oct 2026", coachName: "Test Coach", link: "https://x.test/coaching/sessions/1" });
@@ -69,4 +69,44 @@ test("payment receipt mentions any refund", () => {
   });
   assert.match(m.text, /£130\.00 refunded to you on 15 October 2026/);
   assert.ok(!/hasn’t been put towards/.test(m.text));
+});
+
+test("only client-facing summary wording can reach an email", () => {
+  const stored = {
+    focus: "Rebuilding routine",
+    summary: "You said routine helped before.",
+    insights: ["Booking ahead helps"],
+    client_actions: [{ text: "Book the gym twice a week", due_date: "2026-10-28", goal_id: "" }],
+    coach_actions: [
+      { text: "Keep in touch by text", due_date: "", visible: true },
+      { text: "PRIVATE follow-up for the coach", due_date: "", visible: false },
+    ],
+    points: ["PRIVATE point to confirm"],
+    resources: [{ title: "Glimpses", url: "https://example.test/glimpses" }],
+    next_meeting: { text: "two weeks" },
+    suggested_focus: { area_id: "a1", area_name: "Daily Structure & Discipline", goal: "Steady routine", why: "x" },
+    coach_note: "PRIVATE coach note",
+  };
+  const c = clientFacingSummary(stored, "Mon, 9 Nov 2026, 10:00 GMT · 60 minutes\nhttps://meet.example.test/x");
+  assert.deepEqual(c.coachSteps, ["Keep in touch by text"]);
+  assert.deepEqual(c.steps, [{ text: "Book the gym twice a week", due: "28 October" }]);
+  assert.match(c.startWith ?? "", /Daily Structure & Discipline/);
+  const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "Mon, 26 Oct 2026", coachName: "C", link: "https://x.test", content: c });
+  for (const out of [m.text, m.html]) {
+    assert.ok(!out.includes("PRIVATE"), "nothing private in the email");
+    assert.match(out, /Book the gym twice a week/);
+    assert.match(out, /meet\.example\.test/);
+  }
+  assert.equal(m.subject, "Your session notes");
+});
+
+test("without the tick, the summary email stays a link only", () => {
+  const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "today", coachName: "C", link: "https://x.test" });
+  assert.equal(m.subject, "Your session notes are ready");
+  assert.ok(!m.text.includes("Your next steps"));
+});
+
+test("with no booking, the next meeting falls back to what was said", () => {
+  const c = clientFacingSummary({ next_meeting: { text: "two weeks" } }, null);
+  assert.equal(c.nextMeeting, "Proposed: two weeks");
 });

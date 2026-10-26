@@ -1,14 +1,57 @@
 // The emails sent to clients, built only from what's already in the app.
-// Private coaching content (summaries, notes) is never put in an email: the
-// email says something is ready and links to the member area, where it's
-// behind sign-in. Every email can carry a short personal note from the coach.
+// Private coaching content (notes, reflections, transcripts) is never put in
+// an email. A shared session summary is linked by default; the coach can tick
+// to include its client-facing wording (exactly what the client sees in the
+// app, via clientFacingSummary). Every email can carry a short personal note.
 
 import { renderEmail, renderText, type Block } from "./email-layout.ts";
 
 export type Message = { subject: string; text: string; html: string };
 
+// The parts of a shared summary the client sees in the app, and nothing else.
+export type SummaryForEmail = {
+  focus: string;
+  summary: string;
+  insights: string[];
+  steps: { text: string; due: string | null }[];
+  coachSteps: string[];
+  startWith: string | null;
+  resources: { title: string; url: string }[];
+  nextMeeting: string | null;
+};
+
+const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+const list = (v: unknown) => (Array.isArray(v) ? v : []);
+const longDate = (d: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(d)
+    ? new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })
+    : null;
+
+// Pick out what the client sees from a published summary's stored content.
+// Hidden follow-ups, conversation points and anything else stay out.
+export function clientFacingSummary(content: Record<string, unknown>, nextMeeting: string | null): SummaryForEmail {
+  const focus = (content.suggested_focus ?? {}) as Record<string, unknown>;
+  return {
+    focus: str(content.focus),
+    summary: str(content.summary),
+    insights: list(content.insights).map(str).filter(Boolean),
+    steps: list(content.client_actions)
+      .map((a) => ({ text: str((a as Record<string, unknown>).text), due: longDate(str((a as Record<string, unknown>).due_date)) }))
+      .filter((a) => a.text),
+    coachSteps: list(content.coach_actions)
+      .filter((a) => (a as Record<string, unknown>).visible !== false)
+      .map((a) => str((a as Record<string, unknown>).text))
+      .filter(Boolean),
+    startWith: str(focus.area_id) && str(focus.area_name) ? `${str(focus.area_name)}${str(focus.goal) ? ` — a first goal to consider: “${str(focus.goal)}”` : ""}` : null,
+    resources: list(content.resources)
+      .map((r) => ({ title: str((r as Record<string, unknown>).title), url: str((r as Record<string, unknown>).url) }))
+      .filter((r) => r.title),
+    nextMeeting: nextMeeting?.trim() || (str((content.next_meeting as Record<string, unknown> | undefined)?.text) ? `Proposed: ${str((content.next_meeting as Record<string, unknown>).text)}` : null),
+  };
+}
+
 export type MessageInput =
-  | { kind: "summary_shared"; firstName: string; sessionLabel: string; coachName: string; link: string; note?: string | null }
+  | { kind: "summary_shared"; firstName: string; sessionLabel: string; coachName: string; link: string; note?: string | null; content?: SummaryForEmail | null }
   | {
       kind: "session_update";
       firstName: string;
@@ -67,6 +110,36 @@ const noteBlock = (note?: string | null): Part => (note?.trim() ? { quote: note.
 export function buildMessage(m: MessageInput): Message {
   switch (m.kind) {
     case "summary_shared":
+      if (m.content) {
+        const c = m.content;
+        return compose(
+          "Your session notes",
+          c.focus || "Your session notes",
+          `Notes and next steps from our session on ${m.sessionLabel}.`,
+          [
+            { p: `Hi ${m.firstName},` },
+            { p: `Here are the notes from our session on ${m.sessionLabel}, the same as in your member area.` },
+            noteBlock(m.note),
+            c.summary ? { p: c.summary } : null,
+            c.insights.length ? { small: "What you noticed" } : null,
+            c.insights.length ? { box: c.insights.map((x) => `• ${x}`) } : null,
+            c.steps.length ? { small: "Your next steps" } : null,
+            c.steps.length ? { steps: c.steps.map((x) => ({ title: x.text, text: x.due ? `By ${x.due}` : "" })) } : null,
+            c.coachSteps.length ? { small: "What I'll do" } : null,
+            c.coachSteps.length ? { box: c.coachSteps.map((x) => `• ${x}`) } : null,
+            c.startWith ? { small: "Where to start" } : null,
+            c.startWith ? { p: `I'd suggest starting with ${c.startWith}. It's your choice in My plan.` } : null,
+            c.resources.length ? { small: "Resources" } : null,
+            c.resources.length ? { box: c.resources.map((r) => (r.url ? `${r.title}: ${r.url}` : r.title)) } : null,
+            c.nextMeeting ? { small: "Next session" } : null,
+            c.nextMeeting ? { p: c.nextMeeting } : null,
+            { button: { href: m.link, label: "Open your session notes" } },
+            { p: "You can let me know how each step is going from the same page." },
+            { signOff: m.coachName },
+          ],
+          "This email contains your session notes. They're also kept in your member area, behind your sign-in."
+        );
+      }
       return compose(
         "Your session notes are ready",
         "Your session notes are ready",

@@ -49,7 +49,7 @@ function block(b: Block): string {
       .map(
         (s, i) => `<tr>
 <td valign="top" style="padding:0 14px 14px 0;width:30px"><div style="width:28px;height:28px;line-height:28px;border-radius:14px;background:${C.band};color:${C.gold};font-size:13px;font-weight:700;text-align:center">${i + 1}</div></td>
-<td valign="top" style="padding:3px 0 14px 0;font-size:15px;line-height:1.55;color:${C.ink2}"><strong style="color:${C.ink}">${esc(s.title)}</strong><br>${nl(s.text)}</td>
+<td valign="top" style="padding:3px 0 14px 0;font-size:15px;line-height:1.55;color:${C.ink2}"><strong style="color:${C.ink}">${esc(s.title)}</strong>${s.text ? `<br>${nl(s.text)}` : ""}</td>
 </tr>`
       )
       .join("");
@@ -104,7 +104,7 @@ export function renderText(input: { heading: string; blocks: Block[]; footerNote
     if ("p" in b) parts.push(b.p);
     else if ("small" in b) parts.push(b.small);
     else if ("button" in b) parts.push(`${b.button.label}: ${b.button.href}`);
-    else if ("steps" in b) parts.push(b.steps.map((s, i) => `${i + 1}. ${s.title}: ${s.text}`).join("\n"));
+    else if ("steps" in b) parts.push(b.steps.map((s, i) => `${i + 1}. ${s.title}${s.text ? `: ${s.text}` : ""}`).join("\n"));
     else if ("box" in b) parts.push(b.box.join("\n"));
     else if ("quote" in b) parts.push(b.quote);
     else if ("smallLink" in b) parts.push(`${b.smallLink.lead} ${b.smallLink.label}: ${b.smallLink.href}`);

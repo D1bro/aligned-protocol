@@ -268,8 +268,9 @@ export default async function SessionDeskPage({
         <section className="admin-card desk-email" aria-label="Email about the shared summary">
           <h2>Let {firstName} know</h2>
           <p className="admin-card-sub">
-            Sharing puts the notes in {firstName}&rsquo;s member area. Emailing is a separate step: the email says the notes are
-            ready and links to them. It doesn&rsquo;t include the notes themselves.
+            Sharing puts the notes in {firstName}&rsquo;s member area. Emailing is a separate step: by default the email says the
+            notes are ready and links to them. Tick &ldquo;Include the summary&rdquo; to put the shared wording in the email too.
+            Your private notes, reflection and the transcript are never emailed.
           </p>
           <EmailButton
             kind="summary_shared"
