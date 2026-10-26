@@ -9,6 +9,7 @@ import { getMyBilling } from "@/lib/actions/billing";
 import { MemberInvoices } from "@/components/coaching/MemberInvoices";
 import { BuySessions } from "@/components/coaching/BuySessions";
 import { getMyCredits, getMyExpiries, getOfferedPackages } from "@/lib/actions/packages";
+import { CoachingTabs, coachingTab } from "@/components/coaching/CoachingTabs";
 
 const SESSIONS = [
   { title: "Get clear", text: "We look at your snapshot and your plan together, and agree the one thing that matters most right now." },
@@ -24,7 +25,7 @@ const STATUS: Record<string, string> = {
 };
 
 // Coaching Studio: what coaching is here, the Focus Series pilot and an enquiry form.
-export default async function CoachingPage({ searchParams }: { searchParams: Promise<{ paid?: string }> }) {
+export default async function CoachingPage({ searchParams }: { searchParams: Promise<{ paid?: string; tab?: string }> }) {
   const [enquiries, coaching, billing, sp, packages, credits, expiries] = await Promise.all([
     getMyEnquiries(),
     getMyCoaching(),
@@ -36,13 +37,45 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
   ]);
   const coached = coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0);
   const open = enquiries.find((e) => e.status === "new" || e.status === "contacted") ?? null;
+  // Sessions and payments gets its own tab once there's anything to show there.
+  const held = credits ? credits.available + credits.reserved : 0;
+  const hasPayments = packages.length > 0 || held > 0 || (billing.available && billing.invoices.length > 0);
+  const tab = hasPayments ? coachingTab(sp) : "coaching";
+  const sessionsLeft = credits && hasPayments ? { available: credits.available, href: "/coaching?tab=payments" } : null;
 
   return (
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Coaching</div>
-      {coached ? <MemberCoaching data={coaching} /> : null}
-      <BuySessions packages={packages} credits={credits} expiries={expiries} coached={coached} />
-      <MemberInvoices data={billing} justPaid={sp.paid === "1"} />
+      {hasPayments ? <CoachingTabs base="/coaching" active={tab} coached={coached} /> : null}
+      {tab === "payments" ? (
+        <>
+          <BuySessions packages={packages} credits={credits} expiries={expiries} coached={coached} />
+          <MemberInvoices data={billing} justPaid={sp.paid === "1"} />
+        </>
+      ) : (
+        <CoachingAbout coached={coached} coaching={coaching} sessionsLeft={sessionsLeft} enquiries={enquiries} open={open} />
+      )}
+    </div>
+  );
+}
+
+// The coaching tab: their coaching (once it's started), then what coaching is and how to enquire.
+function CoachingAbout({
+  coached,
+  coaching,
+  sessionsLeft,
+  enquiries,
+  open,
+}: {
+  coached: boolean;
+  coaching: Awaited<ReturnType<typeof getMyCoaching>>;
+  sessionsLeft: { available: number; href: string } | null;
+  enquiries: Awaited<ReturnType<typeof getMyEnquiries>>;
+  open: Awaited<ReturnType<typeof getMyEnquiries>>[number] | null;
+}) {
+  return (
+    <>
+      {coached ? <MemberCoaching data={coaching} sessionsLeft={sessionsLeft} /> : null}
       <h1 className="au-latest-h">{coached ? <>About <em>coaching</em></> : <>Work on it <em>together.</em></>}</h1>
       <p className="draft-tag">Draft</p>
       <p className="lead">
@@ -99,6 +132,6 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
             .join(", ")}
         </p>
       ) : null}
-    </div>
+    </>
   );
 }

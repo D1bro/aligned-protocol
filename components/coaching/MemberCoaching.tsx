@@ -17,7 +17,14 @@ type Content = {
 
 // The member's coaching space: last session, next steps, preparation, and
 // links to their own audit and plan. Only what their coach has shared.
-export function MemberCoaching({ data }: { data: Data }) {
+export function MemberCoaching({
+  data,
+  sessionsLeft = null,
+}: {
+  data: Data;
+  // Paid sessions left to book, with where to top up (null before billing is set up).
+  sessionsLeft?: { available: number; href: string } | null;
+}) {
   const now = Date.now();
   const next =
     data.sessions
@@ -51,6 +58,14 @@ export function MemberCoaching({ data }: { data: Data }) {
           ) : (
             <p className="admin-card-sub">{c.next_meeting?.text ? `Proposed: ${c.next_meeting.text} (not booked yet)` : "Nothing booked yet."}</p>
           )}
+          {sessionsLeft ? (
+            <p className={sessionsLeft.available ? "admin-card-sub" : "admin-card-sub bs-low"}>
+              {sessionsLeft.available
+                ? `${sessionsLeft.available} paid session${sessionsLeft.available === 1 ? "" : "s"} left to book`
+                : "No paid sessions left to book"}{" "}
+              · <Link href={sessionsLeft.href} className="au-text-link">Top up →</Link>
+            </p>
+          ) : null}
         </div>
 
         <div className="admin-card">

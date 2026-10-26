@@ -66,7 +66,7 @@ export function CoachingCard({
         {credits ? (
           <p className="admin-card-sub coaching-credits">
             {credits.available} paid session{credits.available === 1 ? "" : "s"} left to book
-            {credits.available <= 1 ? <> · <Link href="/coaching#buy" className="au-text-link">Top up</Link></> : null}
+            {credits.available <= 1 ? <> · <Link href="/coaching?tab=payments" className="au-text-link">Top up</Link></> : null}
           </p>
         ) : null}
       </div>

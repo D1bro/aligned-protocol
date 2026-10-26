@@ -1689,3 +1689,7 @@ a.nav-user-who:hover b { color: var(--gold); }
   .cp-preview { margin-left: 0; }
   .cpv-screen { padding: .8rem; }
 }
+.mc-tabs a { border-radius:6px; color:var(--text2); padding:.75rem 1rem; font-size:.87rem; min-height:44px; display:inline-flex; align-items:center; text-decoration:none; }
+.mc-tabs a:hover { color:var(--text); }
+.cpv-frame { display: grid; gap: 1.5rem; }
+.cpv-screen .mc-tabs { margin-bottom: 0; }
