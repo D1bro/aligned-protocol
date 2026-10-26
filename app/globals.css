@@ -9,6 +9,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  /* A dark site: browsers draw date/time pickers, their calendar icons and
+     scrollbars in light colours so they stay visible. */
+  color-scheme: dark;
   --bg: #100F18; --bg2: #111622; --bg3: #171C29; --bg4: #1F2535; --bg5: #2B3344;
   --gold: #D3A758; --gold2: #E2BD7A;
   --gd: rgba(211,167,88,.14); --gd2: rgba(211,167,88,.08); --gd3: rgba(211,167,88,.04);
