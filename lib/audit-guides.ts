@@ -50,8 +50,9 @@ function clip(
     title,
     label,
     src: withVideo && VIDEO_BASE ? `${VIDEO_BASE}/${slug}.mp4` : null,
-    poster: `${MEDIA}/posters/${slug}.jpg`,
-    captions: captions ? `${MEDIA}/captions/${slug}.vtt` : null,
+    // Designed title cards (Oct 2026): the same intro image style for every audit film.
+    poster: `${MEDIA}/posters/${slug}-card.jpg`,
+    captions: captions ?`${MEDIA}/captions/${slug}.vtt` : null,
     durationSeconds,
   };
 }
