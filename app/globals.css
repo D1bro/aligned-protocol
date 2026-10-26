@@ -1600,3 +1600,6 @@ a.nav-user-who:hover b { color: var(--gold); }
 .sw-suggest-item ul { padding-left: 1.1rem; font-size: 13px; color: var(--text2); }
 .sw-pre { white-space: pre-wrap; }
 .mc-suggest { margin-top: 1rem; padding: 1rem 1.1rem; border: 1px solid var(--bdr); border-radius: 12px; background: var(--gd3); display: grid; gap: .5rem; }
+.sw-book { border: 1px solid var(--bdr); border-radius: 12px; padding: .9rem 1rem; background: var(--gd3); }
+.sw-book .cs-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .sw-book .cs-grid { grid-template-columns: 1fr; } }
