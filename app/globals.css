@@ -1674,3 +1674,18 @@ a.nav-user-who:hover b { color: var(--gold); }
 @media (max-width: 640px) {
   .team-list li { grid-template-columns: 1fr; }
 }
+
+/* Console: "See as client" preview */
+.cp-preview { margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+.cpv-banner { border: 1px solid var(--bdr); background: var(--gd2); border-radius: 14px; padding: 1rem 1.2rem; display: grid; gap: .4rem; margin-bottom: 1.5rem; }
+.cpv-banner h1 { margin: 0; }
+.cpv-banner p { font-size: 14px; color: var(--text2); line-height: 1.6; max-width: 70ch; }
+.cpv-banner .cpv-k { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.cpv-where { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin: 1.5rem 0 .5rem; }
+.cpv-screen { border: 1px dashed var(--bdr); border-radius: 16px; padding: 1.2rem; display: grid; gap: 1.5rem; }
+.cpv-frame [disabled], .cpv-frame button, .cpv-frame input, .cpv-frame textarea, .cpv-frame select { cursor: not-allowed; }
+@media (max-width: 640px) {
+  .cp-head { flex-wrap: wrap; }
+  .cp-preview { margin-left: 0; }
+  .cpv-screen { padding: .8rem; }
+}
