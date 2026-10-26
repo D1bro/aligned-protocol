@@ -293,7 +293,7 @@ export async function publishSummary(summaryId: string, expectedVersion: number)
 // Draft the summary from a transcript with AI (server-side). Fills the
 // working draft only when it's empty, unless the coach chose to replace it.
 export async function generateDraft(input: { transcriptId: string; replace: boolean }): Promise<DraftSave> {
-  await requireStaff();
+  const me = await requireStaff();
   const supabase = await createClient();
   const { data: t } = await supabase.from("session_transcripts").select("*").eq("id", input.transcriptId).maybeSingle();
   if (!t) return { ok: false, message: "Transcript not found." };
@@ -321,6 +321,7 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
     speakerMap: (t.speaker_map as { text?: string } | null)?.text ?? null,
     transcriptDate: t.transcript_date,
     clientFirstName: ((client?.full_name as string | null) ?? "").split(" ")[0] || "the client",
+    coachFirstName: (me.full_name ?? "").trim().split(/\s+/)[0] || "the coach",
     goals: (goals ?? []).map((g) => ({ id: g.id as string, title: (g.goal_title as string) ?? "Goal" })),
     areas: (areas ?? []).map((a) => a.name as string),
   });
