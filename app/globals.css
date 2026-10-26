@@ -1105,19 +1105,44 @@ a.admin-row:hover { background: var(--bg3); }
 /* Member coaching space */
 .mc { display: grid; gap: 1rem; margin: .5rem 0 2.5rem; }
 .mc-title { font-family: var(--font-sora), 'Sora', sans-serif; font-size: clamp(24px, 3vw, 32px); font-weight: 600; letter-spacing: -.02em; }
-.mc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-@media (max-width: 760px) { .mc-grid { grid-template-columns: 1fr; } }
 .mc .admin-card h3 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; font-weight: 600; }
 .mc .admin-card h4 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-top: .4rem; }
 .mc .admin-card ul { margin-left: 1.1rem; display: grid; gap: .3rem; font-size: 14px; }
 .mc-last { border-color: var(--bdr); }
 .mc-focus { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: var(--text); }
-.mc .mc-steps { list-style: none; margin-left: 0; gap: .8rem; }
-.mc-steps li { border-top: 1px solid var(--bdr2); padding-top: .6rem; display: grid; gap: .3rem; }
-.mc-steps li:first-child { border-top: 0; padding-top: 0; }
-.mc-steps p { font-size: 14px; color: var(--text); }
-.mc-steps em, .mc-earlier em { font-style: normal; font-size: 12px; color: var(--text2); }
+.mc-earlier em { font-style: normal; font-size: 12px; color: var(--text2); }
 .mc-report { display: grid; gap: .5rem; }
+/* Momentum strip and steps to tick off (coaching page, My profile) */
+.mo-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+@media (max-width: 760px) { .mo-strip { grid-template-columns: 1fr; } }
+.mo-tile { background: var(--bg3); border: 1px solid var(--bdr2); border-radius: var(--r2); padding: 1rem 1.1rem; display: grid; align-content: start; gap: .2rem; }
+.mo-k { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text3); margin-bottom: .2rem; }
+.mo-big { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 26px; font-weight: 600; line-height: 1.15; color: var(--text); }
+.mo-sub { font-size: 13px; color: var(--text2); }
+.mo-small { font-size: 12px; margin-top: .3rem; }
+.mo-join { color: var(--gold); font-weight: 500; text-decoration: none; }
+.mo-join:hover { text-decoration: underline; }
+.mo-seg { display: flex; gap: 4px; margin-top: .6rem; }
+.mo-seg span { flex: 1; height: 8px; border-radius: 4px; background: var(--bg5); transition: background .3s; }
+.mo-seg .mo-seg-moving { background: rgba(211,167,88,.45); }
+.mo-seg .mo-seg-done { background: var(--gold); }
+.mo-weeks { display: flex; gap: 5px; margin-top: .6rem; }
+.mo-weeks span { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--bg5); }
+.mo-weeks span.on { background: var(--gold); border-color: var(--gold); }
+.mc-steps-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem 1rem; flex-wrap: wrap; }
+.mc .mc-checks { list-style: none; margin: .6rem 0 0; display: grid; gap: .6rem; }
+.mc-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .8rem; padding: .9rem 1rem; background: var(--bg3); border: 1px solid var(--bdr2); border-radius: var(--r2); transition: border-color .3s; }
+.mc-check.is-done { border-color: rgba(211,167,88,.5); }
+.mc-check p { font-size: 15px; color: var(--text); line-height: 1.5; }
+.mc-check em { font-style: normal; font-size: 12px; color: var(--text3); }
+.mc-check .au-chips { margin-top: .6rem; }
+.mc-check-ctl { display: grid; gap: .5rem; }
+.mc-tick { width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--bg5); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; transition: all .3s; }
+.mc-check.is-done .mc-tick { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+.mc-cele { margin-top: .8rem; padding: .8rem 1rem; border-radius: var(--r2); background: var(--gd2); border: 1px solid var(--bdr); color: var(--gold2); font-size: 14px; }
+.coaching-progress { margin: .3rem 0 .5rem; display: grid; gap: .3rem; }
+.coaching-progress .mo-seg { margin-top: 0; }
+.coaching-steps .au-chips { margin-top: .4rem; }
 .mc-report textarea, .mc-prep textarea { background: var(--bg); width: 100%; }
 .mc-prep { display: grid; gap: .4rem; }
 .mc-list { margin-left: 1.1rem; display: grid; gap: .35rem; font-size: 15px; color: var(--text); }

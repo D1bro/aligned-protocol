@@ -39,7 +39,7 @@ export async function reportProgress(input: {
   progress: "tried" | "partly" | "done" | "not_yet";
   note: string;
   supportRequested: boolean;
-}): Promise<{ ok: boolean; message?: string }> {
+}): Promise<{ ok: boolean; message?: string; id?: string }> {
   const { supabase, userId } = await me();
   if (!userId) return { ok: false, message: "Please sign in again." };
   if (!["tried", "partly", "done", "not_yet"].includes(input.progress)) return { ok: false, message: "Choose how it went." };
@@ -53,6 +53,24 @@ export async function reportProgress(input: {
       note: input.note.trim().slice(0, 2000) || null,
       support_requested: input.supportRequested,
     })
+    .select("id");
+  if (error || !data?.length) return { ok: false, message: "Couldn’t save — try again." };
+  revalidatePath("/coaching");
+  revalidatePath("/");
+  return { ok: true, id: data[0].id as string };
+}
+
+// A note (and whether they'd like support) on the update they just made with one tap.
+export async function addProgressNote(input: { updateId: string; note: string; supportRequested: boolean }): Promise<{ ok: boolean; message?: string }> {
+  const { supabase, userId } = await me();
+  if (!userId) return { ok: false, message: "Please sign in again." };
+  const note = input.note.trim().slice(0, 2000) || null;
+  if (!note && !input.supportRequested) return { ok: false, message: "Write a note, or tick that you’d like support." };
+  const { data, error } = await supabase
+    .from("commitment_updates")
+    .update({ note, support_requested: input.supportRequested })
+    .eq("id", input.updateId)
+    .eq("client_id", userId)
     .select("id");
   if (error || !data?.length) return { ok: false, message: "Couldn’t save — try again." };
   revalidatePath("/coaching");

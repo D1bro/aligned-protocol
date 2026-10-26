@@ -2,7 +2,9 @@ import Link from "next/link";
 import type { MemberCoaching } from "@/lib/actions/member-coaching";
 import { formatDate } from "@/lib/audit-schedule";
 import { formatSessionTime } from "@/lib/time";
-import { ProgressReport } from "@/components/coaching/ProgressReport";
+import { StepCheck } from "@/components/coaching/StepCheck";
+import { StepBar } from "@/components/coaching/Momentum";
+import { stepStates, stepTally, weekStreak } from "@/lib/momentum";
 import { IconBadge } from "@/components/ui/Icon";
 
 const PROGRESS: Record<string, string> = { tried: "Tried it", partly: "Partly", done: "Done", not_yet: "Not yet" };
@@ -35,6 +37,9 @@ export function CoachingCard({
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())[0] ?? null;
   const last = data.summaries[0] ?? null;
   const steps = last ? data.commitments.filter((c) => c.summary_id === last.id && c.owner === "client" && c.status === "open") : [];
+  const states = last ? stepStates(data.commitments.filter((c) => c.summary_id === last.id && c.owner === "client" && c.status !== "dropped"), data.updates) : [];
+  const tally = stepTally(states);
+  const run = weekStreak(data.updates);
   const latest = (id: string) => data.updates.find((u) => u.commitment_id === id) ?? null;
   const goalTitle = new Map(goals.map((g) => [g.id, g.title]));
   const suggestion = ((last?.content ?? {}) as { suggested_focus?: Suggestion }).suggested_focus;
@@ -86,6 +91,15 @@ export function CoachingCard({
       {steps.length ? (
         <div>
           <p className="profile-card-k">Your next steps{last ? ` · from ${formatDate(last.published_at)}` : ""}</p>
+          {tally.total ? (
+            <div className="coaching-progress">
+              <StepBar states={states} />
+              <p className="admin-card-sub">
+                {tally.moved} of {tally.total} under way · {tally.done} done
+                {run.streak ? ` · ${run.streak}-week run` : ""}
+              </p>
+            </div>
+          ) : null}
           <ul className="coaching-steps">
             {steps.slice(0, SHOWN).map((s) => {
               const u = latest(s.id);
@@ -97,7 +111,7 @@ export function CoachingCard({
                     {s.goal_id && goalTitle.has(s.goal_id) ? `For “${goalTitle.get(s.goal_id)}” · ` : ""}
                     {u ? `${PROGRESS[u.progress] ?? u.progress}, ${formatDate(u.created_at)}` : "No update yet"}
                   </em>
-                  <ProgressReport commitmentId={s.id} />
+                  <StepCheck key={u?.id ?? "none"} commitmentId={s.id} current={u?.progress ?? null} />
                 </li>
               );
             })}
@@ -111,7 +125,7 @@ export function CoachingCard({
       ) : last ? (
         <p className="admin-card-sub">No open steps from your last session.</p>
       ) : (
-        <p className="admin-card-sub">Your coach&rsquo;s notes and your next steps appear here after your first session.</p>
+        <p className="admin-card-sub">Your coach&rsquo;s notes and your next steps appear here once your coach shares your session summary.</p>
       )}
     </section>
   );
