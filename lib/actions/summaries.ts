@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/actions/admin";
 import { draftFromTranscript } from "@/lib/ai-summary";
+import { reflectOnTranscript } from "@/lib/ai-reflection";
+import type { Reflection } from "@/lib/ai-draft";
 import { EMPTY_CONTENT } from "@/lib/summary-content";
 
 // Session summaries: import a transcript, draft (by hand or with AI), edit,
@@ -58,6 +60,9 @@ export type Transcript = {
     coach_note?: string;
     prep?: string[];
     next_session?: { date: string; time: string; duration_minutes: number; text: string };
+    // The coach's private reflection, and their verdict on each point.
+    reflection?: Reflection & { model?: string; created_at?: string };
+    reflection_review?: Record<string, { verdict: "agree" | "disagree" | null; note: string }>;
   } | null;
   created_at: string;
   length: number;
@@ -360,6 +365,9 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
     .update({
       ai_status: "done",
       ai_output: {
+        // A reflection made earlier is the coach's and survives a re-draft.
+        reflection: (t.ai_output as Transcript["ai_output"])?.reflection,
+        reflection_review: (t.ai_output as Transcript["ai_output"])?.reflection_review,
         model: result.model,
         review_flags: d.review_flags,
         excerpts: [...d.client_actions, ...d.coach_actions].map((a) => ({ text: a.text, excerpt: a.source_excerpt, time: a.source_time, uncertain: a.uncertain })),
@@ -375,4 +383,53 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
   refresh(t.client_id, t.session_id);
   if (error || !saved?.length) return { ok: false, message: "The draft changed while generating. Reload and try again." };
   return { ok: true, summary: saved[0] as Summary };
+}
+
+// The coaching reflection: a separate AI pass over one transcript, for the
+// coach alone. Stored with the transcript (as private as the transcript), so
+// it never travels with a shared summary or an email. Doesn't touch the draft.
+export async function generateReflection(transcriptId: string): Promise<{ ok: true } | { ok: false; message: string }> {
+  const me = await requireStaff();
+  const supabase = await createClient();
+  const { data: t } = await supabase.from("session_transcripts").select("*").eq("id", transcriptId).maybeSingle();
+  if (!t) return { ok: false, message: "Transcript not found." };
+  const { data: client } = await supabase.from("profiles").select("full_name").eq("id", t.client_id).maybeSingle();
+  const r = await reflectOnTranscript({
+    transcript: t.content,
+    speakerMap: (t.speaker_map as { text?: string } | null)?.text ?? null,
+    coachFirstName: (me.full_name ?? "").trim().split(/\s+/)[0] || "the coach",
+    clientFirstName: ((client?.full_name as string | null) ?? "").split(" ")[0] || "the client",
+  });
+  if (!r.ok) return r;
+  // Re-read just before writing so a draft generated meanwhile isn't lost.
+  const { data: latest } = await supabase.from("session_transcripts").select("ai_output").eq("id", t.id).maybeSingle();
+  const out = (latest?.ai_output ?? {}) as NonNullable<Transcript["ai_output"]>;
+  const { error } = await supabase
+    .from("session_transcripts")
+    .update({ ai_output: { ...out, reflection: { ...r.reflection, model: r.model, created_at: new Date().toISOString() }, reflection_review: {} } })
+    .eq("id", t.id);
+  if (error) return { ok: false, message: "Couldn’t save the reflection — try again." };
+  refresh(t.client_id, t.session_id);
+  return { ok: true };
+}
+
+// Agree / disagree and a note on each reflection point (keys like "movements.0").
+export async function saveReflectionReview(
+  transcriptId: string,
+  review: Record<string, { verdict: "agree" | "disagree" | null; note: string }>
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  await requireStaff();
+  const supabase = await createClient();
+  const { data: t } = await supabase.from("session_transcripts").select("id, client_id, session_id, ai_output").eq("id", transcriptId).maybeSingle();
+  if (!t) return { ok: false, message: "Transcript not found." };
+  const clean: Record<string, { verdict: "agree" | "disagree" | null; note: string }> = {};
+  for (const [k, v] of Object.entries(review).slice(0, 40)) {
+    if (!/^(movements|unfinished|patterns)\.\d{1,2}$|^challenge$/.test(k)) continue;
+    clean[k] = { verdict: v.verdict === "agree" || v.verdict === "disagree" ? v.verdict : null, note: (v.note ?? "").slice(0, 1000) };
+  }
+  const out = (t.ai_output ?? {}) as NonNullable<Transcript["ai_output"]>;
+  const { error } = await supabase.from("session_transcripts").update({ ai_output: { ...out, reflection_review: clean } }).eq("id", t.id);
+  if (error) return { ok: false, message: "Couldn’t save — try again." };
+  refresh(t.client_id as string, t.session_id as string);
+  return { ok: true };
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tidyDraft, type AiDraft } from "../lib/ai-draft.ts";
+import { tidyDraft, tidyReflection, quoteIsReal, type AiDraft, type Reflection } from "../lib/ai-draft.ts";
 
 const AREAS = ["Health & Energy", "Money & Stability"];
 
@@ -51,4 +51,48 @@ test("an area that isn't one of the ten clears the whole suggestion", () => {
 test("prep is trimmed to five real items", () => {
   const d = tidyDraft(draft({ prep: ["a", "", "  ", "b", "c", "d", "e", "f"] }), [], AREAS);
   assert.deepEqual(d.prep, ["a", "b", "c", "d", "e"]);
+});
+
+const TRANSCRIPT = `[52:10] Coach: When I was younger I kept people at arm's length too.
+[52:29] Client: I think I do the same. When there is closeness, it can feel a bit, like…
+[53:00] Coach: Shall we come back to that?`;
+
+function reflection(): Reflection {
+  return {
+    movements: [
+      { time: "52:29", client_words: "I think I do the same", what_moved: "Named his own pattern", coach_move: "story", coach_move_time: "52:10", coach_move_note: "Coach's own story" },
+      { time: "50:00", client_words: "I never said this sentence", what_moved: "x", coach_move: "question", coach_move_time: "", coach_move_note: "" },
+      { time: "", client_words: "I think I do the same", what_moved: "no timestamp", coach_move: "story", coach_move_time: "", coach_move_note: "" },
+    ],
+    unfinished: [{ time: "52:29", client_words: "When there is closeness, it can feel a bit, like...", note: "Not followed up" }],
+    patterns: [
+      { pattern: "Opens up after the coach goes first", evidence_times: ["52:10", "52:29"], note: "" },
+      { pattern: "No evidence given", evidence_times: [], note: "" },
+    ],
+    challenge: { text: "Let him go first next time.", evidence_times: ["52:29"] },
+  };
+}
+
+test("reflection keeps only quotes that are really in the transcript, with timestamps", () => {
+  const r = tidyReflection(reflection(), TRANSCRIPT);
+  assert.equal(r.movements.length, 1);
+  assert.equal(r.movements[0].coach_move, "story");
+  assert.equal(r.unfinished.length, 1, "a trailing ellipsis still matches the real words");
+  assert.equal(r.patterns.length, 1, "patterns need evidence timestamps");
+  assert.equal(r.challenge.text, "Let him go first next time.");
+});
+
+test("a challenge without evidence is dropped, and unknown moves become 'other'", () => {
+  const raw = reflection();
+  raw.challenge = { text: "Talk less.", evidence_times: [] };
+  raw.movements[0].coach_move = "monologue" as never;
+  const r = tidyReflection(raw, TRANSCRIPT);
+  assert.equal(r.challenge.text, "");
+  assert.equal(r.movements[0].coach_move, "other");
+});
+
+test("quote matching ignores case and punctuation but not invented words", () => {
+  assert.ok(quoteIsReal("i think, I do the same!", TRANSCRIPT));
+  assert.ok(!quoteIsReal("I think I do the same thing", TRANSCRIPT));
+  assert.ok(!quoteIsReal("", TRANSCRIPT));
 });
