@@ -4,18 +4,29 @@ import { CoachingCard } from "@/components/profile/CoachingCard";
 import { MemberCoaching } from "@/components/coaching/MemberCoaching";
 import { BuySessions } from "@/components/coaching/BuySessions";
 import { MemberInvoices } from "@/components/coaching/MemberInvoices";
+import { CoachingTabs, coachingTab } from "@/components/coaching/CoachingTabs";
 
 // "See as client": the client's own coaching pages, with their data, made
 // read-only (inert) so nothing can be done on their behalf.
-export default async function ClientPreviewPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function ClientPreviewPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   const p = await getClientPreview(id);
   const name = p.client.full_name || p.client.email || "This client";
   const first = p.client.full_name?.trim().split(/\s+/)[0] || "they";
   const coached = p.coaching.available && (p.coaching.sessions.length > 0 || p.coaching.summaries.length > 0);
   const credits = p.coaching.sessions.length ? p.billing.credits : null;
-  const shown =
-    coached || p.packages.length > 0 || p.billing.invoices.length > 0 || p.billing.credits.balance > 0;
+  const held = p.billing.credits.available + p.billing.credits.reserved;
+  const hasPayments = p.packages.length > 0 || held > 0 || p.billing.invoices.length > 0;
+  const shown = coached || hasPayments;
+  const base = `/coach/clients/${id}/preview`;
+  const tab = hasPayments ? coachingTab(sp) : "coaching";
+  const sessionsLeft = p.billing.available && hasPayments ? { available: p.billing.credits.available, href: `${base}?tab=payments` } : null;
 
   return (
     <div className="page admin-page">
@@ -35,23 +46,33 @@ export default async function ClientPreviewPage({ params }: { params: Promise<{ 
       </div>
 
       {shown ? (
-        <div className="cpv-frame" inert>
+        <>
           {coached ? (
             <>
               <p className="cpv-where">My profile</p>
-              <div className="cpv-screen">
+              <div className="cpv-screen" inert>
                 <CoachingCard data={p.coaching} goals={p.goals} hasGoal={p.goals.length > 0} credits={credits} />
               </div>
             </>
           ) : null}
           <p className="cpv-where">Coaching page</p>
           <div className="cpv-screen">
-            {coached ? <MemberCoaching data={p.coaching} /> : null}
-            <BuySessions packages={p.packages} credits={p.billing.available ? p.billing.credits : null} expiries={p.expiries} coached={coached} />
-            <MemberInvoices data={p.billing} justPaid={false} />
-            {!coached ? <p className="admin-card-sub">No sessions or shared summaries yet, so their Coaching page shows the general introduction to coaching.</p> : null}
+            {/* The tabs work here, so you can see both; everything inside is switched off. */}
+            {hasPayments ? <CoachingTabs base={base} active={tab} coached={coached} /> : null}
+            <div className="cpv-frame" inert>
+              {tab === "payments" ? (
+                <>
+                  <BuySessions packages={p.packages} credits={p.billing.available ? p.billing.credits : null} expiries={p.expiries} coached={coached} />
+                  <MemberInvoices data={p.billing} justPaid={false} />
+                </>
+              ) : coached ? (
+                <MemberCoaching data={p.coaching} sessionsLeft={sessionsLeft} />
+              ) : (
+                <p className="admin-card-sub">No sessions or shared summaries yet, so this tab shows the general introduction to coaching.</p>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <p className="plan-note">
           Nothing from coaching to show yet. Until there&rsquo;s a session, a shared summary or a package on offer,{" "}

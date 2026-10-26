@@ -418,7 +418,7 @@ export async function createPaymentLink(invoiceId: string, clientId: string): Pr
     number: inv.number!,
     amountPence: balance,
     customerEmail: (inv.customer as { email?: string } | null)?.email ?? null,
-    returnUrl: `${await requestOrigin()}/coaching`,
+    returnUrl: `${await requestOrigin()}/coaching?tab=payments`,
   });
   if (!r.ok) return r;
   await supabase.from("invoices").update({ payment_link_url: r.url, payment_link_at: new Date().toISOString() }).eq("id", invoiceId);
@@ -638,6 +638,6 @@ export async function payInvoiceByCard(invoiceId: string): Promise<Result & { ur
     number: inv.number!,
     amountPence: balance,
     customerEmail: user.email ?? null,
-    returnUrl: `${await requestOrigin()}/coaching`,
+    returnUrl: `${await requestOrigin()}/coaching?tab=payments`,
   });
 }
