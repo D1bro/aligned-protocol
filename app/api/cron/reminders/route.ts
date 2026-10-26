@@ -3,9 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { nextCheckInDue } from "@/lib/audit-schedule";
 import { sendEmail, SITE_URL } from "@/lib/email";
 import { renderEmail, renderText, type Block } from "@/lib/email-layout";
+import { sendSessionReminders } from "@/lib/session-reminders";
 
-// Daily job (vercel.json "crons"): email everyone whose monthly check-in is
-// due, once per check-in. Vercel calls it with "Authorization: Bearer
+// Daily job (vercel.json "crons"): remind clients of tomorrow's coaching
+// sessions, and email everyone whose monthly check-in is due, once per check-in. Vercel calls it with "Authorization: Bearer
 // <CRON_SECRET>"; anything else is refused.
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -14,14 +15,15 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient();
+  const sessions = await sendSessionReminders(admin);
   const { data: goals, error } = await admin
     .from("goals")
     .select("id, client_id, goal_title, focus_area, created_at, frequency, success_criteria")
     .eq("status", "active");
-  if (error) return NextResponse.json({ error: "goals query failed" }, { status: 500 });
+  if (error) return NextResponse.json({ error: "goals query failed", sessions }, { status: 500 });
 
   const planned = (goals ?? []).filter((g) => g.frequency?.trim() && g.success_criteria?.trim());
-  if (!planned.length) return NextResponse.json({ checked: 0, sent: 0 });
+  if (!planned.length) return NextResponse.json({ checked: 0, sent: 0, sessions });
 
   const ids = planned.map((g) => g.id);
   const [{ data: checkIns }, { data: profiles }, { data: sentLog }] = await Promise.all([
@@ -72,5 +74,5 @@ export async function GET(request: NextRequest) {
     sent += 1;
   }
 
-  return NextResponse.json({ checked: planned.length, sent, skipped });
+  return NextResponse.json({ checked: planned.length, sent, skipped, sessions });
 }

@@ -38,6 +38,15 @@ export function SessionsTab({ p, billing, jobs }: { p: Profile; billing: ClientB
     return "No summary";
   };
 
+  // The automatic day-before reminder (sent by the daily job at about 8am UK time).
+  const reminderLabel = (s: (typeof sessions)[number]) => {
+    const job = jobs.find((j) => j.kind === "session_reminder" && j.dedupe_key === `reminder:${s.id}:${s.scheduled_at}`);
+    if (job?.status === "sent") return `Reminder sent ${new Date(job.sent_at ?? job.created_at).toLocaleDateString("en-GB", { timeZone: "Europe/London", day: "numeric", month: "short" })}`;
+    if (job?.status === "failed") return "Reminder didn’t send";
+    if (s.state === "confirmed" && new Date(s.scheduled_at).getTime() > Date.now()) return p.client.email ? "Reminder goes the day before" : "No email for a reminder";
+    return null;
+  };
+
   // What each session means for their paid sessions (after migration 0014).
   const creditLabel = (s: (typeof sessions)[number]) => {
     if (!billing?.available) return null;
@@ -79,6 +88,7 @@ export function SessionsTab({ p, billing, jobs }: { p: Profile; billing: ClientB
           {s.cancel_reason ? ` · Reason: ${s.cancel_reason}` : ""}
           {s.no_show_decision ? ` · Decision: ${s.no_show_decision}` : ""}
           {creditLabel(s) ? ` · ${creditLabel(s)}` : ""}
+          {reminderLabel(s) ? ` · ${reminderLabel(s)}` : ""}
         </p>
         {s.state === "no_show" && billing?.canBill && billing.reservations.some((x) => x.session_id === s.id && x.status === "active") ? (
           <NoShowCredit sessionId={s.id} clientId={p.client.id} />

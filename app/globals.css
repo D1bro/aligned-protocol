@@ -1693,3 +1693,9 @@ a.nav-user-who:hover b { color: var(--gold); }
 .mc-tabs a:hover { color:var(--text); }
 .cpv-frame { display: grid; gap: 1.5rem; }
 .cpv-screen .mc-tabs { margin-bottom: 0; }
+.em-head { display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem; font-size: 13px; }
+.em-head dt { color: var(--text3); }
+.em-head dd { margin: 0; color: var(--text2); overflow-wrap: anywhere; }
+.em-preview .em-include { justify-content: flex-start; align-items: flex-start; gap: .55rem; }
+.em-preview .em-include input { width: 16px; height: 16px; flex: none; margin-top: .15rem; }
+.em-frame { width: 100%; height: 560px; border: 1px solid var(--bdr2); border-radius: 10px; background: #EFEEEA; }
