@@ -146,7 +146,7 @@ export function SummaryWorkspace({
   const suggestions = flags ? (
     <AiSuggestions
       output={flags}
-      {...{ clientId, sessionId, firstName, nextSessionId, nextBooking, location, durationMinutes, router }}
+      {...{ clientId, sessionId, nextSessionId, router }}
     />
   ) : null;
 
@@ -353,11 +353,16 @@ export function SummaryWorkspace({
         <label className="sw-field">
           <span>Next meeting, as discussed</span>
           <input type="text" value={content.next_meeting.text} onChange={(e) => edit({ next_meeting: { text: e.target.value } })} placeholder="e.g. Same time in two weeks" />
-          <em>
-            A time mentioned in conversation is only a proposal. {nextBooking ? `Booked: ${nextBooking}.` : "Nothing booked yet —"}{" "}
-            {!nextBooking ? <Link href={`/coach/clients/${clientId}?tab=sessions`}>book it in Sessions</Link> : null}
-          </em>
+          <em>{nextBooking ? `Booked: ${nextBooking}.` : "What was said about meeting again. Book the actual time below."}</em>
         </label>
+        {!nextBooking ? (
+          <NextMeetingBooker
+            {...{ clientId, firstName, durationMinutes, router }}
+            defaultLocation={location ?? ""}
+            suggestion={flags?.next_session ?? null}
+            prepText={flags?.prep?.length ? `Check in on:\n${flags.prep.map((p) => `- ${p}`).join("\n")}` : ""}
+          />
+        ) : null}
 
         <div className="cs-actions sw-buttons">
           <button type="button" className="btn btn-g" disabled={!dirty || busy !== null} onClick={save}>
@@ -676,39 +681,27 @@ function TranscriptReader({ transcripts }: { transcripts: Transcript[] }) {
   );
 }
 
-// What the AI drafted for the coach alone: a private note, what to check
-// in on next time, and a proposed next session. Nothing here is shared, and
-// nothing is saved until the coach presses the button for it.
+// What the AI drafted for the coach alone: a private note and what to check
+// in on next time. Nothing here is shared, and nothing is saved until the
+// coach presses the button for it. (A proposed time pre-fills the booker.)
 function AiSuggestions({
   output,
   clientId,
   sessionId,
-  firstName,
   nextSessionId,
-  nextBooking,
-  location,
-  durationMinutes,
   router,
 }: {
   output: NonNullable<Transcript["ai_output"]>;
   clientId: string;
   sessionId: string;
-  firstName: string;
   nextSessionId: string | null;
-  nextBooking: string | null;
-  location: string | null;
-  durationMinutes: number;
   router: ReturnType<typeof useRouter>;
 }) {
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const prepText = output.prep?.length ? `Check in on:\n${output.prep.map((p) => `- ${p}`).join("\n")}` : "";
-  const next = output.next_session;
-  const nextLabel = next
-    ? `${new Date(`${next.date}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${next.time ? ` at ${next.time}` : ""} · ${next.duration_minutes || durationMinutes} minutes`
-    : "";
-  if (!output.coach_note && !prepText && !next) return null;
+  if (!output.coach_note && !prepText) return null;
 
   async function run(key: string, fn: () => Promise<string | null>, ok: string) {
     setBusy(key);
@@ -738,39 +731,6 @@ function AiSuggestions({
           </button>
         </div>
       ) : null}
-      {next && !nextBooking ? (
-        <div className="sw-suggest-item">
-          <h4>Next session, as agreed</h4>
-          <p className="sw-p">{nextLabel}{next.text ? ` — “${next.text}”` : ""}</p>
-          <button
-            type="button"
-            className="btn btn-g"
-            disabled={busy !== null || done.book || !next.time}
-            onClick={() => {
-              if (!window.confirm(`Add a proposed session with ${firstName} for ${nextLabel}? It stays proposed until you confirm it.`)) return;
-              run(
-                "book",
-                async () => {
-                  const r = await createSession({
-                    clientId,
-                    date: next.date,
-                    time: next.time,
-                    durationMinutes: next.duration_minutes || durationMinutes,
-                    location: location ?? "",
-                    confirmed: false,
-                  });
-                  if (!r.ok) return r.message;
-                  return prepText && r.id ? appendToNote(clientId, r.id, prepText) : null;
-                },
-                `Proposed session added${prepText ? ", with the check-in list in its prep note" : ""}. Confirm it in Sessions when ${firstName} agrees.`
-              );
-            }}
-          >
-            {done.book ? "Proposed session added" : busy === "book" ? "Adding…" : "Book as proposed"}
-          </button>
-          {!next.time ? <em className="admin-card-sub"> No time was agreed — book it in Sessions.</em> : null}
-        </div>
-      ) : null}
       {prepText ? (
         <div className="sw-suggest-item">
           <h4>Check in on next time</h4>
@@ -785,11 +745,97 @@ function AiSuggestions({
               {done.prep ? "Added to next session" : busy === "prep" ? "Adding…" : "Add to next session's prep"}
             </button>
           ) : (
-            <em className="admin-card-sub">{next && !nextBooking ? "Saved with the session when you book it above." : "Book the next session, then add this to its prep."}</em>
+            <em className="admin-card-sub">Book the next session below and tick &ldquo;Add the check-in list&rdquo;.</em>
           )}
         </div>
       ) : null}
       {note ? <p className={note.ok ? "admin-ok" : "clear-err"} role="status">{note.text}</p> : null}
+    </div>
+  );
+}
+
+// Book the next session from the summary page: date, time, length and the
+// meeting link. Proposed by default; tick that the client has agreed to
+// confirm it. The coach's check-in list can go straight into its prep note.
+function NextMeetingBooker({
+  clientId,
+  firstName,
+  durationMinutes,
+  defaultLocation,
+  suggestion,
+  prepText,
+  router,
+}: {
+  clientId: string;
+  firstName: string;
+  durationMinutes: number;
+  defaultLocation: string;
+  suggestion: { date: string; time: string; duration_minutes: number } | null;
+  prepText: string;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const [date, setDate] = useState(suggestion?.date ?? "");
+  const [time, setTime] = useState(suggestion?.time ?? "");
+  const [minutes, setMinutes] = useState(String(suggestion?.duration_minutes || durationMinutes));
+  const [link, setLink] = useState(defaultLocation);
+  const [agreed, setAgreed] = useState(false);
+  const [withPrep, setWithPrep] = useState(Boolean(prepText));
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function book() {
+    setBusy(true);
+    setNote(null);
+    const r = await createSession({ clientId, date, time, durationMinutes: Number(minutes), location: link, confirmed: agreed });
+    if (!r.ok) {
+      setBusy(false);
+      return setNote({ ok: false, text: r.message });
+    }
+    const prepError = withPrep && prepText && r.id ? await appendToNote(clientId, r.id, prepText) : null;
+    setBusy(false);
+    setNote({
+      ok: !prepError,
+      text: `${agreed ? "Booked and confirmed" : `Booked as proposed — confirm it in Sessions when ${firstName} agrees`}.${prepError ? ` The check-in list didn't save: ${prepError}` : ""}`,
+    });
+    router.refresh();
+  }
+
+  return (
+    <div className="sw-field sw-book">
+      <span>Book the next session</span>
+      <div className="cs-grid">
+        <label className="sw-field">
+          <span>Date</span>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label className="sw-field">
+          <span>Time (UK)</span>
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </label>
+        <label className="sw-field">
+          <span>Minutes</span>
+          <input type="number" min={5} max={600} value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+        </label>
+      </div>
+      <label className="sw-field">
+        <span>Meeting link or place</span>
+        <input type="text" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://meet.google.com/…" />
+      </label>
+      <label className="admin-check">
+        <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /> {firstName} has agreed this time (confirm it now)
+      </label>
+      {prepText ? (
+        <label className="admin-check">
+          <input type="checkbox" checked={withPrep} onChange={(e) => setWithPrep(e.target.checked)} /> Add the &ldquo;check in on&rdquo; list to its prep note
+        </label>
+      ) : null}
+      <div className="cs-actions">
+        <button type="button" className="btn btn-g" disabled={busy || !date || !time} onClick={book}>
+          {busy ? "Booking…" : agreed ? "Book and confirm" : "Book as proposed"}
+        </button>
+        {note ? <span className={note.ok ? "admin-ok" : "clear-err"} role="status">{note.text}</span> : null}
+      </div>
+      <em>{firstName} sees it on their Coaching page once it&rsquo;s booked. Booking doesn&rsquo;t change the summary draft.</em>
     </div>
   );
 }

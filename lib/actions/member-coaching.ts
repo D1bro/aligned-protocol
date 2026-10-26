@@ -73,6 +73,7 @@ export async function reportProgress(input: {
     .select("id");
   if (error || !data?.length) return { ok: false, message: "Couldn’t save — try again." };
   revalidatePath("/coaching");
+  revalidatePath("/");
   return { ok: true };
 }
 

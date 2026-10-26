@@ -93,6 +93,8 @@ Only include what was actually said or agreed. Never invent commitments, dates, 
 
 Leave out anything that sounds like the coach's private reflection rather than something agreed together. Don't include health, family or other sensitive details beyond what the client would expect to see in their own summary.
 
+Who is speaking: transcript speaker labels are often wrong or missing, because automatic transcription mixes people up. Decide who is speaking from what is said, not from the label. The coach leads the conversation, asks questions, reads out or reflects back the client's answers, explains ideas, and sometimes shares their own experience as an example. The client describes their own life, feelings, plans and answers. Attribute every insight, commitment and quote to the right person on that basis, and never put the coach's own story into the client's summary. If you had to correct labels, add one short review flag saying so; only flag individual lines when the content genuinely doesn't show who said them and it changes what was agreed.
+
 The coach_note and prep are for the coach alone; put private reflections there, not in the summary. The suggested_focus is shared with the client as a suggestion they can accept or not: only suggest an area the conversation genuinely points to, and leave it empty otherwise.`;
 
 export async function draftFromTranscript(input: {
@@ -100,6 +102,7 @@ export async function draftFromTranscript(input: {
   speakerMap: string | null;
   transcriptDate: string | null;
   clientFirstName: string;
+  coachFirstName: string;
   goals: { id: string; title: string }[];
   // The ten life area names, as the client sees them.
   areas: string[];
@@ -108,9 +111,12 @@ export async function draftFromTranscript(input: {
   const client = new Anthropic();
 
   const context = [
+    `Coach: ${input.coachFirstName}`,
     `Client's first name: ${input.clientFirstName}`,
     input.transcriptDate ? `Transcript date: ${input.transcriptDate}` : "Transcript date: not given",
-    input.speakerMap ? `Speakers: ${input.speakerMap}` : "Speakers: not mapped — flag any speaker you can't identify",
+    input.speakerMap
+      ? `Speaker labels given by the coach: ${input.speakerMap} (still check them against what is said)`
+      : "Speaker labels: not given. Work out who is speaking from what is said.",
     input.goals.length ? `Client's current goals (id: title):\n${input.goals.map((g) => `${g.id}: ${g.title}`).join("\n")}` : "Client's current goals: none",
     `Life areas: ${input.areas.join("; ")}`,
   ].join("\n");

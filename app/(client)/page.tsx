@@ -10,6 +10,8 @@ import { getCurrentProfile } from "@/lib/session";
 import { getMyDetails } from "@/lib/actions/details";
 import { greetingName } from "@/lib/details";
 import { DetailsPrompt } from "@/components/profile/DetailsPrompt";
+import { CoachingCard } from "@/components/profile/CoachingCard";
+import { getMyCoaching } from "@/lib/actions/member-coaching";
 import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { LifeMap } from "@/components/audit/LifeMap";
@@ -69,7 +71,7 @@ export default async function ProfilePage() {
     );
   }
 
-  const [{ responses }, areas, planState, main, allGoals, lessons, identity] = await Promise.all([
+  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching] = await Promise.all([
     getAuditWithResponses(audit.id),
     getLifeAreas(),
     getPlanState(audit.id),
@@ -77,6 +79,7 @@ export default async function ProfilePage() {
     getAllGoals(),
     getLessonProgress(),
     getIdentityStatement(),
+    getMyCoaching(),
   ]);
 
   const scoreByArea = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
@@ -100,6 +103,13 @@ export default async function ProfilePage() {
   const when = goal?.action_when?.trim() || goal?.frequency?.trim() || null;
   const practised = checkIns.filter((c) => c.did_it !== "not_yet");
   const goalsDone = allGoals.filter((g) => g.status === "completed").length;
+
+  // Steps from the last shared coaching session that are linked to this goal.
+  const lastShared = coaching.summaries[0] ?? null;
+  const goalSteps =
+    goal && lastShared
+      ? coaching.commitments.filter((c) => c.summary_id === lastShared.id && c.owner === "client" && c.status === "open" && c.goal_id === goal.id)
+      : [];
 
   const auditDue = nextAuditDue(audit.completed_at);
   const auditDays = daysUntil(auditDue);
@@ -203,6 +213,13 @@ export default async function ProfilePage() {
         </figure>
       </section>
 
+      {/* Coaching clients: next session, agreed steps, and the coach's suggestion. */}
+      <CoachingCard
+        data={coaching}
+        goals={allGoals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" }))}
+        hasGoal={!!goal}
+      />
+
       {/* Daily Alignment is Tier 2: staff only until Tier 2 exists. */}
       {canUseDailyAlignment(profile?.role) ? <DailyAlignmentCard /> : null}
       <div className="profile-grid">
@@ -248,6 +265,12 @@ export default async function ProfilePage() {
             <Link href={action.href} className="btn btn-p">{action.label}</Link>
             {action.quiet ? <Link href={action.quiet.href} className="au-text-link">{action.quiet.label}</Link> : null}
           </div>
+          {goalSteps.length ? (
+            <div className="next-action-coaching">
+              <p className="au-detail-k">Agreed with your coach for this goal</p>
+              <ul>{goalSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>
+            </div>
+          ) : null}
           {main?.otherActive.length ? (
             <p className="next-action-note">
               This is your main goal. You have {main.otherActive.length} other active goal
