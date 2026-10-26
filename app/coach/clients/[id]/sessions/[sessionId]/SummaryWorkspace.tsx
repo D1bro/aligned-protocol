@@ -148,7 +148,6 @@ export function SummaryWorkspace({
   const suggestions = (
     <>
       {flags ? <AiSuggestions output={flags} {...{ clientId, sessionId, nextSessionId, router }} /> : null}
-      {transcripts.length ? <ReflectionPanel {...{ transcripts, aiAvailable, clientId, firstName, nextSessionId, router }} /> : null}
     </>
   );
 
@@ -857,21 +856,20 @@ type Verdict = { verdict: "agree" | "disagree" | null; note: string };
 // The coaching reflection (coach only, never shared or emailed): where the
 // client moved and what came just before, unfinished threads, patterns to
 // watch and one direct challenge. Each point can be agreed or disagreed with.
-function ReflectionPanel({
+export function ReflectionPanel({
   transcripts,
   aiAvailable,
   clientId,
   firstName,
   nextSessionId,
-  router,
 }: {
   transcripts: Transcript[];
   aiAvailable: boolean;
   clientId: string;
   firstName: string;
   nextSessionId: string | null;
-  router: ReturnType<typeof useRouter>;
 }) {
+  const router = useRouter();
   // Reflect on the fullest transcript unless one already has a reflection.
   const target = transcripts.find((t) => t.ai_output?.reflection) ?? [...transcripts].sort((a, b) => b.length - a.length)[0];
   const r = target.ai_output?.reflection ?? null;

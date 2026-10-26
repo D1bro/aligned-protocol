@@ -6,7 +6,7 @@ import { formatSessionTime, toLocalParts } from "@/lib/time";
 import { NoteEditor } from "../../NoteEditor";
 import { SessionActions } from "../../SessionActions";
 import { STATE_LABEL } from "../../SessionsTab";
-import { SummaryWorkspace } from "./SummaryWorkspace";
+import { ReflectionPanel, SummaryWorkspace } from "./SummaryWorkspace";
 import { EmailButton } from "../../EmailButton";
 import { getMessageJobs } from "@/lib/actions/messages";
 import { getTranscripts } from "@/lib/actions/summaries";
@@ -20,6 +20,7 @@ const STAGES = [
   ["conversation", "In the conversation"],
   ["import", "Import and summarise"],
   ["review", "Review and share"],
+  ["reflect", "Reflect"],
 ] as const;
 type Stage = (typeof STAGES)[number][0];
 
@@ -75,7 +76,7 @@ export default async function SessionDeskPage({
   const myNote = coaching.notes.find((n) => n.session_id === session.id && n.author_id === p.viewer.id) ?? null;
   const local = toLocalParts(session.scheduled_at, session.timezone);
   const summaries = coaching.summaries.filter((x) => x.session_id === session.id);
-  const transcripts = stage === "import" || stage === "review" ? await getTranscripts(session.id) : [];
+  const transcripts = stage === "import" || stage === "review" || stage === "reflect" ? await getTranscripts(session.id) : [];
   const areas = stage === "review" ? (await getLifeAreas()).map((a) => ({ id: a.id, name: a.name })) : [];
   const publishedHere = summaries.find((x) => x.status === "published") ?? null;
   const jobs = stage === "review" && publishedHere ? await getMessageJobs(client.id) : [];
@@ -262,6 +263,32 @@ export default async function SessionDeskPage({
           location={session.location}
           durationMinutes={session.duration_minutes}
         />
+      ) : null}
+
+      {stage === "reflect" ? (
+        <div className="desk-grid">
+          <div className="desk-main">
+            {transcripts.length ? (
+              <ReflectionPanel
+                transcripts={transcripts}
+                aiAvailable={Boolean(process.env.ANTHROPIC_API_KEY)}
+                clientId={client.id}
+                firstName={firstName}
+                nextSessionId={nextBookingSession?.id ?? null}
+              />
+            ) : (
+              <section className="admin-card">
+                <h2>Reflect</h2>
+                <p className="admin-card-sub">
+                  Add a transcript in <Link href="?stage=import">3. Import and summarise</Link> first; the reflection is built from it.
+                </p>
+              </section>
+            )}
+          </div>
+          <aside className="desk-side">
+            <NoteEditor clientId={client.id} sessionId={session.id} initial={myNote} label="Your private note for this session" />
+          </aside>
+        </div>
       ) : null}
 
       {stage === "review" && publishedHere && client.email ? (
