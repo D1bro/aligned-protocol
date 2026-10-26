@@ -19,10 +19,13 @@ export function CoachingCard({
   data,
   goals,
   hasGoal,
+  credits = null,
 }: {
   data: MemberCoaching;
   goals: { id: string; title: string }[];
   hasGoal: boolean;
+  // Sessions paid for and not yet used (null before billing is set up).
+  credits?: { available: number; reserved: number } | null;
 }) {
   if (!data.available || (!data.sessions.length && !data.summaries.length)) return null;
   const now = Date.now();
@@ -60,6 +63,12 @@ export function CoachingCard({
         ) : (
           <p className="admin-card-sub">Nothing booked yet.</p>
         )}
+        {credits ? (
+          <p className="admin-card-sub coaching-credits">
+            {credits.available} paid session{credits.available === 1 ? "" : "s"} left to book
+            {credits.available <= 1 ? <> · <Link href="/coaching#buy" className="au-text-link">Top up</Link></> : null}
+          </p>
+        ) : null}
       </div>
 
       {!hasGoal && suggestion?.area_id ? (

@@ -11,6 +11,7 @@ import {
   AllocatePayment,
   CreditNote,
   CustomerForm,
+  InvoiceFromPackage,
   NewInvoiceButton,
   NoticeActions,
   PaymentLink,
@@ -27,7 +28,20 @@ const LEDGER_LABEL: Record<string, string> = { grant: "Paid for", use: "Used", a
 // Payments and invoices for one client: their invoices (drafts editable,
 // issued ones frozen), the money received and where it went, and their
 // session credits. Coaches without billing access see the credits only.
-export function BillingTab({ b, clientId, jobs, firstName }: { b: ClientBilling; clientId: string; jobs: MessageJob[]; firstName: string }) {
+export function BillingTab({
+  b,
+  clientId,
+  jobs,
+  firstName,
+  packages = [],
+}: {
+  b: ClientBilling;
+  clientId: string;
+  jobs: MessageJob[];
+  firstName: string;
+  // Packages on sale, for "Draft invoice from a package".
+  packages?: { id: string; label: string }[];
+}) {
   if (!b.available) {
     return <p className="plan-note">Invoicing needs database update 0014. Run it, then reload.</p>;
   }
@@ -100,7 +114,10 @@ export function BillingTab({ b, clientId, jobs, firstName }: { b: ClientBilling;
 
       <div className="bl-head">
         <h2 className="sec-head">Invoices</h2>
-        <NewInvoiceButton clientId={clientId} />
+        <span className="bl-act">
+          <InvoiceFromPackage clientId={clientId} packages={packages} />
+          <NewInvoiceButton clientId={clientId} />
+        </span>
       </div>
       {b.invoices.length ? (
         <ul className="cs-list">

@@ -60,15 +60,17 @@ export function SessionsTab({ p, billing, jobs }: { p: Profile; billing: ClientB
     const moves = ev.filter((e) => e.kind === "rescheduled");
     const local = toLocalParts(s.scheduled_at, s.timezone);
     const overdue = (s.state === "proposed" || s.state === "confirmed") && new Date(s.scheduled_at).getTime() < now;
+    const desk = `/coach/clients/${p.client.id}/sessions/${s.id}?stage=${s.state === "held" ? "import" : "prepare"}`;
     return (
       <li key={s.id} className="cs-row">
         <div className="cs-row-head">
           <div>
-            <b>{formatSessionTime(s.scheduled_at, s.timezone)}</b>
+            {/* The date opens the session too: the link on the right is easy to miss. */}
+            <Link href={desk} className="cs-title-link"><b>{formatSessionTime(s.scheduled_at, s.timezone)}</b></Link>
             <span className={`cs-state ${s.state}`}>{STATE_LABEL[s.state]}</span>
             {overdue ? <span className="cs-state overdue">Time has passed — mark held, no-show or cancelled</span> : null}
           </div>
-          <Link href={`/coach/clients/${p.client.id}/sessions/${s.id}?stage=${s.state === "held" ? "import" : "prepare"}`} className="au-text-link">
+          <Link href={desk} className="au-text-link">
             {s.state === "held" ? "Summarise" : "Prepare"} →
           </Link>
         </div>

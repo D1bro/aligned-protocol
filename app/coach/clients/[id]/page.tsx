@@ -20,6 +20,8 @@ import { RemoveClient } from "./RemoveClient";
 import { getRemovalCheck } from "@/lib/actions/remove-client";
 import { ResetPasswordButton } from "./ResetPasswordButton";
 import { BillingTab } from "./BillingTab";
+import { getAllPackages } from "@/lib/actions/packages";
+import { formatPence } from "@/lib/money";
 import { getClientBilling } from "@/lib/actions/billing";
 import { getMessageJobs } from "@/lib/actions/messages";
 
@@ -311,7 +313,21 @@ export default async function ClientProfilePage({
 
       {tab === "notes" ? <CoachNotesTab p={p} /> : null}
 
-      {tab === "billing" && billing ? <BillingTab b={billing} clientId={client.id} jobs={jobs} firstName={firstName} /> : null}
+      {tab === "billing" && billing ? (
+        <BillingTab
+          b={billing}
+          clientId={client.id}
+          jobs={jobs}
+          firstName={firstName}
+          packages={
+            billing.canBill
+              ? ((await getAllPackages()) ?? [])
+                  .filter((pk) => pk.active)
+                  .map((pk) => ({ id: pk.id, label: `${pk.name} · ${formatPence(pk.price_pence)} · ${pk.sessions} sessions` }))
+              : []
+          }
+        />
+      ) : null}
 
       {tab === "settings" && isAdmin ? (
         <section className="admin-card" aria-label="Settings">
