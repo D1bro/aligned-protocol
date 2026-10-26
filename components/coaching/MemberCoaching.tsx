@@ -12,6 +12,7 @@ type Content = {
   insights?: string[];
   resources?: { title: string; url: string }[];
   next_meeting?: { text?: string };
+  suggested_focus?: { area_id?: string; area_name?: string; goal?: string; why?: string };
 };
 
 // The member's coaching space: last session, next steps, preparation, and
@@ -73,6 +74,22 @@ export function MemberCoaching({ data }: { data: Data }) {
                 <h4>What you noticed</h4>
                 <ul>{c.insights.map((x, i) => <li key={i}>{x}</li>)}</ul>
               </>
+            ) : null}
+            {c.suggested_focus?.area_id ? (
+              <div className="mc-suggest">
+                <h4>Where to start</h4>
+                <p>
+                  Your coach suggests starting with <b>{c.suggested_focus.area_name}</b>
+                  {c.suggested_focus.goal ? <>, with a first goal like &ldquo;{c.suggested_focus.goal}&rdquo;</> : null}.
+                </p>
+                {c.suggested_focus.why ? <p className="sw-p">{c.suggested_focus.why}</p> : null}
+                <p>
+                  <Link href={`/clear?choose=1&suggested=${encodeURIComponent(c.suggested_focus.area_id)}`} className="btn btn-o">
+                    Choose where to start →
+                  </Link>
+                </p>
+                <p className="admin-card-sub">It&rsquo;s your choice: pick this area or another in My plan.</p>
+              </div>
             ) : null}
             {c.resources?.length ? (
               <>

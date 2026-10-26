@@ -24,12 +24,12 @@ const filled = (v: string | null | undefined) => !!v?.trim();
 export default async function ClearPage({
   searchParams,
 }: {
-  searchParams: Promise<{ choose?: string; start?: string; edit?: string; new?: string; latest?: string; welcome?: string }>;
+  searchParams: Promise<{ choose?: string; start?: string; edit?: string; new?: string; latest?: string; welcome?: string; suggested?: string }>;
 }) {
   // ?edit=N opens CLEAR at step N (review / adjust); ?new=1 starts a fresh
   // goal on the same plan once the last one is done; ?latest=1 opens CLEAR
   // for the latest audit while another goal is still the main one.
-  const { choose, start, edit, new: newGoal, latest, welcome } = await searchParams;
+  const { choose, start, edit, new: newGoal, latest, welcome, suggested } = await searchParams;
   const editStep = edit ? Math.min(5, Math.max(1, Number(edit) || 1)) : null;
   const audit = await getLatestCompletedAudit();
   if (!audit) redirect("/audit");
@@ -111,6 +111,7 @@ export default async function ClearPage({
                     <span className="au-list-name">
                       {a.name}
                       {s === lowest ? <span className="au-low-tag">Lowest score</span> : null}
+                      {a.id === suggested ? <span className="au-focus-tag">Suggested by your coach</span> : null}
                     </span>
                     <span className="au-list-score">{s}/10</span>
                   </button>

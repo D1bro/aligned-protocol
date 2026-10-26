@@ -21,6 +21,8 @@ export type SummaryContent = {
   resources: { title: string; url: string }[];
   next_meeting: { text: string };
   points: string[];
+  // A suggested place to start, shared with the client; they choose in My plan.
+  suggested_focus: { area_id: string; area_name: string; goal: string; why: string };
 };
 
 export type Summary = {
@@ -48,7 +50,15 @@ export type Transcript = {
   consent_confirmed: boolean;
   ai_status: "none" | "processing" | "done" | "failed";
   ai_error: string | null;
-  ai_output: { review_flags?: string[]; excerpts?: { text: string; excerpt: string; time: string; uncertain: boolean }[]; model?: string } | null;
+  ai_output: {
+    review_flags?: string[];
+    excerpts?: { text: string; excerpt: string; time: string; uncertain: boolean }[];
+    model?: string;
+    // Coach-only suggestions from the transcript (never shared).
+    coach_note?: string;
+    prep?: string[];
+    next_session?: { date: string; time: string; duration_minutes: number; text: string };
+  } | null;
   created_at: string;
   length: number;
 };
@@ -84,6 +94,12 @@ function clean(c: Partial<SummaryContent>): SummaryContent {
       .slice(0, 10),
     next_meeting: { text: s(c.next_meeting?.text, 300) },
     points: (c.points ?? []).map((x) => s(x, 1000)).filter(Boolean).slice(0, 30),
+    suggested_focus: {
+      area_id: s(c.suggested_focus?.area_id, 40),
+      area_name: s(c.suggested_focus?.area_name, 80),
+      goal: s(c.suggested_focus?.goal, 300),
+      why: s(c.suggested_focus?.why, 600),
+    },
   };
 }
 
@@ -96,6 +112,16 @@ export async function getTranscripts(sessionId: string): Promise<Transcript[]> {
     .eq("session_id", sessionId)
     .order("created_at", { ascending: false });
   return (data ?? []).map(({ content, ...t }) => ({ ...(t as Omit<Transcript, "length">), length: (content as string).length }));
+}
+
+// The full text of one transcript, for the coach to read beside the summary.
+// Only the client's coaches can read it (the table's row security).
+export async function getTranscriptText(transcriptId: string): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
+  await requireStaff();
+  const supabase = await createClient();
+  const { data } = await supabase.from("session_transcripts").select("content").eq("id", transcriptId).maybeSingle();
+  if (!data) return { ok: false, message: "Transcript not found." };
+  return { ok: true, text: data.content as string };
 }
 
 // Save a transcript against a session. The client is read from the session
@@ -285,9 +311,10 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
 
   await supabase.from("session_transcripts").update({ ai_status: "processing", ai_error: null, ai_started_at: new Date().toISOString() }).eq("id", t.id);
 
-  const [{ data: client }, { data: goals }] = await Promise.all([
+  const [{ data: client }, { data: goals }, { data: areas }] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", t.client_id).maybeSingle(),
     supabase.from("goals").select("id, goal_title").eq("client_id", t.client_id).eq("status", "active"),
+    supabase.from("life_areas").select("id, name").order("sort_order"),
   ]);
   const result = await draftFromTranscript({
     transcript: t.content,
@@ -295,6 +322,7 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
     transcriptDate: t.transcript_date,
     clientFirstName: ((client?.full_name as string | null) ?? "").split(" ")[0] || "the client",
     goals: (goals ?? []).map((g) => ({ id: g.id as string, title: (g.goal_title as string) ?? "Goal" })),
+    areas: (areas ?? []).map((a) => a.name as string),
   });
 
   if (!result.ok) {
@@ -312,6 +340,12 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
     client_actions: d.client_actions.map((a) => ({ text: a.text, due_date: a.due_date, goal_id: a.goal_id })),
     coach_actions: d.coach_actions.map((a) => ({ text: a.text, due_date: a.due_date, visible: true })),
     next_meeting: { text: d.next_meeting.mentioned ? d.next_meeting.text : current.next_meeting.text },
+    suggested_focus: (() => {
+      const area = (areas ?? []).find((a) => a.name === d.suggested_focus.area);
+      return area
+        ? { area_id: area.id as string, area_name: area.name as string, goal: d.suggested_focus.goal, why: d.suggested_focus.why }
+        : current.suggested_focus;
+    })(),
   };
   const { data: saved, error } = await supabase
     .from("session_summaries")
@@ -329,6 +363,11 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
         review_flags: d.review_flags,
         excerpts: [...d.client_actions, ...d.coach_actions].map((a) => ({ text: a.text, excerpt: a.source_excerpt, time: a.source_time, uncertain: a.uncertain })),
         next_meeting_excerpt: d.next_meeting.source_excerpt,
+        coach_note: d.coach_note,
+        prep: d.prep,
+        next_session: d.next_meeting.date
+          ? { date: d.next_meeting.date, time: d.next_meeting.time, duration_minutes: d.next_meeting.duration_minutes, text: d.next_meeting.text }
+          : undefined,
       },
     })
     .eq("id", t.id);

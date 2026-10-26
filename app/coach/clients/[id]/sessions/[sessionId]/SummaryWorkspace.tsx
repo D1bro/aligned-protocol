@@ -7,6 +7,7 @@ import {
   approveDraft,
   generateDraft,
   getOrCreateDraft,
+  getTranscriptText,
   importTranscript,
   publishSummary,
   saveDraft,
@@ -14,6 +15,7 @@ import {
   type SummaryContent,
   type Transcript,
 } from "@/lib/actions/summaries";
+import { createSession, saveCoachNote } from "@/lib/actions/sessions";
 import { EMPTY_CONTENT } from "@/lib/summary-content";
 
 type Mode = "points" | "import" | "review";
@@ -22,7 +24,18 @@ const fill = (c: Partial<SummaryContent> | undefined): SummaryContent => ({
   ...EMPTY_CONTENT,
   ...(c ?? {}),
   next_meeting: { text: c?.next_meeting?.text ?? "" },
+  suggested_focus: { ...EMPTY_CONTENT.suggested_focus, ...(c?.suggested_focus ?? {}) },
 });
+
+// Add text to the coach's private note for a session: a new note, or
+// appended to the one already there (one note per session per coach).
+async function appendToNote(clientId: string, sessionId: string, text: string): Promise<string | null> {
+  let r = await saveCoachNote({ noteId: null, clientId, sessionId, body: text, expectedVersion: null });
+  if (!r.ok && r.conflict) {
+    r = await saveCoachNote({ noteId: r.current.id, clientId, sessionId, body: `${r.current.body.trim()}\n\n${text}`, expectedVersion: r.current.version });
+  }
+  return r.ok ? null : r.message;
+}
 
 // The summary side of the session desk: points to confirm during the
 // conversation, transcript import, and the reviewed summary that is shared.
@@ -37,6 +50,10 @@ export function SummaryWorkspace({
   firstName,
   aiAvailable,
   nextBooking,
+  nextSessionId = null,
+  areas = [],
+  location = null,
+  durationMinutes = 60,
 }: {
   mode: Mode;
   clientId: string;
@@ -48,6 +65,11 @@ export function SummaryWorkspace({
   firstName: string;
   aiAvailable: boolean;
   nextBooking: string | null;
+  // The next booked session after this one, if any.
+  nextSessionId?: string | null;
+  areas?: { id: string; name: string }[];
+  location?: string | null;
+  durationMinutes?: number;
 }) {
   const router = useRouter();
   const typed = summaries as unknown as Summary[];
@@ -120,6 +142,13 @@ export function SummaryWorkspace({
 
   // ---- Review and share ----
   const flags = transcripts.find((t) => t.ai_status === "done")?.ai_output;
+  const reading = transcripts.length ? <TranscriptReader transcripts={transcripts} /> : null;
+  const suggestions = flags ? (
+    <AiSuggestions
+      output={flags}
+      {...{ clientId, sessionId, firstName, nextSessionId, nextBooking, location, durationMinutes, router }}
+    />
+  ) : null;
 
   async function approve() {
     if (dirty) return setNote({ ok: false, text: "Save your changes first, then approve." });
@@ -171,6 +200,8 @@ export function SummaryWorkspace({
             {busy === "new" ? "Starting…" : "Edit a new draft"}
           </button>
           {note ? <p className={note.ok ? "admin-ok" : "clear-err"}>{note.text}</p> : null}
+          {reading}
+          {suggestions}
         </div>
         <Preview content={fill(published.content)} firstName={firstName} goals={goals} nextBooking={nextBooking} />
       </div>
@@ -191,6 +222,8 @@ export function SummaryWorkspace({
             <ul>{flags.review_flags.map((f, i) => <li key={i}>{f}</li>)}</ul>
           </div>
         ) : null}
+        {reading}
+        {suggestions}
 
         <label className="sw-field">
           <span>Focus</span>
@@ -279,6 +312,42 @@ export function SummaryWorkspace({
             </div>
           ))}
           <button type="button" className="au-text-link as-btn" onClick={() => edit({ resources: [...content.resources, { title: "", url: "" }] })}>+ Add a resource</button>
+        </div>
+
+        <div className="sw-field">
+          <span>Where to start (a suggestion {firstName} sees)</span>
+          <div className="sw-action">
+            <select
+              value={content.suggested_focus.area_id}
+              aria-label="Suggested area"
+              onChange={(e) => {
+                const a = areas.find((x) => x.id === e.target.value);
+                edit({ suggested_focus: { ...content.suggested_focus, area_id: a?.id ?? "", area_name: a?.name ?? "" } });
+              }}
+            >
+              <option value="">No suggestion</option>
+              {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+          {content.suggested_focus.area_id ? (
+            <>
+              <input
+                type="text"
+                value={content.suggested_focus.goal}
+                placeholder="A first goal to consider, in their words"
+                aria-label="Suggested first goal"
+                onChange={(e) => edit({ suggested_focus: { ...content.suggested_focus, goal: e.target.value } })}
+              />
+              <textarea
+                rows={2}
+                value={content.suggested_focus.why}
+                placeholder={`Why, written to ${firstName}`}
+                aria-label="Why this area"
+                onChange={(e) => edit({ suggested_focus: { ...content.suggested_focus, why: e.target.value } })}
+              />
+              <em>{firstName} chooses for themself in My plan; this only points the way.</em>
+            </>
+          ) : null}
         </div>
 
         <label className="sw-field">
@@ -387,6 +456,16 @@ function Preview({
         <>
           <h4>What I&rsquo;ll do</h4>
           <ul>{visibleCoach.map((a, i) => <li key={i}>{a.text}{a.due_date ? <em> · by {fmt(a.due_date)}</em> : null}</li>)}</ul>
+        </>
+      ) : null}
+      {content.suggested_focus.area_id ? (
+        <>
+          <h4>Where to start</h4>
+          <p className="sw-p">
+            Suggested: <b>{content.suggested_focus.area_name}</b>
+            {content.suggested_focus.goal ? <> · a first goal to consider: &ldquo;{content.suggested_focus.goal}&rdquo;</> : null}
+          </p>
+          {content.suggested_focus.why ? <p className="sw-p">{content.suggested_focus.why}</p> : null}
         </>
       ) : null}
       {content.resources.filter((r) => r.title.trim()).length ? (
@@ -525,6 +604,7 @@ function ImportPanel({
                     {t.length.toLocaleString()} characters{t.speaker_map?.text ? ` · ${t.speaker_map.text}` : " · speakers not mapped"}
                   </span>
                 </div>
+                <TranscriptText id={t.id} />
                 {t.ai_status === "processing" ? <p className="note-status">Drafting… this can take a minute.</p> : null}
                 {t.ai_status === "failed" ? <p className="clear-err">Drafting failed: {t.ai_error}</p> : null}
                 {t.ai_status === "done" ? <p className="admin-ok">AI draft created{t.ai_output?.model ? ` (${t.ai_output.model})` : ""}. Review it in step 4.</p> : null}
@@ -558,6 +638,158 @@ function ImportPanel({
           <Link href={`?stage=review`} className="au-text-link">Write or review the summary →</Link>
         </p>
       </section>
+    </div>
+  );
+}
+
+// Read a saved transcript (coach only). Loads the text when first opened.
+function TranscriptText({ id, label = "Read the transcript" }: { id: string; label?: string }) {
+  const [text, setText] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <details
+      className="cs-history sw-transcript"
+      onToggle={async (e) => {
+        if (!(e.currentTarget as HTMLDetailsElement).open || text !== null) return;
+        const r = await getTranscriptText(id);
+        if (r.ok) setText(r.text);
+        else setError(r.message);
+      }}
+    >
+      <summary>{label}</summary>
+      {error ? <p className="clear-err">{error}</p> : text === null ? <p className="note-status">Loading…</p> : <pre className="sw-transcript-text">{text}</pre>}
+    </details>
+  );
+}
+
+function TranscriptReader({ transcripts }: { transcripts: Transcript[] }) {
+  return (
+    <div className="sw-field">
+      {transcripts.map((t, i) => (
+        <TranscriptText
+          key={t.id}
+          id={t.id}
+          label={`Read the transcript${transcripts.length > 1 ? ` ${transcripts.length - i}` : ""} (only you see it)`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// What the AI drafted for the coach alone: a private note, what to check
+// in on next time, and a proposed next session. Nothing here is shared, and
+// nothing is saved until the coach presses the button for it.
+function AiSuggestions({
+  output,
+  clientId,
+  sessionId,
+  firstName,
+  nextSessionId,
+  nextBooking,
+  location,
+  durationMinutes,
+  router,
+}: {
+  output: NonNullable<Transcript["ai_output"]>;
+  clientId: string;
+  sessionId: string;
+  firstName: string;
+  nextSessionId: string | null;
+  nextBooking: string | null;
+  location: string | null;
+  durationMinutes: number;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const [done, setDone] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const prepText = output.prep?.length ? `Check in on:\n${output.prep.map((p) => `- ${p}`).join("\n")}` : "";
+  const next = output.next_session;
+  const nextLabel = next
+    ? `${new Date(`${next.date}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${next.time ? ` at ${next.time}` : ""} · ${next.duration_minutes || durationMinutes} minutes`
+    : "";
+  if (!output.coach_note && !prepText && !next) return null;
+
+  async function run(key: string, fn: () => Promise<string | null>, ok: string) {
+    setBusy(key);
+    setNote(null);
+    const error = await fn();
+    setBusy(null);
+    if (error) return setNote({ ok: false, text: error });
+    setDone((d) => ({ ...d, [key]: true }));
+    setNote({ ok: true, text: ok });
+    router.refresh();
+  }
+
+  return (
+    <div className="sw-flags sw-suggest">
+      <p className="au-detail-k">From the transcript · only you see this</p>
+      {output.coach_note ? (
+        <div className="sw-suggest-item">
+          <h4>Private note</h4>
+          <p className="sw-p sw-pre">{output.coach_note}</p>
+          <button
+            type="button"
+            className="btn btn-g"
+            disabled={busy !== null || done.note}
+            onClick={() => run("note", () => appendToNote(clientId, sessionId, output.coach_note!), "Added to your private note for this session.")}
+          >
+            {done.note ? "Added to your note" : busy === "note" ? "Adding…" : "Add to my private note"}
+          </button>
+        </div>
+      ) : null}
+      {next && !nextBooking ? (
+        <div className="sw-suggest-item">
+          <h4>Next session, as agreed</h4>
+          <p className="sw-p">{nextLabel}{next.text ? ` — “${next.text}”` : ""}</p>
+          <button
+            type="button"
+            className="btn btn-g"
+            disabled={busy !== null || done.book || !next.time}
+            onClick={() => {
+              if (!window.confirm(`Add a proposed session with ${firstName} for ${nextLabel}? It stays proposed until you confirm it.`)) return;
+              run(
+                "book",
+                async () => {
+                  const r = await createSession({
+                    clientId,
+                    date: next.date,
+                    time: next.time,
+                    durationMinutes: next.duration_minutes || durationMinutes,
+                    location: location ?? "",
+                    confirmed: false,
+                  });
+                  if (!r.ok) return r.message;
+                  return prepText && r.id ? appendToNote(clientId, r.id, prepText) : null;
+                },
+                `Proposed session added${prepText ? ", with the check-in list in its prep note" : ""}. Confirm it in Sessions when ${firstName} agrees.`
+              );
+            }}
+          >
+            {done.book ? "Proposed session added" : busy === "book" ? "Adding…" : "Book as proposed"}
+          </button>
+          {!next.time ? <em className="admin-card-sub"> No time was agreed — book it in Sessions.</em> : null}
+        </div>
+      ) : null}
+      {prepText ? (
+        <div className="sw-suggest-item">
+          <h4>Check in on next time</h4>
+          <ul>{output.prep!.map((p, i) => <li key={i}>{p}</li>)}</ul>
+          {nextSessionId ? (
+            <button
+              type="button"
+              className="btn btn-g"
+              disabled={busy !== null || done.prep}
+              onClick={() => run("prep", () => appendToNote(clientId, nextSessionId, prepText), "Added to the next session's prep note.")}
+            >
+              {done.prep ? "Added to next session" : busy === "prep" ? "Adding…" : "Add to next session's prep"}
+            </button>
+          ) : (
+            <em className="admin-card-sub">{next && !nextBooking ? "Saved with the session when you book it above." : "Book the next session, then add this to its prep."}</em>
+          )}
+        </div>
+      ) : null}
+      {note ? <p className={note.ok ? "admin-ok" : "clear-err"} role="status">{note.text}</p> : null}
     </div>
   );
 }

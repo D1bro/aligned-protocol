@@ -10,6 +10,7 @@ import { SummaryWorkspace } from "./SummaryWorkspace";
 import { EmailButton } from "../../EmailButton";
 import { getMessageJobs } from "@/lib/actions/messages";
 import { getTranscripts } from "@/lib/actions/summaries";
+import { getLifeAreas } from "@/lib/actions/audit";
 
 // AI drafting can take a while; allow up to 5 minutes (Vercel caps this per plan).
 export const maxDuration = 300;
@@ -75,6 +76,7 @@ export default async function SessionDeskPage({
   const local = toLocalParts(session.scheduled_at, session.timezone);
   const summaries = coaching.summaries.filter((x) => x.session_id === session.id);
   const transcripts = stage === "import" || stage === "review" ? await getTranscripts(session.id) : [];
+  const areas = stage === "review" ? (await getLifeAreas()).map((a) => ({ id: a.id, name: a.name })) : [];
   const publishedHere = summaries.find((x) => x.status === "published") ?? null;
   const jobs = stage === "review" && publishedHere ? await getMessageJobs(client.id) : [];
   const nextBookingSession =
@@ -255,6 +257,10 @@ export default async function SessionDeskPage({
           transcripts={transcripts}
           sessionLabel={sessionLabel}
           nextBooking={nextBooking}
+          nextSessionId={nextBookingSession?.id ?? null}
+          areas={areas}
+          location={session.location}
+          durationMinutes={session.duration_minutes}
         />
       ) : null}
 

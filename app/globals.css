@@ -1590,3 +1590,13 @@ a.nav-user-who:hover b { color: var(--gold); }
 .au-results-score { display: grid; grid-template-columns: auto 1fr; gap: 1.1rem; align-items: center; margin: .6rem 0 .3rem; }
 .au-start-grid { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
 @media (max-width: 900px) { .au-results-head { grid-template-columns: 1fr; gap: 1.25rem; } }
+
+/* Session desk: reading the transcript, and the coach-only suggestions */
+.sw-transcript summary { cursor: pointer; }
+.sw-transcript-text { margin-top: .6rem; max-height: 420px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.7 var(--font-dm-sans), 'DM Sans', sans-serif; color: var(--text2); background: var(--bg); border: 1px solid var(--bdr2); border-radius: 10px; padding: .9rem 1rem; }
+.sw-suggest { display: grid; gap: 1rem; }
+.sw-suggest-item { display: grid; gap: .45rem; justify-items: start; padding-top: .8rem; border-top: 1px solid var(--bdr2); }
+.sw-suggest-item h4 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 13px; font-weight: 600; }
+.sw-suggest-item ul { padding-left: 1.1rem; font-size: 13px; color: var(--text2); }
+.sw-pre { white-space: pre-wrap; }
+.mc-suggest { margin-top: 1rem; padding: 1rem 1.1rem; border: 1px solid var(--bdr); border-radius: 12px; background: var(--gd3); display: grid; gap: .5rem; }
