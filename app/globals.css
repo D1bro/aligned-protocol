@@ -1616,3 +1616,14 @@ a.nav-user-who:hover b { color: var(--gold); }
 .coaching-steps em { font-size: 12px; font-style: normal; color: var(--text3); }
 .next-action-coaching { border-top: 1px solid var(--bdr2); padding-top: .8rem; }
 .next-action-coaching ul { padding-left: 1.1rem; font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+/* Session desk: the coaching reflection (coach only) */
+.rf h4 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 13px; font-weight: 600; margin-top: .6rem; }
+.rf-list { list-style: none; display: grid; gap: .55rem; }
+.rf-point { display: grid; gap: .4rem; padding: .7rem .8rem; border: 1px solid var(--bdr2); border-radius: 10px; background: var(--bg2); font-size: 13.5px; line-height: 1.6; }
+.rf-point b { color: var(--gold); font-weight: 600; margin-right: .3rem; }
+.rf-sub { display: block; color: var(--text2); font-size: 12.5px; }
+.rf-verdict { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.rf-verdict button { border: 1px solid var(--bdr2); background: none; color: var(--text2); border-radius: 999px; padding: .2rem .7rem; font: 500 12px var(--font-dm-sans), 'DM Sans', sans-serif; cursor: pointer; }
+.rf-verdict button.on { border-color: var(--gold); color: var(--gold); background: var(--gd2); }
+.rf-verdict input { flex: 1; min-width: 160px; padding: .35rem .6rem; font-size: 12.5px; }

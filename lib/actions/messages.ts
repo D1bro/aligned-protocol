@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/actions/admin";
 import { emailStatus, sendEmail } from "@/lib/email";
-import { buildMessage, type MessageInput } from "@/lib/messages";
+import { buildMessage, clientFacingSummary, type MessageInput } from "@/lib/messages";
 import { requestOrigin } from "@/lib/request-origin";
 import { formatSessionTime } from "@/lib/time";
 import { formatPence } from "@/lib/money";
@@ -50,7 +50,7 @@ const first = (name: string | null | undefined) => name?.trim().split(/\s+/)[0] 
 
 // Work out the email for one thing (a shared summary, a session change, an
 // invoice, a payment) from the database, checking it's in a state worth emailing.
-async function build(kind: MessageKind, refId: string, note: string | null): Promise<Built | Fail> {
+async function build(kind: MessageKind, refId: string, note: string | null, opts: { includeSummary?: boolean } = {}): Promise<Built | Fail> {
   const me = await requireStaff();
   const supabase = await createClient();
   const origin = await requestOrigin();
@@ -59,13 +59,27 @@ async function build(kind: MessageKind, refId: string, note: string | null): Pro
     (await supabase.from("profiles").select("id, full_name, email").eq("id", id).maybeSingle()).data as { id: string; full_name: string | null; email: string | null } | null;
 
   if (kind === "summary_shared") {
-    const { data: s } = await supabase.from("session_summaries").select("id, session_id, client_id, status").eq("id", refId).maybeSingle();
+    const { data: s } = await supabase.from("session_summaries").select("id, session_id, client_id, status, content").eq("id", refId).maybeSingle();
     if (!s || s.status !== "published") return { ok: false, message: "Share the summary first; then you can email about it." };
-    const [{ data: sess }, c] = await Promise.all([
+    const [{ data: sess }, c, { data: upcoming }] = await Promise.all([
       supabase.from("coaching_sessions").select("scheduled_at, timezone").eq("id", s.session_id).maybeSingle(),
       client(s.client_id),
+      supabase
+        .from("coaching_sessions")
+        .select("scheduled_at, timezone, duration_minutes, state, location")
+        .eq("client_id", s.client_id)
+        .in("state", ["proposed", "confirmed"])
+        .gt("scheduled_at", new Date().toISOString())
+        .order("scheduled_at")
+        .limit(1),
     ]);
     if (!c?.email) return { ok: false, message: "This client has no email address." };
+    // Only the published, client-facing wording; never notes or transcripts.
+    const nextUp = upcoming?.[0];
+    const nextLine = nextUp
+      ? `${formatSessionTime(nextUp.scheduled_at, nextUp.timezone)} · ${nextUp.duration_minutes} minutes${nextUp.state === "proposed" ? " (proposed)" : ""}${nextUp.location ? `\n${nextUp.location}` : ""}`
+      : null;
+    const content = opts.includeSummary ? clientFacingSummary((s.content ?? {}) as Record<string, unknown>, nextLine) : null;
     return {
       clientId: c.id,
       to: c.email,
@@ -79,6 +93,7 @@ async function build(kind: MessageKind, refId: string, note: string | null): Pro
         coachName: meProfile?.full_name?.trim() || "Your coach",
         link: `${origin}/coaching/sessions/${s.session_id}`,
         note,
+        content,
       },
     };
   }
@@ -202,19 +217,19 @@ async function build(kind: MessageKind, refId: string, note: string | null): Pro
   };
 }
 
-export async function previewMessage(kind: MessageKind, refId: string, note: string) {
-  const b = await build(kind, refId, note.trim() || null);
+export async function previewMessage(kind: MessageKind, refId: string, note: string, opts: { includeSummary?: boolean } = {}) {
+  const b = await build(kind, refId, note.trim() || null, opts);
   if ("ok" in b) return b;
   const m = buildMessage(b.input);
   return { ok: true as const, to: b.to, subject: m.subject, text: m.text, email: emailStatus() };
 }
 
-export async function sendMessage(input: { kind: MessageKind; refId: string; note: string; again?: boolean }): Promise<{ ok: true; message: string } | Fail> {
+export async function sendMessage(input: { kind: MessageKind; refId: string; note: string; again?: boolean; includeSummary?: boolean }): Promise<{ ok: true; message: string } | Fail> {
   const me = await requireStaff();
   const status = emailStatus();
   if (!status.ready) return { ok: false, message: `${status.reason} Nothing was sent.` };
   const note = input.note.trim().slice(0, 1000) || null;
-  const b = await build(input.kind, input.refId, note);
+  const b = await build(input.kind, input.refId, note, { includeSummary: input.includeSummary });
   if ("ok" in b) return b;
   const m = buildMessage(b.input);
   const supabase = await createClient();

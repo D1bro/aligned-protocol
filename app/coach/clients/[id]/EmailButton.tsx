@@ -9,11 +9,13 @@ type Last = { status: "queued" | "sent" | "failed"; sent_at: string | null; crea
 const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: "Europe/London", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 // "Email Sam about this": shows exactly what will be sent, takes an optional
-// note, and sends once. Separate from sharing or issuing in the app.
+// note, and sends once. Separate from sharing or issuing in the app. For a
+// shared summary, the coach can tick to include its client-facing wording.
 export function EmailButton({ kind, refId, label, last }: { kind: MessageKind; refId: string; label: string; last: Last }) {
   const router = useRouter();
   const [preview, setPreview] = useState<null | { to: string; subject: string; text: string; ready: boolean; reason?: string }>(null);
   const [note, setNote] = useState("");
+  const [includeSummary, setIncludeSummary] = useState(false);
   const [pending, setPending] = useState<null | "preview" | "send">(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const again = last?.status === "sent";
@@ -21,21 +23,21 @@ export function EmailButton({ kind, refId, label, last }: { kind: MessageKind; r
   async function open() {
     setPending("preview");
     setMsg(null);
-    const r = await previewMessage(kind, refId, note);
+    const r = await previewMessage(kind, refId, note, { includeSummary });
     setPending(null);
     if (!r.ok) return setMsg({ ok: false, text: r.message });
     setPreview({ to: r.to, subject: r.subject, text: r.text, ready: r.email.ready, reason: r.email.reason });
   }
 
-  async function refreshPreview(nextNote: string) {
-    const r = await previewMessage(kind, refId, nextNote);
-    if (r.ok) setPreview((p) => (p ? { ...p, text: r.text } : p));
+  async function refreshPreview(nextNote: string, withSummary = includeSummary) {
+    const r = await previewMessage(kind, refId, nextNote, { includeSummary: withSummary });
+    if (r.ok) setPreview((p) => (p ? { ...p, subject: r.subject, text: r.text } : p));
   }
 
   async function send() {
     setPending("send");
     setMsg(null);
-    const r = await sendMessage({ kind, refId, note, again });
+    const r = await sendMessage({ kind, refId, note, again, includeSummary });
     setPending(null);
     setMsg({ ok: r.ok, text: r.message });
     if (r.ok) {
@@ -64,6 +66,19 @@ export function EmailButton({ kind, refId, label, last }: { kind: MessageKind; r
       <p className="cs-meta">
         To <b>{preview.to}</b> · Subject: <b>{preview.subject}</b>
       </p>
+      {kind === "summary_shared" ? (
+        <label className="admin-check">
+          <input
+            type="checkbox"
+            checked={includeSummary}
+            onChange={(e) => {
+              setIncludeSummary(e.target.checked);
+              refreshPreview(note, e.target.checked);
+            }}
+          />{" "}
+          Include the summary in the email (only what they see in the app; never your private notes)
+        </label>
+      ) : null}
       <pre className="em-body">{preview.text}</pre>
       <label className="sw-field">
         <span>Add a personal note (optional)</span>
