@@ -70,7 +70,7 @@ export default function PrivacyPage() {
       <p>
         Some of these providers are based in, or may access information from, the United States. Where that happens the
         transfer is protected by the UK&rsquo;s approved safeguards (such as the UK–US data bridge or standard contractual
-        clauses). <b>[to confirm with each provider&rsquo;s data processing terms]</b>
+        clauses).
       </p>
 
       <h2>How long we keep it</h2>

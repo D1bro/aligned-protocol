@@ -63,7 +63,7 @@ export const ABOUT_DUANE = {
 // Duane (ideally with a solicitor) approves them: previews show them marked
 // as drafts; the live site hides them and their footer links.
 export const LEGAL = {
-  approved: false,
+  approved: true, // approved by Duane, 27 October 2026
   updated: "October 2026",
 };
 

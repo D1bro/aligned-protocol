@@ -33,7 +33,7 @@ export default function TermsPage() {
 
       <h2>Your account</h2>
       <ul>
-        <li>You need to be 18 or over to create an account. <b>[to confirm]</b></li>
+        <li>You need to be 18 or over to create an account.</li>
         <li>Keep your sign-in details to yourself; you&rsquo;re responsible for what happens under your account.</li>
         <li>The free audit and profile are free. We&rsquo;ll tell you clearly before anything costs money.</li>
       </ul>
@@ -64,8 +64,8 @@ export default function TermsPage() {
         <li>Coaching is with an Aligned Coach. Each package or invoice shows what&rsquo;s included, the price and the number of sessions.</li>
         <li>Aligned Focus is £995, paid in one go, for a six-week programme: three 60-minute one-to-one sessions with an Aligned Coach, with Aligned Momentum included for the six weeks. Sessions are to be used within 42 days of payment.</li>
         <li>Invoices show what&rsquo;s owed and when it&rsquo;s due. You can pay by bank transfer, or by card where a card option is offered.</li>
-        <li>Cancellations and missed sessions: <b>[to confirm: your notice period, and whether a late cancellation or no-show uses up a paid session]</b>.</li>
-        <li>Refunds: <b>[to confirm: your refund policy]</b>. This doesn&rsquo;t affect your legal rights as a consumer.</li>
+        <li>Cancelling or moving a session: you can rearrange free of charge with at least 48 hours&rsquo; notice. A later cancellation, or not turning up, uses up that session.</li>
+        <li>Refunds: if you change your mind within 14 days of paying for coaching or Aligned Focus, email {mail} and we&rsquo;ll refund you in full, less the price of any sessions you&rsquo;ve already had. After 14 days, unused sessions aren&rsquo;t refunded. This doesn&rsquo;t affect your legal rights as a consumer.</li>
       </ul>
 
       <h2>Fair use</h2>
