@@ -66,7 +66,7 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
             </p>
           ) : (
             <p>
-              When you&rsquo;re ready, CLEAR turns this into one goal and one action.{" "}
+              When you&rsquo;re ready, Build your plan turns this into one clear action.{" "}
               <Link href="/clear" className="au-text-link">Go to My plan</Link>
             </p>
           )}

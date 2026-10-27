@@ -9,7 +9,6 @@ import { AREA_GUIDES, AREA_SHORT_NAMES, CLOSING_GUIDE } from "@/lib/audit-guides
 import type { SnapshotArea } from "@/components/audit/SnapshotView";
 import type { StartArea } from "@/components/audit/StartingPoint";
 import { ResultsBody } from "@/components/audit/ResultsBody";
-import { ProfileOffer } from "@/components/site/ProfileOffer";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { GuideVideo } from "@/components/audit/GuideVideo";
 
@@ -59,7 +58,7 @@ export default async function ResultsPage() {
   const initialAreaId =
     plan?.life_area_id ?? audit.focus_area_id ?? startAreas.find((a) => a.score === lowestScore)!.id;
 
-  // Once CLEAR has started, the snapshot shows their plan instead of asking
+  // Once the plan has started, the snapshot shows their plan instead of asking
   // the starting-point question again.
   const planArea = areas.findIndex((a) => a.id === initialAreaId);
   const planCard: PlanCardProps | null =
@@ -152,8 +151,9 @@ export default async function ResultsPage() {
           {isGuest ? (
             <li className="primary">
               <span className="au-step-n">02</span>
-              {/* Until the starting point is saved, the button goes to the question (where saving happens). */}
-              <ProfileOffer headingLevel={3} href={plan ? "/login?signup=1" : "#step-up"} />
+              <h3>Build your plan</h3>
+              <p>Five guided steps turn your starting point into one clear action. Build it first; save it to a free account when it&rsquo;s set.</p>
+              <a href={plan ? "/clear" : "#step-up"} className="btn btn-p">Build my plan →</a>
             </li>
           ) : planCard?.stage === "done" ? (
             <li className="primary">
@@ -165,15 +165,15 @@ export default async function ResultsPage() {
           ) : (
             <li className="primary">
               <span className="au-step-n">02</span>
-              <h3>Work on it with CLEAR</h3>
-              <p>A short guided plan that turns your starting point into one clear goal you can act on this week.</p>
-              <Link href="/clear" className="btn btn-p">Open CLEAR →</Link>
+              <h3>Build your plan</h3>
+              <p>Five guided steps turn your starting point into one clear action you can take this week.</p>
+              <Link href="/clear" className="btn btn-p">Build my plan →</Link>
             </li>
           )}
           <li>
             <span className="au-step-n">03</span>
             <h3>Come back and compare</h3>
-            <p>Monthly goal check-ins keep your plan honest. Revisit all ten areas in about three months, or sooner after a meaningful change, to see what&rsquo;s moved.</p>
+            <p>A one-minute weekly review keeps your plan going, and each month you score the area again. Revisit all ten areas in about three months, or sooner after a meaningful change, to see what&rsquo;s moved.</p>
             {isGuest ? null : <Link href="/" className="au-text-link">Go to my profile</Link>}
           </li>
         </ol>

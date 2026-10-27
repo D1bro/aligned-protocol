@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { DID_IT_LABELS } from "@/lib/checkin-labels";
+import { DID_IT_LABELS, WEEKLY_LABELS } from "@/lib/checkin-labels";
 import { formatDate } from "@/lib/audit-schedule";
 import type { ClientSummary } from "@/lib/actions/admin";
 
@@ -86,10 +86,10 @@ export async function buildView(
   if (key === "checkins") {
     let q = supabase
       .from("goal_checkins")
-      .select("id, client_id, did_it, area_score, next_step, created_at")
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(1000);
-    if (opts.didIt) q = q.neq("did_it", "not_yet");
+    if (opts.didIt) q = q.not("did_it", "in", "(not_yet,missed)");
     const { data } = await q;
     const rows = (data ?? [])
       .filter((c) => allowed(c.client_id))
@@ -98,16 +98,16 @@ export async function buildView(
         date: c.created_at as string,
         cells: [
           personName(people.get(c.client_id)),
-          DID_IT_LABELS[c.did_it as keyof typeof DID_IT_LABELS] ?? c.did_it,
-          `${c.area_score}/10`,
-          NEXT[c.next_step as string] ?? c.next_step,
+          c.kind === "weekly" ? `Weekly · ${WEEKLY_LABELS[c.did_it as string] ?? c.did_it}` : DID_IT_LABELS[c.did_it as keyof typeof DID_IT_LABELS] ?? c.did_it,
+          c.kind === "weekly" ? "—" : `${c.area_score}/10`,
+          (c.kind === "weekly" ? WEEKLY_LABELS[c.next_step as string] : NEXT[c.next_step as string]) ?? c.next_step,
           formatDate(c.created_at as string),
         ],
       }));
     return {
       key,
       title: opts.didIt ? "Recorded an action" : VIEW_LABELS.checkins,
-      lead: "Every goal check-in, newest first. Area scores are self-reported.",
+      lead: "Every weekly and monthly review, newest first. Area scores (monthly) are self-reported.",
       columns: ["Person", "Did it", "Area now", "Next", "Date"],
       rows,
     };

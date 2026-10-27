@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
+// A monthly review (the goal check-in: did they do it, the area's score,
+// what next). Weekly reviews share the table (kind 'weekly', migration 0021)
+// and are read separately, so everything that charts scores only ever sees
+// monthly ones.
 export type CheckIn = {
   id: string;
   goal_id: string;
@@ -15,6 +19,19 @@ export type CheckIn = {
   created_at: string;
 };
 
+export type WeeklyReview = {
+  id: string;
+  goal_id: string;
+  kind: "weekly";
+  did_it: "done" | "partly" | "missed";
+  helped: string | null;
+  next_step: "keep" | "smaller" | "change";
+  next_commitment: string | null;
+  created_at: string;
+};
+
+const isWeekly = (r: { kind?: string | null }) => r.kind === "weekly";
+
 export async function getCheckIns(goalId: string): Promise<CheckIn[]> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -22,7 +39,55 @@ export async function getCheckIns(goalId: string): Promise<CheckIn[]> {
     .select("*")
     .eq("goal_id", goalId)
     .order("created_at", { ascending: true });
-  return (data as CheckIn[]) ?? [];
+  return ((data ?? []) as (CheckIn & { kind?: string })[]).filter((c) => !isWeekly(c));
+}
+
+// Every review on a goal, weekly and monthly, oldest first: what the weekly
+// rhythm (lib/review-schedule.ts) counts from.
+export async function getReviews(goalId: string): Promise<{ weekly: WeeklyReview[]; all: { created_at: string; kind: string }[] }> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("goal_checkins")
+    .select("*")
+    .eq("goal_id", goalId)
+    .order("created_at", { ascending: true });
+  const rows = (data ?? []) as { kind?: string | null; created_at: string }[];
+  return {
+    weekly: rows.filter(isWeekly) as unknown as WeeklyReview[],
+    all: rows.map((r) => ({ created_at: r.created_at, kind: r.kind ?? "monthly" })),
+  };
+}
+
+// The weekly review: what happened, what helped or got in the way, and what
+// they're committing to next. Monthly reviews go through saveCheckIn.
+export async function saveWeeklyReview(input: {
+  goalId: string;
+  didIt: WeeklyReview["did_it"];
+  helped: string;
+  nextStep: WeeklyReview["next_step"];
+  nextCommitment: string;
+}): Promise<{ ok: false; message: string } | void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const commitment = input.nextCommitment.trim().slice(0, 600);
+  if (!commitment) return { ok: false, message: "Say what you’re committing to next week." };
+  const { error } = await supabase.from("goal_checkins").insert({
+    client_id: user.id,
+    goal_id: input.goalId,
+    kind: "weekly",
+    did_it: input.didIt,
+    area_score: null,
+    helped: input.helped.trim().slice(0, 600) || null,
+    next_step: input.nextStep,
+    next_commitment: commitment,
+  });
+  if (error) return { ok: false, message: "Couldn’t save your review — check your connection and try again." };
+  revalidatePath("/");
+  revalidatePath("/clear");
+  redirect("/?reviewed=1");
 }
 
 // Every goal they’ve set, newest first — for My plan’s goal list and My journey.
@@ -40,7 +105,7 @@ export async function getAllGoals() {
   return data ?? [];
 }
 
-// Save a monthly check-in, then go where their "what next" choice leads:
+// Save a monthly review (the goal check-in), then go where their "what next" choice leads:
 // keep going -> My plan; adjust -> CLEAR's action step; done -> goal closed.
 export async function saveCheckIn(input: {
   goalId: string;
@@ -67,7 +132,7 @@ export async function saveCheckIn(input: {
     got_in_way: input.gotInWay.trim() || null,
     next_step: input.nextStep,
   });
-  if (error) return { ok: false, message: "Couldn’t save your check-in — check your connection and try again." };
+  if (error) return { ok: false, message: "Couldn’t save your monthly review — check your connection and try again." };
 
   if (input.nextStep === "done") {
     // The check-in is already saved, so on failure say so plainly rather than
@@ -82,16 +147,16 @@ export async function saveCheckIn(input: {
       return {
         ok: false,
         saved: true,
-        message: "Your check-in is saved, but the goal couldn’t be marked done. Use “Mark as done” on My plan.",
+        message: "Your monthly review is saved, but the goal couldn’t be marked done. Use “Mark as done” on My plan.",
       };
     }
   }
   revalidatePath("/clear");
   revalidatePath("/");
-  redirect(input.nextStep === "adjust" ? "/clear?edit=4" : "/clear");
+  redirect(input.nextStep === "adjust" ? "/clear?edit=4" : "/?reviewed=1");
 }
 
-// Every check-in they've done, newest first — for My journey.
+// Every monthly review they've done, newest first — for My journey.
 export async function getAllCheckIns(): Promise<CheckIn[]> {
   const supabase = await createClient();
   const {
@@ -103,5 +168,5 @@ export async function getAllCheckIns(): Promise<CheckIn[]> {
     .select("*")
     .eq("client_id", user.id)
     .order("created_at", { ascending: false });
-  return (data as CheckIn[]) ?? [];
+  return ((data ?? []) as (CheckIn & { kind?: string })[]).filter((c) => !isWeekly(c));
 }

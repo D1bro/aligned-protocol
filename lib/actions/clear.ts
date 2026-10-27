@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { planStarted } from "@/lib/plan-action";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -29,6 +30,8 @@ export type ClearPlan = {
   tried_before?: string | null;
   if_obstacle?: string | null;
   if_response?: string | null;
+  // Build your plan, step 2 (migration 0021)
+  why_it_matters?: string | null;
 };
 
 export type ClearPlanFields = Partial<
@@ -44,6 +47,7 @@ export type ClearPlanFields = Partial<
     | "tried_before"
     | "if_obstacle"
     | "if_response"
+    | "why_it_matters"
   >
 >;
 
@@ -79,8 +83,8 @@ export async function getClearPlanForAudit(auditId: string): Promise<ClearPlan |
   return (data as ClearPlan) ?? null;
 }
 
-// Where someone is in CLEAR for an audit — read-only, so any page can show
-// the same picture of their plan without creating anything.
+// Where someone is in Build your plan for an audit — read-only, so any page
+// can show the same picture of their plan without creating anything.
 export type PlanStage = "none" | "chosen" | "in_progress" | "done";
 
 export async function getPlanState(auditId: string) {
@@ -88,9 +92,15 @@ export async function getPlanState(auditId: string) {
   const goal = plan ? await getGoalForPlan(plan.id) : null;
   const f = (v: string | null | undefined) => !!v?.trim();
   const done = !!goal && f(goal.frequency) && f(goal.success_criteria);
-  const started = (!!plan && (f(plan.current_reality) || f(plan.life_vision) || f(plan.emotional_blocks))) || !!goal;
+  const started = (!!plan && planStarted(plan)) || !!goal;
   const stage: PlanStage = done ? "done" : started ? "in_progress" : plan ? "chosen" : "none";
-  const step = !plan ? 0 : !f(plan.current_reality) ? 1 : !f(plan.life_vision) ? 2 : !f(plan.emotional_blocks) ? 3 : !goal ? 4 : 5;
+  const step = !plan
+    ? 0
+    : !f(plan.step_up_answer) ? 1
+    : !f(plan.why_it_matters ?? goal?.motivation_text) ? 2
+    : !(plan.blocks?.length ?? 0) ? 3
+    : !goal ? 4
+    : 5;
   return { plan, goal, stage, step };
 }
 
@@ -132,7 +142,7 @@ export async function saveStartingPoint(input: {
   const existing = await getClearPlanForAudit(input.auditId);
 
   if (existing) {
-    const started = Boolean(existing.current_reality || existing.life_vision || existing.emotional_blocks);
+    const started = planStarted(existing);
     const { data: updated, error } = await supabase
       .from("clear_plans")
       .update({
@@ -157,15 +167,14 @@ export async function saveStartingPoint(input: {
   return { ok: true };
 }
 
-// Choose (or change) the area CLEAR works on, from CLEAR's intro. Only
-// before CLEAR has started — after that the plan's area is fixed.
+// Choose (or change) the area the plan works on. Only before the plan has
+// started — after that the plan's area is fixed.
 export async function chooseClearArea(auditId: string, lifeAreaId: string) {
   const clientId = await requireUserId();
   const supabase = await createClient();
   const existing = await getClearPlanForAudit(auditId);
   if (existing) {
-    const started = Boolean(existing.current_reality || existing.life_vision || existing.emotional_blocks);
-    if (!started && existing.life_area_id !== lifeAreaId) {
+    if (!planStarted(existing) && existing.life_area_id !== lifeAreaId) {
       // A "what would a 5 look like" answer belongs to the area it was written for.
       await supabase
         .from("clear_plans")

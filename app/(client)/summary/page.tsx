@@ -83,7 +83,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
     ...checkIns.map((c) => ({
       date: c.created_at,
       kind: "checkin" as const,
-      title: `Goal check-in · ${c.area_score}/10`,
+      title: `Monthly review · ${c.area_score}/10`,
       detail: goalTitle.get(c.goal_id),
     })),
     ...lessonsDone.map((l) => ({
@@ -115,15 +115,15 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
         <div><b>{audits.length}</b><span>{audits.length === 1 ? "audit" : "audits"}</span></div>
         <div><b>{latest.total_score ?? 0}</b><span>latest, out of 100</span></div>
         <div><b>{goalsDone}</b><span>{goalsDone === 1 ? "goal done" : "goals done"}</span></div>
-        <div><b>{checkIns.length}</b><span>{checkIns.length === 1 ? "goal check-in" : "goal check-ins"}</span></div>
+        <div><b>{checkIns.length}</b><span>{checkIns.length === 1 ? "monthly review" : "monthly reviews"}</span></div>
         <div><b>{lessonsDone.length}</b><span>{lessonsDone.length === 1 ? "lesson done" : "lessons done"}</span></div>
       </div>
 
       {checkIns.length === 0 ? (
         <p className="plan-note">
           {main
-            ? <>No goal check-ins yet. Your first one records what you did and what got in the way, and adds it here. <Link href="/clear/check-in">Do a goal check-in</Link></>
-            : <>No goal check-ins yet. Set one goal in <Link href="/clear">My plan</Link> and your monthly goal check-ins will build your journey here.</>}
+            ? <>No monthly reviews yet. Your weekly reviews lead up to the first one, which scores the area again and adds it here. <Link href="/clear/review">Do my review</Link></>
+            : <>No monthly reviews yet. Build your plan in <Link href="/clear">My plan</Link> and your reviews will build your journey here.</>}
         </p>
       ) : null}
 

@@ -3,7 +3,7 @@ import { getClientProfile, getStaff } from "@/lib/actions/admin";
 import { getLifeAreas } from "@/lib/actions/audit";
 import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
 import { LifeMap } from "@/components/audit/LifeMap";
-import { DID_IT_LABELS } from "@/lib/checkin-labels";
+import { reviewLine } from "@/lib/checkin-labels";
 import { cleanReality } from "@/lib/clear-text";
 import { formatDate } from "@/lib/audit-schedule";
 import { PATHS } from "@/lib/learn-content";
@@ -270,18 +270,17 @@ export default async function ClientProfilePage({
       {tab === "goals" ? (
         p.checkIns.length ? (
           <>
-          <h2 className="sec-head">Goal check-ins</h2>
+          <h2 className="sec-head">Reviews</h2>
           <ol className="checkin-list">
             {p.checkIns.map((c) => (
               <li key={c.id as string}>
                 <div className="checkin-head">
                   <b>{formatDate(c.created_at as string)}</b>
-                  <span>
-                    {DID_IT_LABELS[c.did_it as keyof typeof DID_IT_LABELS]} · {c.area_score as number}/10 · {NEXT[c.next_step as string]}
-                  </span>
+                  <span>{reviewLine(c as Parameters<typeof reviewLine>[0], NEXT)}</span>
                 </div>
                 <p><span>Goal:</span> {goalTitle.get(c.goal_id as string)}</p>
-                {str(c.helped) ? <p><span>Helped:</span> {str(c.helped)}</p> : null}
+                {str(c.helped) ? <p><span>{c.kind === "weekly" ? "Helped or got in the way:" : "Helped:"}</span> {str(c.helped)}</p> : null}
+                {str(c.next_commitment) ? <p><span>Next week:</span> {str(c.next_commitment)}</p> : null}
                 {str(c.got_in_way) ? <p><span>Got in the way:</span> {str(c.got_in_way)}</p> : null}
               </li>
             ))}

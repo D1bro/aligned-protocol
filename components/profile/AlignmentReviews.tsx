@@ -6,7 +6,7 @@ export async function AlignmentReviews() {
   return (
     <section className="profile-card alignment-journey" aria-labelledby="alignment-reviews-heading">
       <h2 id="alignment-reviews-heading">Your weekly reflections</h2>
-      <p className="alignment-small">Private to you in Aligned. Your goal check-ins and audit history stay separate.</p>
+      <p className="alignment-small">Private to you in Aligned. Your plan reviews and audit history stay separate.</p>
       {!history.available ? (
         <p className="alignment-small">Saved reflections are not available yet. You can still use the daily practice.</p>
       ) : history.weekly.length ? (

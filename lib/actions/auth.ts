@@ -119,3 +119,53 @@ export async function requestPasswordReset(formData: FormData): Promise<ActionRe
   if (error) return { ok: false, message: error.message };
   return { ok: true };
 }
+
+// Save my plan, on Your plan is set: turns the guest into a real account in
+// place (same as signUp above), so the plan built as a guest is already
+// theirs. They stay on their plan while they confirm their email; the
+// confirmation link (any device) lands on My profile with "your plan is saved".
+export type SavePlanResult = { ok: true; confirmed: boolean; email: string } | { ok: false; message: string; exists?: boolean };
+
+export async function saveGuestPlan(formData: FormData): Promise<SavePlanResult> {
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const password = String(formData.get("password") || "");
+  if (!name || !email || !password) return { ok: false, message: "Fill in your name, email and a password." };
+  if (password.length < 8) return { ok: false, message: "Your password needs at least 8 characters." };
+
+  const supabase = await createClient();
+  const {
+    data: { user: current },
+  } = await supabase.auth.getUser();
+  if (!current?.is_anonymous) return { ok: false, message: "This plan is already saved to an account." };
+
+  const { data: updated, error } = await supabase.auth.updateUser({ email, password, data: { full_name: name, role: "client" } });
+  if (error) {
+    const exists = /already/i.test(error.message);
+    return {
+      ok: false,
+      exists,
+      message: exists ? "There’s already an account with this email. Sign in instead and your plan comes with you." : error.message,
+    };
+  }
+  await supabase.from("profiles").update({ email, full_name: name }).eq("id", current.id);
+  return { ok: true, confirmed: !!updated.user?.email && !updated.user.new_email, email };
+}
+
+// "Resend the email" while they wait to confirm.
+export async function resendSaveEmail(email: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({ type: "email_change", email });
+  if (error) return { ok: false, message: "Couldn’t resend just now. Wait a minute and try again." };
+  return { ok: true };
+}
+
+// Whether the plan is saved yet: true once the email is confirmed, on this
+// device or any other.
+export async function planSaved(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return !!user && !user.is_anonymous;
+}

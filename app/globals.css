@@ -1779,3 +1779,126 @@ a.nav-user-who:hover b { color: var(--gold); }
 .em-preview .em-include { justify-content: flex-start; align-items: flex-start; gap: .55rem; }
 .em-preview .em-include input { width: 16px; height: 16px; flex: none; margin-top: .15rem; }
 .em-frame { width: 100%; height: 560px; border: 1px solid var(--bdr2); border-radius: 10px; background: #EFEEEA; }
+
+
+/* Build your plan: five guided steps, the plan card beside them */
+.bp-progress { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: .8rem 3rem .2rem; margin: 0; }
+@media (max-width: 768px) { .bp-progress { padding: .7rem 1rem .1rem; } }
+.bp-progress li { display: grid; gap: .35rem; min-width: 0; }
+.bp-seg { height: 4px; border-radius: 2px; background: var(--bg5); }
+.bp-progress li.done .bp-seg { background: var(--green); }
+.bp-progress li.on .bp-seg { background: var(--gold); }
+.bp-name { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bp-progress li.on .bp-name { color: var(--text); }
+@media (max-width: 640px) { .bp-name { display: none; } }
+.clear-step.bp-page { max-width: 1120px; }
+.bp-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 2.5rem; align-items: start; }
+@media (max-width: 960px) { .bp-layout { grid-template-columns: 1fr; gap: 1.5rem; } }
+.bp-main { min-width: 0; max-width: 680px; }
+.bp-card { position: sticky; top: 5rem; border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 14px; padding: 1.1rem 1.2rem; }
+@media (max-width: 960px) { .bp-card { position: static; } }
+.bp-card-k { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: .7rem; }
+.bp-card dl { display: grid; gap: .2rem; }
+.bp-card dt { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-top: .6rem; }
+.bp-card dt:first-child { margin-top: 0; }
+.bp-card dd { font-size: 14px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
+.bp-said { margin-top: .4rem; }
+.bp-said textarea { margin-top: .3rem; }
+.bp-said p { font-size: 14px; color: var(--text); }
+.bp-more { margin-top: 1rem; color: var(--gold); font-size: 13px; }
+.bp-example { margin-top: 1.4rem; border: 1px dashed rgba(211,167,88,.35); background: var(--gd3); border-radius: 12px; padding: .75rem 1rem; font-size: 13px; line-height: 1.6; color: var(--text2); }
+.bp-example b { color: var(--text); font-weight: 600; }
+.bp-move { margin-top: 1.6rem; font-family: var(--font-sora), 'Sora', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.bp-two { display: grid; grid-template-columns: minmax(0, 180px) minmax(0, 1fr); gap: 1rem; }
+@media (max-width: 480px) { .bp-two { grid-template-columns: 1fr; } }
+.bp-action-card { margin-top: 1.4rem; border-color: var(--bdr); background: var(--gd3); }
+.bp-sentence { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px !important; color: var(--text) !important; line-height: 1.5 !important; }
+.bp-hint { font-size: 13px !important; margin-top: .4rem; }
+.bp-hint.ok { color: var(--hi) !important; }
+.bp-hint.warn { color: var(--gold2) !important; }
+.bp-video { margin: .2rem 0 1.4rem; max-width: 560px; }
+
+/* Your plan is set */
+.ps-page { max-width: 1040px; }
+.ps-h { font-family: var(--serif); font-weight: 500; font-size: clamp(38px, 5vw, 54px); line-height: 1.05; margin: .4rem 0 .3rem; }
+.ps-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; margin-top: 1.6rem; }
+@media (max-width: 860px) { .ps-grid { grid-template-columns: 1fr; } }
+.ps-card { border: 1px solid var(--bdr); background: linear-gradient(180deg, rgba(211,167,88,.09), rgba(211,167,88,.02)); border-radius: 18px; padding: 1.5rem 1.6rem; }
+.ps-card dl { display: grid; gap: .25rem; }
+.ps-card dt { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-top: 1rem; }
+.ps-card dt:first-child { margin-top: 0; }
+.ps-card dd { font-size: 16px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
+.ps-card dd span { display: block; font-size: 13px; color: var(--text2); margin-top: .2rem; }
+.ps-side { display: grid; gap: 1.2rem; }
+.ps-next ol { list-style: none; display: grid; gap: .6rem; margin: .7rem 0; }
+.ps-next li { font-size: 14px; color: var(--text2); line-height: 1.5; }
+.ps-next li b { display: block; color: var(--text); font-weight: 600; }
+.ps-save { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 16px; padding: 1.2rem 1.3rem; display: grid; gap: .7rem; justify-items: start; }
+.ps-save h2 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 18px; font-weight: 600; }
+.ps-save p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.ps-save p b { color: var(--text); }
+.ps-save.is-saved { border-color: rgba(74,222,128,.4); }
+.ps-form { display: grid; gap: .75rem; width: 100%; }
+.ps-form label { display: grid; gap: .3rem; font-size: 13px; font-weight: 600; color: var(--text); }
+.ps-form .btn { justify-self: start; }
+.ps-links { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+.ps-support { margin-top: 2.4rem; border-top: 1px solid var(--bdr2); padding-top: 1.4rem; display: grid; gap: .6rem; justify-items: start; }
+.ps-support ul { list-style: none; display: grid; gap: .5rem; width: 100%; max-width: 640px; }
+.ps-support li { display: flex; justify-content: space-between; gap: 1rem; align-items: center; border: 1px solid var(--bdr2); border-radius: 12px; padding: .7rem 1rem; }
+.ps-support li div { display: grid; }
+.ps-support li b { font-size: 14px; }
+.ps-support li span { font-size: 12px; color: var(--text2); }
+.ps-support li em { font-style: normal; font-size: 13px; color: var(--gold2); white-space: nowrap; }
+
+/* My profile: this week */
+.pf-h { margin: .3rem 0 1.2rem; }
+.pf-week { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.2rem; }
+@media (max-width: 960px) { .pf-week { grid-template-columns: 1fr; } }
+.pf-tile { border: 1px solid var(--bdr2); background: var(--bg2); border-radius: 16px; padding: 1.2rem 1.25rem; display: grid; gap: .55rem; align-content: start; justify-items: start; min-width: 0; }
+.pf-tile.is-gold { border-color: var(--bdr); background: linear-gradient(180deg, rgba(211,167,88,.10), rgba(211,167,88,.02)); }
+.pf-big { display: flex; align-items: center; gap: .5rem; font-family: var(--font-sora), 'Sora', sans-serif; font-size: 19px; font-weight: 600; line-height: 1.3; }
+.pf-sub { font-size: 13px; color: var(--text2); line-height: 1.55; }
+.pf-why { font-family: var(--serif); font-size: 20px; line-height: 1.3; color: var(--gold2); }
+.pf-commit { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+.pf-tile .mo-weeks { margin-top: .1rem; }
+.pf-tile .btn { margin-top: .3rem; }
+.pf-lower { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--bdr2); }
+.pf-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem; }
+@media (max-width: 760px) { .pf-more { grid-template-columns: 1fr; } }
+
+/* Offers */
+.of-page { padding: 3rem 0 4rem; }
+.of-head { max-width: 720px; display: grid; gap: .8rem; }
+.of-head h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(34px, 4.6vw, 50px); line-height: 1.08; }
+.of-head p { font-size: 16px; line-height: 1.65; color: var(--text2); }
+.of-banner { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin: 2rem 0 1.4rem; padding: .9rem 1.1rem; border-radius: 14px; background: var(--gd2); border: 1px solid var(--bdr); font-size: 14px; color: var(--text); }
+.of-pill { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--bg); background: var(--gold); border-radius: 100px; padding: 3px 10px; }
+.of-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; align-items: stretch; }
+@media (max-width: 1100px) { .of-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .of-grid { grid-template-columns: 1fr; } }
+.of-card { display: flex; flex-direction: column; gap: 1rem; padding: 1.4rem 1.3rem; border-radius: 18px; background: var(--bg2); border: 1px solid var(--bdr2); }
+.of-card.is-featured { border-color: var(--gold); }
+.of-card h2 { display: flex; justify-content: space-between; align-items: center; gap: .5rem; font-family: var(--font-sora), 'Sora', sans-serif; font-size: 17px; font-weight: 600; }
+.of-tag { font-size: 14px; color: var(--text2); line-height: 1.5; }
+.of-price { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 30px; font-weight: 700; line-height: 1; }
+.of-price span { font-size: 14px; font-weight: 500; color: var(--text2); }
+.of-note { font-size: 12px; color: var(--text3); margin-top: .35rem; }
+.of-intro { font-size: 13px; font-weight: 600; }
+.of-card ul { list-style: none; display: grid; gap: .55rem; }
+.of-card li { display: flex; gap: .55rem; font-size: 14px; line-height: 1.5; color: var(--text2); }
+.of-card li::before { content: "✓"; color: var(--hi); flex: none; }
+.of-hour { display: grid; gap: .45rem; padding: .7rem; border-radius: 10px; background: var(--bg3); }
+.of-hour-bar { display: flex; gap: 3px; height: 8px; }
+.of-hour-bar span { border-radius: 2px; background: var(--bg5); }
+.of-hour-bar span:nth-child(3) { background: var(--gold); }
+.of-hour-bar span:nth-child(5) { background: var(--green); }
+.of-card .btn { margin-top: auto; width: 100%; }
+.of-current { margin-top: auto; text-align: center; font-size: 13px; color: var(--text3); border: 1px solid var(--bdr2); border-radius: 10px; padding: .75rem; }
+.of-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 2rem; }
+@media (max-width: 860px) { .of-facts { grid-template-columns: 1fr; } }
+.of-facts div { border: 1px solid var(--bdr2); border-radius: 14px; padding: 1rem 1.1rem; }
+.of-facts h3 { font-size: 15px; font-weight: 600; margin-bottom: .3rem; }
+.of-facts p { font-size: 14px; line-height: 1.6; color: var(--text2); }
+.of-small { margin-top: 1.4rem; font-size: 12px; color: var(--text3); }
+.ps-card dd.ps-why { font-family: var(--serif); font-size: 21px; line-height: 1.3; color: var(--gold2); }
+.ps-save a:not(.btn), .ps-save .clear-err a { color: var(--gold); }

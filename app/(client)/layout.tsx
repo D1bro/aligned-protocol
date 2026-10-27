@@ -18,11 +18,11 @@ export default async function ClientLayout({ children }: { children: React.React
   const staff = profile.role === "coach" || profile.role === "admin";
 
   if (profile.isAnonymous) {
-    // Guests taking the audit before creating an account can only ever land
-    // on /audit routes (middleware enforces this) — those pages already
-    // have their own back button and progress bar, so skip the full app
-    // chrome entirely rather than exposing Dashboard/CLEAR/Goals links and a
-    // "Sign out" button that would silently abandon their in-progress audit.
+    // Guests (no account yet) can only land on the audit and on building
+    // their plan (middleware enforces this) — those pages have their own
+    // back button and progress bar, so skip the full app chrome entirely
+    // rather than exposing links and a "Sign out" button that would silently
+    // abandon their work.
     // The thin bar below is the only nav they get — mainly so a returning
     // client who lands here by mistake (or just wants to check) has an
     // obvious way to sign in instead of being stuck taking the audit again.
@@ -46,7 +46,7 @@ function GuestShell({ children }: { children: React.ReactNode }) {
     <div className="shell">
       <div className="main no-sidebar">
         <div className="guest-bar">
-          <span>Taking the Aligned Audit as a guest</span>
+          <span>Using Aligned as a guest</span>
           <Link href="/login" className="guest-bar-link">Already have an account? Sign in</Link>
         </div>
         {children}
