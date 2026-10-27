@@ -9,6 +9,7 @@ import { getMainGoal } from "@/lib/actions/goals";
 import { PATHS } from "@/lib/learn-content";
 import { AlignmentReviews } from "@/components/profile/AlignmentReviews";
 import { canUseDailyAlignment } from "@/lib/alignment";
+import { getMyAccess } from "@/lib/actions/membership";
 import { getCurrentProfile } from "@/lib/session";
 
 type Event = { date: string; kind: "audit" | "goal" | "done" | "checkin" | "lesson"; title: string; detail?: string };
@@ -19,8 +20,8 @@ const LESSON_TITLE = new Map(PATHS.flatMap((p) => p.lessons.map((l) => [l.slug, 
 // moved, and everything they've done along the way.
 export default async function JourneyPage({ searchParams }: { searchParams: Promise<{ compare?: string }> }) {
   const { compare } = await searchParams;
-  // Daily Alignment reviews are Tier 2: staff only until Tier 2 exists.
-  const alignment = canUseDailyAlignment((await getCurrentProfile())?.role);
+  // Daily Alignment reviews, for Practice and Momentum members and staff.
+  const alignment = canUseDailyAlignment((await getCurrentProfile())?.role, (await getMyAccess()).tier);
   const [audits, areas, goals, checkIns, lessons, main] = await Promise.all([
     getRecentCompletedAudits(50),
     getLifeAreas(),

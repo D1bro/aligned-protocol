@@ -125,9 +125,11 @@ test("future days and weeks are judged in the member's own time zone", () => {
 
 import { canUseDailyAlignment } from "../lib/alignment.ts";
 
-test("Daily Alignment is Tier 2: staff only until Tier 2 exists", () => {
+test("Daily Alignment is for Practice and Momentum members, and staff", () => {
   assert.equal(canUseDailyAlignment("admin"), true);
   assert.equal(canUseDailyAlignment("coach"), true);
   assert.equal(canUseDailyAlignment("client"), false);
   assert.equal(canUseDailyAlignment(null), false);
+  assert.equal(canUseDailyAlignment("client", "practice"), true);
+  assert.equal(canUseDailyAlignment("client", "momentum"), true);
 });

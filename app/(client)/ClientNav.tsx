@@ -25,16 +25,24 @@ const TABS: MobileNavLink[] = [
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
-// Daily Alignment is Tier 2; until that exists only staff have it (lib/alignment.ts).
-const ALIGNMENT_LINK: MobileNavLink = { group: "You", href: "/alignment", label: "Daily Alignment", icon: "sunrise", match: (p) => p.startsWith("/alignment") };
-const linksFor = (staff: boolean) => (staff ? [CLIENT_LINKS[0], ALIGNMENT_LINK, ...CLIENT_LINKS.slice(1), STAFF_LINK] : CLIENT_LINKS);
+// The daily practice (intention, reflection, journal) is for Practice and
+// Momentum members and staff (lib/alignment.ts). Membership is for everyone.
+const ALIGNMENT_LINK: MobileNavLink = { group: "You", href: "/alignment", label: "Daily practice", icon: "sunrise", match: (p) => p.startsWith("/alignment") };
+const MEMBERSHIP_LINK: MobileNavLink = { group: "Grow", href: "/membership", label: "Membership", icon: "star", match: (p) => p.startsWith("/membership") };
+const linksFor = (staff: boolean, practice: boolean) => [
+  CLIENT_LINKS[0],
+  ...(practice || staff ? [ALIGNMENT_LINK] : []),
+  ...CLIENT_LINKS.slice(1),
+  MEMBERSHIP_LINK,
+  ...(staff ? [STAFF_LINK] : []),
+];
 
-export function ClientNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
+export function ClientNav({ fullName, staff = false, practice = false }: { fullName: string | null; staff?: boolean; practice?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className="sb-nav">
-      <NavLinks links={linksFor(staff)} pathname={pathname} />
+      <NavLinks links={linksFor(staff, practice)} pathname={pathname} />
       <div className="sb-q">
         <div className="sb-qm">&ldquo;</div>
         <div className="sb-qt">Alignment is the foundation. Action is the transformation.</div>
@@ -44,6 +52,6 @@ export function ClientNav({ fullName, staff = false }: { fullName: string | null
   );
 }
 
-export function ClientMobileNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
-  return <MobileNav links={linksFor(staff)} fullName={fullName} sub="Your details" userHref="/details" tabs={TABS} />;
+export function ClientMobileNav({ fullName, staff = false, practice = false }: { fullName: string | null; staff?: boolean; practice?: boolean }) {
+  return <MobileNav links={linksFor(staff, practice)} fullName={fullName} sub="Your details" userHref="/details" tabs={TABS} />;
 }

@@ -7,6 +7,8 @@ import {
   type AlignmentData, type AlignmentDaily, type AlignmentScore, type AlignmentWeekly, type DailyAlignmentInput,
   type ScoreField, type WeeklyAlignmentInput,
 } from "@/lib/alignment";
+import { AUDIO } from "@/lib/audit-guides";
+import { GuideAudio } from "@/components/audit/GuideAudio";
 
 // Daily Alignment: Today, Weekly review, Privacy & history. Nothing is sent
 // to the server until "Save privately" (or "Save review privately"); drafts
@@ -320,8 +322,9 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
             {/* Today */}
             <section role="tabpanel" id={`${id}-panel-today`} aria-labelledby={`${id}-tab-today`} hidden={view !== "today"} className="alignment-stack">
               <section className="alignment-card" aria-labelledby={`${id}-arrive`}>
-                <p className="alignment-kicker">Morning</p>
+                <p className="alignment-kicker">Morning · your daily intention</p>
                 <h2 id={`${id}-arrive`}>Arrive for a moment.</h2>
+                <GuideAudio clip={AUDIO.D01} caption="Listen first if you like, then set your intention below." />
                 <p className="alignment-help">
                   Feel your feet. Notice your breathing and what is around you. Let thoughts and feelings be here without
                   needing to solve them. Ask: <em>&ldquo;What matters in how I live today?&rdquo;</em>
@@ -378,6 +381,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
               <section className="alignment-card" aria-labelledby={`${id}-evening`}>
                 <p className="alignment-kicker">Evening</p>
                 <h2 id={`${id}-evening`}>A reflection of this day, not a grade.</h2>
+                <GuideAudio clip={AUDIO.D02} />
                 <p className="alignment-help">Answer what is useful. Anything left blank stays blank.</p>
                 {QUESTIONS.map((q) => (
                   <fieldset key={q.key} className="alignment-score-row" disabled={disabled}>

@@ -112,7 +112,38 @@ export const FILMS = {
   L04: film({ file: null, title: "From clarity to one step", label: "Academy · lesson 4" }),
   M01: film({ file: null, title: "Musing 1", label: "Duane’s Musings" }),
   M02: film({ file: null, title: "Musing 2", label: "Duane’s Musings" }),
+  C01: film({ file: null, title: "Coaching with an Aligned Coach", label: "Coaching · what to expect" }),
+  O01: film({ file: null, title: "Support options", label: "Practice, Momentum and Focus · Duane explains" }),
 } satisfies Record<string, GuideClip | null>;
+
+// Build your plan and Your plan is set (P01–P06). Until a film is recorded
+// the page shows "Video coming soon" in its place.
+export const PLAN_FILMS = {
+  P01: film({ file: null, title: "Your starting point", label: "Build your plan · your starting point" }),
+  P02: film({ file: null, title: "What better looks like", label: "Build your plan · what better looks like" }),
+  P03: film({ file: null, title: "What’s in the way", label: "Build your plan · what’s in the way" }),
+  P04: film({ file: null, title: "Your action", label: "Build your plan · your action" }),
+  P05: film({ file: null, title: "How you’ll know", label: "Build your plan · how you’ll know" }),
+  P06: film({ file: null, title: "Your plan is set", label: "Your plan is set · what happens next" }),
+} satisfies Record<string, GuideClip | null>;
+
+// A film slot that isn't recorded yet, shown as "Video coming soon".
+export function filmOrSoon(f: GuideClip | null, id: string, title: string): GuideClip {
+  return f ?? { id, title, label: title, src: null, poster: null, captions: null, durationSeconds: 0 };
+}
+
+// Duane's audio guidance (D01–D02): MP3s in the same folder as the films,
+// named <file>-<version>.mp3. `file` is null until recorded; the page then
+// shows "Audio coming soon".
+export type GuideAudioClip = { id: string; title: string; label: string; src: string | null };
+function audio(s: { file: string | null; version?: string; title: string; label: string }): GuideAudioClip {
+  const src = s.file && VIDEO_BASE ? `${VIDEO_BASE}/${s.file}-${s.version ?? "v1"}.mp3` : null;
+  return { id: s.file ?? s.title, title: s.title, label: s.label, src };
+}
+export const AUDIO = {
+  D01: audio({ file: null, title: "Your daily intention", label: "Daily intention · a few minutes with Duane" }),
+  D02: audio({ file: null, title: "Evening reflection", label: "Evening reflection · a few minutes with Duane" }),
+} satisfies Record<string, GuideAudioClip>;
 
 // Short labels for the life map, where full area names don't fit.
 export const AREA_SHORT_NAMES: Record<number, string> = {

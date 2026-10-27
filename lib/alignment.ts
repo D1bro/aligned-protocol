@@ -1,3 +1,5 @@
+import { hasPractice, type Tier } from "./membership.ts";
+
 // Private Daily Alignment. No browser persistence or automatic saving belongs
 // here: a member explicitly chooses when a reflection becomes a saved record.
 export const ALIGNMENT_SCORES = ["yes", "partly", "not_today", "not_needed"] as const;
@@ -206,9 +208,9 @@ export function isFutureWeek(mondayDate: string, timezone: string, now = new Dat
 
 export const ALIGNMENT_EXPORT_SCHEMA = { name: "aligned.daily-alignment", version: 1 } as const;
 
-// Who can use Daily Alignment. It's a Tier 2 feature: until Tier 2 exists,
-// only staff accounts (coaches and admins, practising on their own private
-// records) have it. Swap this one rule for the Tier 2 check when it's built.
-export function canUseDailyAlignment(role: string | null | undefined): boolean {
-  return role === "coach" || role === "admin";
+// Who can use Daily Alignment and the journal: Aligned Practice and Momentum
+// members (lib/membership.ts), and staff, practising on their own private
+// records. After a membership ends their entries stay theirs to export.
+export function canUseDailyAlignment(role: string | null | undefined, tier: Tier = "clarity"): boolean {
+  return hasPractice(tier, role);
 }

@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyStripeEvent } from "@/lib/stripe-signature";
 import { eventMatchesMode } from "@/lib/stripe-mode";
-import { currentStripeMode } from "@/lib/stripe";
+import { currentStripeMode, getSubscription, type StripeSubscription } from "@/lib/stripe";
+import { saveSubscription } from "@/lib/membership-sync";
 
-// Stripe tells us here when a card payment succeeds. Only signed events are
-// trusted; each event is handled once; the payment is recorded against the
-// invoice named in the payment's own metadata, and anything over what's owed
-// stays on the client's account as unallocated money.
+// Stripe tells us here when a card payment succeeds, and when a membership
+// starts, renews, changes, fails to renew or ends. Only signed events are
+// trusted; each event is handled once. An invoice payment is recorded against
+// the invoice named in the payment's own metadata, and anything over what's
+// owed stays on the client's account as unallocated money. A membership
+// event updates the memberships table from the subscription itself.
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
@@ -24,6 +27,25 @@ export async function POST(req: Request) {
   const db = createAdminClient();
   const { data: seen } = await db.from("provider_events").select("id").eq("id", event.id).maybeSingle();
   if (seen) return NextResponse.json({ received: true, duplicate: true });
+
+  // Memberships: the subscription's current state is what counts (events
+  // can arrive out of order, so it's read fresh from Stripe).
+  if (event.type.startsWith("customer.subscription.")) {
+    const fromEvent = event.data.object as unknown as StripeSubscription;
+    const fresh = await getSubscription(fromEvent.id);
+    const saved = await saveSubscription(db, fresh.ok ? fresh.data : fromEvent);
+    if (!saved.ok && saved.why !== "not an Aligned membership") return NextResponse.json({ error: "could not save membership" }, { status: 500 });
+    await db.from("provider_events").insert({ id: event.id, provider: "stripe", type: event.type, outcome: saved.ok ? "membership saved" : saved.why });
+    return NextResponse.json({ received: true });
+  }
+  if (event.type === "checkout.session.completed" && (event.data.object as { mode?: string }).mode === "subscription") {
+    const subId = (event.data.object as { subscription?: string }).subscription;
+    const sub = subId ? await getSubscription(subId) : null;
+    if (!sub?.ok) return NextResponse.json({ error: "could not read subscription" }, { status: 500 });
+    const saved = await saveSubscription(db, sub.data);
+    await db.from("provider_events").insert({ id: event.id, provider: "stripe", type: event.type, outcome: saved.ok ? "membership saved" : saved.why });
+    return NextResponse.json({ received: true });
+  }
 
   let outcome = "ignored";
   let invoiceId: string | null = null;

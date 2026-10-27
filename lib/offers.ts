@@ -4,14 +4,18 @@ import { SITE } from "./site-copy.ts";
 // offers, October 2026). Working names. Prices are the total the customer
 // pays; no VAT is charged while Aligned isn't VAT-registered.
 //
-// Memberships can't be bought on the site yet (Stripe subscriptions come
-// next), so each paid offer's button asks to join the founding list by email.
+// Practice and Momentum are monthly Stripe subscriptions (lib/stripe.ts);
+// Focus is a package, bought on the Coaching page. Until joining is switched
+// on for the live site (lib/membership.ts), the buttons ask to join the
+// founding list by email instead.
 
 export type Offer = {
   key: "clarity" | "practice" | "momentum" | "focus";
   name: string;
   tagline: string;
   price: string;
+  // What a new member pays each month, in pence (subscriptions only).
+  pricePence?: number;
   per?: string;
   priceNote: string;
   short: string; // one line, for Your plan is set
@@ -42,6 +46,7 @@ export const OFFERS: Offer[] = [
     name: "Aligned Practice",
     tagline: "Give what matters a place in your everyday life.",
     price: "£9",
+    pricePence: 900,
     per: "a month",
     priceNote: "Founding price · self-guided",
     short: "Daily Alignment, reflection and tools",
@@ -58,6 +63,7 @@ export const OFFERS: Offer[] = [
     name: "Aligned Momentum",
     tagline: "An hour for you. A commitment you return to.",
     price: "£25",
+    pricePence: 2500,
     per: "a month",
     priceNote: "Founding price · live, weekly",
     short: "A live weekly hour with a small group",
@@ -98,7 +104,9 @@ export const MOMENTUM_HOUR: [string, number][] = [
   ["Close", 5],
 ];
 
-// Until paid offers can be bought on the site: a founding-list email.
+export const offerFor = (key: Offer["key"]) => OFFERS.find((o) => o.key === key)!;
+
+// While joining is switched off: a founding-list email.
 export function joinHref(o: Offer) {
   const subject = o.key === "focus" ? "Aligned Focus: I’d like to start" : `${o.name}: founding place`;
   return `mailto:${SITE.contactEmail}?subject=${encodeURIComponent(subject)}`;

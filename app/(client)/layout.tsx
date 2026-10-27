@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/session";
 import { Logo } from "@/components/ui/Logo";
 import { ClientNav, ClientMobileNav } from "./ClientNav";
+import { getMyAccess } from "@/lib/actions/membership";
+import { hasPractice } from "@/lib/membership";
 
 // Member pages are personal: keep them out of search results. The audit
 // welcome page opts back in (app/(client)/audit/page.tsx).
@@ -29,13 +31,14 @@ export default async function ClientLayout({ children }: { children: React.React
     return <GuestShell>{children}</GuestShell>;
   }
 
+  const practice = hasPractice((await getMyAccess()).tier);
   return (
     <div className="shell has-tabs">
       <aside className="sidebar">
         <Logo subtitle="Protocol" />
-        <ClientNav fullName={profile.full_name} staff={staff} />
+        <ClientNav fullName={profile.full_name} staff={staff} practice={practice} />
       </aside>
-      <ClientMobileNav fullName={profile.full_name} staff={staff} />
+      <ClientMobileNav fullName={profile.full_name} staff={staff} practice={practice} />
       <div className="main">{children}</div>
     </div>
   );
