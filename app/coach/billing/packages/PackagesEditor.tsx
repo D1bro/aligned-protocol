@@ -17,9 +17,10 @@ type Draft = {
   audience: "everyone" | "selected";
   clientIds: string[];
   active: boolean;
+  includesMembership: "" | "practice" | "momentum";
 };
 
-const blank: Draft = { id: null, name: "", description: "", price: "", sessions: "4", validDays: "", availableFrom: "", availableUntil: "", audience: "everyone", clientIds: [], active: true };
+const blank: Draft = { id: null, name: "", description: "", price: "", sessions: "4", validDays: "", availableFrom: "", availableUntil: "", audience: "everyone", clientIds: [], active: true, includesMembership: "" };
 const toDraft = (p: AdminPackage): Draft => ({
   id: p.id,
   name: p.name,
@@ -32,6 +33,7 @@ const toDraft = (p: AdminPackage): Draft => ({
   audience: p.audience,
   clientIds: p.clientIds,
   active: p.active,
+  includesMembership: p.includes_membership ?? "",
 });
 const ukDate = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
@@ -111,6 +113,15 @@ export function PackagesEditor({ packages, clients }: { packages: AdminPackage[]
             </label>
           </div>
           {perSession ? <em className="admin-card-sub">That&rsquo;s £{perSession.toFixed(2)} per session.</em> : null}
+          <label className="sw-field">
+            <span>Includes a membership (for Aligned Focus)</span>
+            <select value={d.includesMembership} onChange={(e) => set({ includesMembership: e.target.value as Draft["includesMembership"] })}>
+              <option value="">No</option>
+              <option value="practice">Aligned Practice</option>
+              <option value="momentum">Aligned Momentum (includes Practice)</option>
+            </select>
+            <em className="admin-card-sub">Unlocked once it&rsquo;s fully paid, for its &ldquo;use within&rdquo; days (six weeks if blank). No automatic membership afterwards.</em>
+          </label>
           <div className="cs-grid">
             <label className="sw-field">
               <span>On offer from (optional)</span>

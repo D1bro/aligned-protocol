@@ -3,6 +3,10 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { MOMENTUM_HOUR, OFFERS, joinHref } from "@/lib/offers";
+import { joiningOpen } from "@/lib/actions/membership";
+import { JoinButton } from "@/components/membership/JoinButton";
+import { GuideVideo } from "@/components/audit/GuideVideo";
+import { FILMS, filmOrSoon } from "@/lib/audit-guides";
 
 export const metadata: Metadata = {
   title: "Support options",
@@ -11,7 +15,8 @@ export const metadata: Metadata = {
 
 // The four offers, at founding prices. Public: linked from Your plan is set
 // and My profile, and readable before anyone has an account.
-export default function OffersPage() {
+export default async function OffersPage() {
+  const open = await joiningOpen();
   return (
     <div className="site">
       <SiteHeader cta={{ href: "/audit", label: "Take the free audit" }} />
@@ -24,6 +29,10 @@ export default function OffersPage() {
               Add a daily practice, a weekly appointment with others, or six weeks with a coach. Everything you&rsquo;ve
               built stays with you, whichever you choose.
             </p>
+          </div>
+
+          <div className="of-film">
+            <GuideVideo clip={filmOrSoon(FILMS.O01, "offers", "Support options")} caption="Duane on Practice, Momentum and Focus" />
           </div>
 
           <p className="of-banner">
@@ -58,10 +67,14 @@ export default function OffersPage() {
                 ) : null}
                 {o.key === "clarity" ? (
                   <Link href="/audit" className="btn btn-g">Start free</Link>
+                ) : o.key === "focus" ? (
+                  open ? (
+                    <Link href="/coaching?tab=payments" className="btn btn-g">Start Focus</Link>
+                  ) : (
+                    <a href={joinHref(o)} className="btn btn-g">Ask to start Focus</a>
+                  )
                 ) : (
-                  <a href={joinHref(o)} className={o.featured ? "btn btn-p" : "btn btn-g"}>
-                    {o.key === "focus" ? "Ask to start Focus" : "Join the founding list"}
-                  </a>
+                  <JoinButton tier={o.key} open={open} label={`Join ${o.name.replace("Aligned ", "")}`} className={o.featured ? "btn btn-p" : "btn btn-g"} />
                 )}
               </section>
             ))}

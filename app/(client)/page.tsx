@@ -15,6 +15,9 @@ import { getMyCoaching } from "@/lib/actions/member-coaching";
 import { getMyCredits } from "@/lib/actions/packages";
 import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { canUseDailyAlignment } from "@/lib/alignment";
+import { getMomentumDetails, getMyAccess } from "@/lib/actions/membership";
+import { hasMomentum } from "@/lib/membership";
+import { MomentumCard } from "@/components/membership/MomentumCard";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { AreaBadge, IconBadge } from "@/components/ui/Icon";
@@ -78,7 +81,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching] = await Promise.all([
+  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching, access] = await Promise.all([
     getAuditWithResponses(audit.id),
     getLifeAreas(),
     getPlanState(audit.id),
@@ -87,6 +90,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     getLessonProgress(),
     getIdentityStatement(),
     getMyCoaching(),
+    getMyAccess(),
   ]);
   const credits = coaching.sessions.length ? await getMyCredits() : null;
 
@@ -247,8 +251,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         credits={credits}
       />
 
-      {/* Daily Alignment is Tier 2: staff only until Tier 2 exists. */}
-      {canUseDailyAlignment(profile?.role) ? <DailyAlignmentCard /> : null}
+      {/* Members: the daily practice, and Momentum's weekly session. */}
+      {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : null}
+      {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
 
       {offerDetails ? <DetailsPrompt /> : null}
 

@@ -23,11 +23,13 @@ export type Package = {
   audience: "everyone" | "selected";
   active: boolean;
   position: number;
+  // Aligned Focus: unlocks this membership for the "use within" days (0022).
+  includes_membership: "practice" | "momentum" | null;
 };
 export type AdminPackage = Package & { clientIds: string[]; sold: number };
 type Result = { ok: true; id?: string } | { ok: false; message: string };
 
-const COLUMNS = "id, name, description, price_pence, sessions, valid_days, available_from, available_until, audience, active, position";
+const COLUMNS = "id, name, description, price_pence, sessions, valid_days, available_from, available_until, audience, active, position, includes_membership";
 
 async function requireBilling() {
   await requireAdmin();
@@ -65,6 +67,7 @@ export async function savePackage(input: {
   audience: "everyone" | "selected";
   clientIds: string[];
   active: boolean;
+  includesMembership: "" | "practice" | "momentum";
 }): Promise<Result> {
   await requireBilling();
   const name = input.name.trim();
@@ -91,6 +94,7 @@ export async function savePackage(input: {
     available_until: until,
     audience: input.audience,
     active: input.active,
+    includes_membership: input.includesMembership || null,
   };
   const { data, error } = input.id
     ? await supabase.from("packages").update(row).eq("id", input.id).select("id").single()

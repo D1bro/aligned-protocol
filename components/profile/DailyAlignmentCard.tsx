@@ -8,8 +8,8 @@ export async function DailyAlignmentCard() {
   return (
     <section className="alignment-entry" aria-labelledby="daily-entry-heading">
       <div>
-        <h2 id="daily-entry-heading">Daily Alignment</h2>
-        <p>Take a moment. Choose what matters today.</p>
+        <h2 id="daily-entry-heading">Your daily practice</h2>
+        <p>Set today&rsquo;s intention, with Duane&rsquo;s audio if you like. Reflect this evening.</p>
         {today?.saved ? (
           <p className="alignment-small alignment-saved">✓ Saved privately for today. <Link href="/alignment">Edit</Link></p>
         ) : (
@@ -18,6 +18,7 @@ export async function DailyAlignmentCard() {
       </div>
       <div className="alignment-entry-actions">
         <Link href="/alignment" className="btn btn-p">Open today →</Link>
+        <Link href="/alignment/journal" className="au-text-link">Journal</Link>
         <Link href="/alignment?view=week" className="au-text-link">Review my week</Link>
       </div>
     </section>

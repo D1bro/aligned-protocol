@@ -1,7 +1,8 @@
 import { getMyEnquiries } from "@/lib/actions/learn";
 import { formatDate } from "@/lib/audit-schedule";
 import { GuideVideo } from "@/components/audit/GuideVideo";
-import { clipFor } from "@/lib/learn-content";
+import { FILMS, filmOrSoon } from "@/lib/audit-guides";
+import { offerFor } from "@/lib/offers";
 import { EnquiryForm } from "@/components/learn/EnquiryForm";
 import { getMyCoaching } from "@/lib/actions/member-coaching";
 import { MemberCoaching } from "@/components/coaching/MemberCoaching";
@@ -12,19 +13,20 @@ import { getMyCredits, getMyExpiries, getOfferedPackages } from "@/lib/actions/p
 import { CoachingTabs, coachingTab } from "@/components/coaching/CoachingTabs";
 
 const SESSIONS = [
-  { title: "Get clear", text: "We look at your snapshot and your plan together, and agree the one thing that matters most right now." },
-  { title: "Build the plan", text: "We turn it into actions that fit your life, and work through what usually gets in the way." },
-  { title: "Review and continue", text: "We look at what’s moved, what you’ve learned, and what comes next — with or without more coaching." },
+  { title: "Check and sharpen your plan", text: "We start from the plan you’ve built: what matters most right now, and the one action that will move it." },
+  { title: "Work through what gets in the way", text: "Halfway through the six weeks: what’s worked, what hasn’t, and adjusting so it fits your life." },
+  { title: "Review and continue", text: "What’s moved, what you’ve learned, and what comes next — with or without more coaching." },
 ];
+const FOCUS = offerFor("focus");
 
 const STATUS: Record<string, string> = {
   new: "Received",
-  contacted: "Duane has been in touch",
+  contacted: "We’ve been in touch",
   booked: "Booked",
   closed: "Closed",
 };
 
-// Coaching Studio: what coaching is here, the Focus Series pilot and an enquiry form.
+// Coaching Studio: what coaching is here, Aligned Focus and an enquiry form.
 export default async function CoachingPage({ searchParams }: { searchParams: Promise<{ paid?: string; tab?: string }> }) {
   const [enquiries, coaching, billing, sp, packages, credits, expiries] = await Promise.all([
     getMyEnquiries(),
@@ -83,18 +85,18 @@ function CoachingAbout({
         audit and your plan, so we start from where you already are — not from scratch.
       </p>
 
-      <GuideVideo clip={clipFor("coaching-intro", "Coaching with Duane", null)} />
+      <GuideVideo clip={filmOrSoon(FILMS.C01, "coaching-intro", "Coaching with an Aligned Coach")} />
 
       <section className="coach-offer" aria-labelledby="focus-h">
         <div className="coach-offer-head">
           <div>
-            <div className="eyebrow"><span className="eydot" /> Pilot</div>
-            <h2 id="focus-h">The Focus Series</h2>
-            <p>Three sessions on one area of your life, spaced a few weeks apart so there&rsquo;s time to act in between.</p>
+            <div className="eyebrow"><span className="eydot" /> {FOCUS.tagline}</div>
+            <h2 id="focus-h">{FOCUS.name}</h2>
+            <p>Six weeks with an Aligned Coach: three 60-minute sessions, agreed actions and a summary after each, with Practice and Momentum included throughout.</p>
           </div>
           <div className="coach-price">
-            <span>Pilot</span>
-            <b>Price on enquiry</b>
+            <span>Six weeks</span>
+            <b>{FOCUS.price}</b>
           </div>
         </div>
         <ol className="coach-sessions">
@@ -117,7 +119,7 @@ function CoachingAbout({
       {open ? (
         <section className="au-sum-card coach-sent" aria-live="polite">
           <p className="au-detail-k">Your enquiry · {formatDate(open.created_at)}</p>
-          <p><b>{STATUS[open.status]}.</b> Duane will reply by email to arrange a short call.</p>
+          <p><b>{STATUS[open.status]}.</b> An Aligned Coach will reply by email.</p>
         </section>
       ) : (
         <EnquiryForm />

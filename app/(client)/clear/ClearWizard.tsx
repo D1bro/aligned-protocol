@@ -7,7 +7,7 @@ import { saveClearReflection, createGoalFromClear, updateGoalCore, saveGoalRoadm
 import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import type { LifeArea } from "@/lib/actions/audit";
 import { GuideVideo } from "@/components/audit/GuideVideo";
-import { clipFor } from "@/lib/learn-content";
+import { PLAN_FILMS, filmOrSoon } from "@/lib/audit-guides";
 import {
   ACTION_IDEAS,
   DAYS,
@@ -23,6 +23,7 @@ import {
 import { firstActionDate, longDay, upcomingReviews } from "@/lib/review-schedule";
 
 const TOTAL_STEPS = 5;
+const STEP_CLIPS = [PLAN_FILMS.P01, PLAN_FILMS.P02, PLAN_FILMS.P03, PLAN_FILMS.P04, PLAN_FILMS.P05];
 const STEP_FILMS = [
   "Duane on choosing your starting point",
   "Duane on what better looks like, and why it matters",
@@ -264,7 +265,7 @@ export function ClearWizard({
   // Duane's film for each step, shown in the step itself, as in the audit.
   const film = (n: number) => (
     <div className="bp-video">
-      <GuideVideo clip={clipFor(`plan-step-${n}`, `Build your plan: ${STEP_NAMES[n - 1]}`, null)} caption={STEP_FILMS[n - 1]} />
+      <GuideVideo clip={filmOrSoon(STEP_CLIPS[n - 1], `plan-step-${n}`, `Build your plan: ${STEP_NAMES[n - 1]}`)} caption={STEP_FILMS[n - 1]} />
     </div>
   );
 

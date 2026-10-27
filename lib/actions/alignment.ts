@@ -10,19 +10,27 @@ import {
   type AlignmentDaily, type AlignmentWeekly, type AlignmentData, type AlignmentResult,
   type DailyAlignmentInput, type WeeklyAlignmentInput,
 } from "@/lib/alignment";
+import { getMyAccess } from "@/lib/actions/membership";
 
 const DAILY_COLUMNS = "id,client_id,entry_date,timezone,presence_done,priority,goal_id,value,wellbeing_action,evening_note,wellbeing,meaningful_action,participation,values_choice,created_at,updated_at";
 const WEEKLY_COLUMNS = "id,client_id,week_start,timezone,helped,adjustment,next_priority,created_at,updated_at";
 const unavailable = "Saving isn’t available yet. Your draft is still here; try again when Daily Alignment is ready.";
 
-async function requireMember() {
+// Practice and Momentum members and staff (lib/alignment.ts): refused here,
+// not just hidden on screen. `exporting` lets anyone take their own saved
+// entries away, including after a membership ends.
+async function requireMember(exporting = false) {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (!user || user.is_anonymous) redirect("/login");
   if (error) throw new Error("Couldn’t verify your sign-in. Please try again.");
-  // Tier 2 only (lib/alignment.ts): refused here, not just hidden on screen.
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (!canUseDailyAlignment(profile?.role)) redirect("/");
+  if (!exporting) {
+    const [{ data: profile }, access] = await Promise.all([
+      supabase.from("profiles").select("role").eq("id", user.id).single(),
+      getMyAccess(),
+    ]);
+    if (!canUseDailyAlignment(profile?.role, access.tier)) redirect("/alignment");
+  }
   return { supabase, userId: user.id };
 }
 function refreshAlignment() {
@@ -135,7 +143,7 @@ export async function exportAlignmentData(): Promise<
   | { ok: true; data: { schema: typeof ALIGNMENT_EXPORT_SCHEMA; exported_at: string; daily: AlignmentDaily[]; weekly: AlignmentWeekly[] } }
   | { ok: false; message: string }
 > {
-  const { supabase, userId } = await requireMember();
+  const { supabase, userId } = await requireMember(true);
   // Supabase caps each response. Explicit pages ensure export includes history
   // longer than that cap, without ever querying another member's entries.
   const daily: AlignmentDaily[] = [];

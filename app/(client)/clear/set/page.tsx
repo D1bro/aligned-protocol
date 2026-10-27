@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getMainGoal } from "@/lib/actions/goals";
 import { getCurrentProfile } from "@/lib/session";
 import { GuideVideo } from "@/components/audit/GuideVideo";
-import { clipFor } from "@/lib/learn-content";
+import { PLAN_FILMS, filmOrSoon } from "@/lib/audit-guides";
 import { OFFERS } from "@/lib/offers";
 import { fallbackOf } from "@/lib/plan-action";
 import { firstActionDate, longDay, upcomingReviews } from "@/lib/review-schedule";
@@ -56,7 +56,7 @@ export default async function PlanSetPage() {
         </section>
 
         <div className="ps-side">
-          <GuideVideo clip={clipFor("plan-set", "Your plan is set", null)} caption="Duane on what happens next" />
+          <GuideVideo clip={filmOrSoon(PLAN_FILMS.P06, "plan-set", "Your plan is set")} caption="Duane on what happens next" />
           <section className="ps-next" aria-labelledby="ps-next-h">
             <h2 id="ps-next-h" className="pl-k">What happens next</h2>
             <ol>
