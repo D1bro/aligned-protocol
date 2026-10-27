@@ -186,11 +186,11 @@ export default async function HomePage() {
           <div className="home-in home-offer">
             <div>
               <div className="eyebrow"><span className="eydot" /> Your free profile</div>
-              <ProfileOffer href={cta.href === "/audit/results" ? "/login?signup=1" : "/audit"} />
-              <p className="home-small">You&rsquo;ll see your snapshot first, before you decide.</p>
+              <ProfileOffer href={cta.href === "/audit/results" ? "/audit/results#step-up" : "/audit"} />
+              <p className="home-small">You&rsquo;ll see your snapshot and build your plan first, before you decide.</p>
             </div>
             <div className="home-after">
-              <h3>What happens after you register</h3>
+              <h3>How it works</h3>
               <ol>
                 {AFTER_REGISTERING.map((s) => <li key={s}>{s}</li>)}
               </ol>

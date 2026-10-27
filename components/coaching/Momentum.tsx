@@ -13,11 +13,12 @@ export function StepBar({ states }: { states: StepState[] }) {
   );
 }
 
-// The last few weeks, filled where they updated a step.
-export function WeekDots({ weeks }: { weeks: boolean[] }) {
+// The last few weeks, filled where they updated a step (or, on My profile,
+// did their weekly review).
+export function WeekDots({ weeks, what = "Updated a step" }: { weeks: boolean[]; what?: string }) {
   const n = weeks.filter(Boolean).length;
   return (
-    <div className="mo-weeks" role="img" aria-label={`Updated a step in ${n} of the last ${weeks.length} weeks`}>
+    <div className="mo-weeks" role="img" aria-label={`${what} in ${n} of the last ${weeks.length} weeks`}>
       {weeks.map((on, i) => <span key={i} className={on ? "on" : undefined} />)}
     </div>
   );

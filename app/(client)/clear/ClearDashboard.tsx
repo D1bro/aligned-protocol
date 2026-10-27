@@ -3,13 +3,14 @@ import type { LifeArea } from "@/lib/actions/audit";
 import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import type { CheckIn } from "@/lib/actions/checkins";
 import { DID_IT_LABELS } from "@/lib/checkin-labels";
-import { daysUntil, formatDate, nextCheckInDue } from "@/lib/audit-schedule";
+import { daysUntil, formatDate } from "@/lib/audit-schedule";
 import { ProgressPath, buildMilestones } from "@/components/audit/ProgressPath";
 import { ReminderToggle } from "@/components/ui/ReminderToggle";
 import { GoalActions } from "./GoalActions";
 import { MainGoalButton } from "./MainGoalButton";
-import { CLEAR_STEPS } from "./ClearIntro";
 import { ClearLetters } from "./ClearLetters";
+import { STEP_NAMES } from "@/lib/plan-action";
+import { longDay, type NextReview } from "@/lib/review-schedule";
 import { cleanReality, looksHardToVerify } from "@/lib/clear-text";
 
 type ListedGoal = { id: string; goal_title: string; goal_type?: string; focus_area: string | null; status: string; created_at: string };
@@ -24,8 +25,8 @@ const short = (d: Date | string) => new Date(d).toLocaleDateString("en-GB", { da
 const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
 
 // My plan: why this matters and how they'll follow through. Where the area
-// is and where they are in the rhythm first, then the goal itself; check-in
-// history, CLEAR answers and other goals underneath.
+// is and where they are in the rhythm first, then the goal itself; monthly
+// review history, their answers to the five steps and other goals underneath.
 export function ClearDashboard({
   area,
   score,
@@ -38,6 +39,7 @@ export function ClearDashboard({
   isMain,
   newerAudit,
   remindersOn,
+  review,
 }: {
   area: LifeArea;
   score: number;
@@ -52,6 +54,8 @@ export function ClearDashboard({
   newerAudit: string | null;
   // null when reminder emails aren't set up (the switch stays hidden).
   remindersOn: boolean | null;
+  // The next weekly (or monthly) review (lib/review-schedule.ts).
+  review: NextReview;
 }) {
   const target = Math.min(10, plan.step_up_target ?? score + 1);
   const latestScore = checkIns.length ? checkIns[checkIns.length - 1].area_score : score;
@@ -61,23 +65,22 @@ export function ClearDashboard({
   const when = goal.action_when?.trim() || goal.frequency?.trim() || null;
 
   const lastCheckIn = checkIns[checkIns.length - 1];
-  const checkInDue = nextCheckInDue(lastCheckIn?.created_at ?? goal.created_at ?? auditDate);
-  const checkInDays = daysUntil(checkInDue);
-  const checkInNow = checkInDays <= 0;
+  const checkInNow = review.due;
+  const reviewName = review.kind === "monthly" ? "Monthly review" : "Weekly review";
+  const why = plan.why_it_matters?.trim() || goal.motivation_text?.trim() || "";
   const auditDays = daysUntil(nextAuditDue);
   const milestones = buildMilestones({ auditDate, auditScore: score, checkIns, nextAuditDue });
   const vague = looksHardToVerify(goal.success_criteria);
 
+  const blocksText = plan.blocks?.length ? plan.blocks.join(", ") : null;
   const answers = [
-    cleanReality(plan.current_reality),
-    [plan.life_vision, plan.step_up_answer ? `Next step: ${plan.step_up_answer}` : null].filter(Boolean).join("\n"),
-    [plan.blocks?.length ? plan.blocks.join(", ") : null, plan.emotional_blocks, plan.tried_before ? `Tried before: ${plan.tried_before}` : null]
+    [plan.step_up_answer ? `A ${target} would look like: ${plan.step_up_answer}` : null, cleanReality(plan.current_reality)].filter(Boolean).join("\n"),
+    [why ? `Why it matters: ${why}` : null, plan.life_vision ? `Where I’m heading: ${plan.life_vision}` : null].filter(Boolean).join("\n"),
+    [blocksText, plan.emotional_blocks !== blocksText ? plan.emotional_blocks : null, plan.tried_before ? `Tried before: ${plan.tried_before}` : null]
       .filter(Boolean)
       .join("\n"),
-    [goal.goal_title, goal.action_text ? `Action: ${goal.action_text}` : null, goal.motivation_text ? `Why: ${goal.motivation_text}` : null]
-      .filter(Boolean)
-      .join("\n"),
-    [goal.success_criteria, ifThen].filter(Boolean).join("\n"),
+    [goal.goal_title, ifThen].filter(Boolean).join("\n"),
+    goal.success_criteria ?? "",
   ];
 
   const otherActive = otherGoals.filter((g) => g.status === "active");
@@ -90,21 +93,21 @@ export function ClearDashboard({
   // The action as its own card only when the goal's wording doesn't already say it.
   const action = goal.action_text?.trim() ?? "";
   const actionInTitle = action && norm(goal.goal_title ?? "").includes(norm(action));
-  const pillars = [goal.motivation_text?.trim(), plan.step_up_answer?.trim(), action && !actionInTitle, true, ifThen].filter(Boolean).length;
+  const pillars = [why, plan.step_up_answer?.trim(), action && !actionInTitle, true, ifThen].filter(Boolean).length;
 
-  // Where they are in the rhythm: audit, goal, practising, goal check-in, next audit.
+  // Where they are in the rhythm: audit, goal, practising, next review, next audit.
   const rhythm: { label: string; sub: string; state: "done" | "now" | "next" }[] = [
     { label: "Audit", sub: `${short(auditDate)} · ${score}/10`, state: "done" },
     { label: "Goal set", sub: goal.created_at ? short(goal.created_at) : "", state: "done" },
     ...(closed
-      ? [{ label: goal.status === "completed" ? "Goal done" : "Goal let go", sub: checkIns.length ? `${checkIns.length} goal check-in${checkIns.length === 1 ? "" : "s"}` : "", state: "done" as const }]
+      ? [{ label: goal.status === "completed" ? "Goal done" : "Goal let go", sub: review.number > 1 ? `${review.number - 1} review${review.number === 2 ? "" : "s"}` : "", state: "done" as const }]
       : [
           {
             label: "Practising",
-            sub: checkIns.length ? `${checkIns.length} goal check-in${checkIns.length === 1 ? "" : "s"} so far` : when ?? "Your action",
+            sub: review.number > 1 ? `${review.number - 1} review${review.number === 2 ? "" : "s"} so far` : when ?? "Your action",
             state: "now" as const,
           },
-          { label: "Goal check-in", sub: checkInNow ? "Due now" : short(checkInDue), state: checkInNow ? ("now" as const) : ("next" as const) },
+          { label: reviewName, sub: checkInNow ? "Due now" : short(review.date), state: checkInNow ? ("now" as const) : ("next" as const) },
         ]),
     { label: "Next audit", sub: auditDays <= 0 ? "Due now" : `around ${short(nextAuditDue)}`, state: "next" },
   ];
@@ -128,10 +131,10 @@ export function ClearDashboard({
           </p>
         </div>
         {!closed ? (
-          <Link href="/clear/check-in" className={checkInNow ? "pl-count is-due" : "pl-count"}>
-            <span className="pl-k">Next goal check-in</span>
-            <b>{checkInNow ? "Due now" : checkInDays === 1 ? "Tomorrow" : `${checkInDays} days`}</b>
-            <span>{checkInNow ? "Do it now →" : `${formatDate(checkInDue).replace(/ \d{4}$/, "")} · or check in early`}</span>
+          <Link href="/clear/review" className={checkInNow ? "pl-count is-due" : "pl-count"}>
+            <span className="pl-k">Next {reviewName.toLowerCase()}</span>
+            <b>{checkInNow ? "Due now" : review.daysAway === 1 ? "Tomorrow" : `${review.daysAway} days`}</b>
+            <span>{checkInNow ? "Do it now →" : `${longDay(review.date)} · or review early`}</span>
           </Link>
         ) : null}
       </div>
@@ -176,9 +179,10 @@ export function ClearDashboard({
           ))}
         </ol>
         <p className="plan-small">
-          Self-reported. {checkIns.length ? `From your last goal check-in, ${formatDate(lastCheckIn.created_at)}.` : `From your audit, ${formatDate(auditDate)}.`}{" "}
-          Circumstances move scores too, so your notes and actions count as evidence alongside the number. Goal check-ins
-          are monthly by default, and you can check in sooner; a goal can finish earlier or carry on longer.
+          Self-reported. {checkIns.length ? `From your last monthly review, ${formatDate(lastCheckIn.created_at)}.` : `From your audit, ${formatDate(auditDate)}.`}{" "}
+          Circumstances move scores too, so your notes and actions count as evidence alongside the number. A short
+          weekly review keeps the action on track, and every fourth is your monthly review, where you score the area
+          again. A goal can finish earlier or carry on longer.
         </p>
         {remindersOn !== null && !closed ? <ReminderToggle initial={remindersOn} /> : null}
       </section>
@@ -196,10 +200,10 @@ export function ClearDashboard({
         ) : null}
 
         <div className="pl-pillars">
-          {goal.motivation_text?.trim() ? (
+          {why ? (
             <div className={pillars % 2 ? "pl-pillar is-wide" : "pl-pillar"}>
               <h3 className="pl-k">Why it matters</h3>
-              <p className="pl-quote">&ldquo;{goal.motivation_text.trim()}&rdquo;</p>
+              <p className="pl-quote">&ldquo;{why}&rdquo;</p>
             </div>
           ) : null}
           {plan.step_up_answer?.trim() ? (
@@ -238,7 +242,7 @@ export function ClearDashboard({
           </div>
         ) : (
           <div className="pl-cta">
-            <Link href="/clear/check-in" className="btn btn-p">{checkInNow ? "Do my goal check-in →" : "Check in early"}</Link>
+            <Link href="/clear/review" className="btn btn-p">{checkInNow ? `Do my ${reviewName.toLowerCase()} →` : "Review early"}</Link>
             <Link href="/clear?edit=4" className="au-text-link">Adjust the action</Link>
             <GoalActions goalId={goal.id} />
           </div>
@@ -251,7 +255,7 @@ export function ClearDashboard({
           <div className="au-chart clear-progress">
             <ProgressPath milestones={milestones} target={target} />
             <p className="au-chart-caption">
-              Gold is how {area.name} has felt at each goal check-in (self-reported). The dotted line runs to your suggested next whole-life audit.
+              Gold is how {area.name} has felt at each monthly review (self-reported). The dotted line runs to your suggested next whole-life audit.
             </p>
           </div>
           <ol className="checkin-list">
@@ -271,10 +275,10 @@ export function ClearDashboard({
 
       <section className="pl-section" aria-labelledby="pl-clear-h">
         <div className="pl-section-head">
-          <h2 id="pl-clear-h" className="pl-h">Your CLEAR answers</h2>
-          <span>As you wrote them · tap a letter</span>
+          <h2 id="pl-clear-h" className="pl-h">Your answers</h2>
+          <span>As you wrote them · tap a step</span>
         </div>
-        <ClearLetters items={CLEAR_STEPS.map((s, i) => ({ letter: s.letter, name: s.name, text: answers[i] }))} />
+        <ClearLetters items={STEP_NAMES.map((name, i) => ({ letter: String(i + 1), name, text: answers[i] }))} />
         <p className="pl-edit"><Link href="/clear?edit=1" className="au-text-link">Review or edit my answers</Link></p>
       </section>
 

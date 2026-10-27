@@ -28,14 +28,14 @@ export const EXAMPLE = {
   focusScore: 4,
   stepUp: "Five would mean making room for one priority.",
   action: "On Monday at 9am, spend 20 minutes planning the week’s priority.",
-  review: "At the goal check-in: did it happen? Keep it, adjust it, or mark it done.",
+  review: "At the weekly review: did it happen? Keep it, make it smaller, or change it.",
 };
 
 export const HOW = [
   { title: "See where you stand", text: "Score ten areas of your life as they feel today, with notes in your own words. You get a snapshot straight away." },
   { title: "Choose a focus", text: "Pick one area to start with. Then describe what one point better would look like — not a complete fix, one honest step up." },
-  { title: "Plan and act", text: "CLEAR, five short questions, turns that into one action, when you’ll do it, and what “done” looks like." },
-  { title: "Review", text: "A monthly goal check-in records what happened, so you can keep going, adjust or move on. Revisit all ten areas every few months." },
+  { title: "Plan and act", text: "Five guided steps turn that into one clear action, when you’ll do it, and how you’ll know it’s helping." },
+  { title: "Review", text: "A one-minute weekly review keeps it going: keep it, make it smaller or change it. Every month, score the area again; every few months, revisit all ten." },
 ];
 
 // Set approved: true once Duane has approved the wording. Until then the
@@ -73,24 +73,24 @@ export const PROFILE_OFFER = {
   heading: "Keep your starting point. Build your next step.",
   points: [
     "Keep your snapshot and personal notes together.",
-    "Turn your chosen focus into a practical CLEAR plan.",
+    "Turn your chosen focus into a practical plan, in five guided steps.",
     "Return to your plan and review what happened.",
   ],
-  button: "Create my free profile",
-  next: "Next, we’ll help you build your first plan.",
+  button: "Build my free plan",
+  next: "Build your plan first, then save it to a free account.",
 };
 
 export const AFTER_REGISTERING = [
-  "Confirm your email with one click.",
-  "Your snapshot, notes and starting point are already there.",
-  "Build your first plan with CLEAR — five short questions.",
-  "Act on it, then check in and review what happened.",
+  "Build your plan in five guided steps, before you sign up.",
+  "Save it to a free account, and confirm your email with one click.",
+  "Your snapshot, plan and notes are kept together.",
+  "Act on it, then a one-minute weekly review keeps it going.",
 ];
 
 export const FAQS = [
   { q: "Is it free?", a: "Yes. The audit and your profile are free." },
   { q: "How long does it take?", a: "About ten minutes for the audit. Building your first plan takes about ten more, whenever you’re ready." },
-  { q: "Do I need an account?", a: "Not to start. You see your full snapshot first, then choose whether to keep it in a free profile." },
+  { q: "Do I need an account?", a: "Not to start. You see your snapshot and build your plan first, then save it in a free account." },
   {
     q: "What do the scores mean?",
     a: "They’re your own reflection of how each area feels today, from 1 to 10. They aren’t a diagnosis, a ranking or a test, and a low score isn’t a failure — it’s a place you might choose to start.",

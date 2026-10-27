@@ -7,7 +7,6 @@ import { Notice } from "@/components/ui/Notice";
 import { PasswordStrength } from "@/components/ui/PasswordStrength";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { ProfileOffer } from "@/components/site/ProfileOffer";
-import { PROFILE_OFFER } from "@/lib/site-copy";
 
 type Tab = "signin" | "signup" | "reset";
 
@@ -146,7 +145,7 @@ export function LoginForms({ hasSnapshot = false, startingPointSaved = false }: 
               <PasswordStrength password={signupPassword} />
             </div>
             <button className="btn btn-p btn-block auth-submit" disabled={pending}>
-              {pending ? "Creating your profile…" : PROFILE_OFFER.button}
+              {pending ? "Creating your profile…" : "Create my free profile"}
             </button>
           </form>
           <Notice type="err">{error}</Notice>

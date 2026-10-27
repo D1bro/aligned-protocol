@@ -17,7 +17,23 @@ type GuestAudit = {
   audit: Record<string, unknown>;
   responses: Record<string, unknown>[];
   plan: Record<string, unknown> | null;
+  // Goals a guest set while building their plan (they can now build it
+  // before saving).
+  goals: Record<string, unknown>[];
 };
+
+// The plan's own answers, copied as they are. Columns from later migrations
+// are only present once those have run; a missing one is simply left out.
+const PLAN_FIELDS = [
+  "life_area_id", "current_reality", "life_vision", "emotional_blocks", "step_up_target", "step_up_answer",
+  "blocks", "block_answers", "tried_before", "if_obstacle", "if_response", "why_it_matters",
+];
+const GOAL_FIELDS = [
+  "goal_title", "goal_type", "focus_area", "action_text", "frequency", "action_when", "success_criteria",
+  "motivation_text", "start_date", "status", "created_at",
+];
+const pick = (row: Record<string, unknown>, keys: string[]) =>
+  Object.fromEntries(keys.filter((k) => k in row).map((k) => [k, row[k]]));
 
 export async function readGuestWork(supabase: SupabaseClient, guestId: string): Promise<GuestAudit[]> {
   const { data: audits } = await supabase
@@ -36,7 +52,10 @@ export async function readGuestWork(supabase: SupabaseClient, guestId: string): 
       .eq("audit_id", audit.id)
       .eq("client_id", guestId)
       .maybeSingle();
-    work.push({ audit, responses, plan: plan ?? null });
+    const { data: goals } = plan
+      ? await supabase.from("goals").select("*").eq("clear_plan_id", plan.id).eq("client_id", guestId)
+      : { data: [] };
+    work.push({ audit, responses, plan: plan ?? null, goals: goals ?? [] });
   }
   return work;
 }
@@ -54,7 +73,7 @@ export async function saveGuestWorkToAccount(supabase: SupabaseClient, userId: s
     .maybeSingle();
   let seq = (last?.sequence_number as number | undefined) ?? 0;
 
-  for (const { audit, responses, plan } of work) {
+  for (const { audit, responses, plan, goals } of work) {
     seq += 1;
     const { data: copy, error } = await supabase
       .from("audits")
@@ -83,17 +102,18 @@ export async function saveGuestWorkToAccount(supabase: SupabaseClient, userId: s
     if (respErr) throw respErr;
 
     if (plan) {
-      const { error: planErr } = await supabase.from("clear_plans").insert({
-        client_id: userId,
-        audit_id: copy.id,
-        life_area_id: plan.life_area_id,
-        current_reality: plan.current_reality,
-        life_vision: plan.life_vision,
-        emotional_blocks: plan.emotional_blocks,
-        step_up_target: plan.step_up_target,
-        step_up_answer: plan.step_up_answer,
-      });
+      const { data: planCopy, error: planErr } = await supabase
+        .from("clear_plans")
+        .insert({ client_id: userId, audit_id: copy.id, ...pick(plan, PLAN_FIELDS) })
+        .select("id")
+        .single();
       if (planErr) throw planErr;
+      if (goals.length) {
+        const { error: goalErr } = await supabase
+          .from("goals")
+          .insert(goals.map((g) => ({ client_id: userId, clear_plan_id: planCopy.id, ...pick(g, GOAL_FIELDS) })));
+        if (goalErr) throw goalErr;
+      }
     }
   }
 }

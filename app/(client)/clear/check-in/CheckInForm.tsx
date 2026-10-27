@@ -11,7 +11,7 @@ const DID_IT: { key: CheckIn["did_it"]; label: string }[] = [
   { key: "every", label: "Every time" },
 ];
 const NEXT: { key: CheckIn["next_step"]; label: string; help: string }[] = [
-  { key: "keep", label: "Keep going", help: "Same action, another month." },
+  { key: "keep", label: "Keep going", help: "Same action, another month of weekly reviews." },
   { key: "adjust", label: "Adjust my action", help: "Make it smaller, or change when." },
   { key: "done", label: "The whole goal is done", help: "Not just this month’s action — the goal itself." },
 ];
@@ -60,18 +60,18 @@ export function CheckInForm({
   return (
     <>
       <div className="topbar">
-        <Link href="/clear" className="tb-back">← My plan</Link>
-        <span className="tb-label">Goal check-in</span>
+        <Link href="/" className="tb-back">← My profile</Link>
+        <span className="tb-label">Monthly review</span>
       </div>
       <div className="page au-page clear-step">
-        <div className="eyebrow"><span className="eydot" /> Goal check-in · {areaName}</div>
-        <h1 className="clear-h">How&rsquo;s it going?</h1>
+        <div className="eyebrow"><span className="eydot" /> Monthly review · {areaName}</div>
+        <h1 className="clear-h">How has this month gone?</h1>
         <div className="au-sum-card clear-from">
           <p className="au-detail-k">Your action</p>
           <p className="clear-note">{goalTitle}</p>
         </div>
 
-        <p className="au-start-q">How often did you do it since your last check-in?</p>
+        <p className="au-start-q">How often did you do it this month?</p>
         <div className="au-chips" role="group" aria-label="How often did you do it">
           {DID_IT.map((d) => (
             <button key={d.key} type="button" aria-pressed={didIt === d.key} onClick={() => setDidIt(d.key)}>{d.label}</button>
@@ -112,10 +112,10 @@ export function CheckInForm({
           {error ?? (ready ? "Ready to save" : "Answer the three questions to save")}
         </span>
         {savedAlready ? (
-          <Link href="/clear" className="btn btn-p">Go to My plan</Link>
+          <Link href="/" className="btn btn-p">Go to My profile</Link>
         ) : (
           <button className="btn btn-p" disabled={!ready || pending} onClick={submit}>
-            {pending ? "Saving…" : "Save my check-in"}
+            {pending ? "Saving…" : "Save my monthly review"}
           </button>
         )}
       </div>

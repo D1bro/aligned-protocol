@@ -1,112 +1,59 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveClearReflection, createGoalFromClear, updateGoalCore, saveGoalRoadmap } from "@/lib/actions/clear";
 import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import type { LifeArea } from "@/lib/actions/audit";
-import { formatDate } from "@/lib/audit-schedule";
-import { ScoreTrack } from "@/components/audit/ScoreTrack";
-import { REALITY_PROMPTS, withoutStarters } from "@/lib/clear-text";
+import { GuideVideo } from "@/components/audit/GuideVideo";
+import { clipFor } from "@/lib/learn-content";
+import {
+  ACTION_IDEAS,
+  DAYS,
+  HARD_WEEK,
+  STEP_NAMES,
+  WAY_OPTIONS,
+  actionHint,
+  frequencyOf,
+  goalSentence,
+  parseWhen,
+  whenPhrase,
+} from "@/lib/plan-action";
+import { firstActionDate, longDay, upcomingReviews } from "@/lib/review-schedule";
 
-const STEP_LABELS = ["Current reality", "Life vision", "What's in the way", "One action", "Roadmap and review"];
 const TOTAL_STEPS = 5;
-
-// E: the blocks people can tap, each with its own short follow-up.
-export const BLOCKS: Record<string, string> = {
-  Time: "What usually gets your time instead?",
-  "Knowing where to start": "What's the very first thing you'd need to know or do?",
-  Money: "Is it the amount itself, or not knowing where it goes?",
-  Energy: "When in the week do you have the most energy for this?",
-  Habit: "When does the old pattern usually win, and what sets it off?",
-  Confidence: "What do you tell yourself when you think about tackling this?",
-  "Other people": "Whose support, agreement or space would change this?",
-  "Fear of getting it wrong": "What's the worst that could realistically happen, and could you handle it?",
-  "It hasn't felt like a priority": "What's changed that makes it matter now?",
-  "Something else": "What is it? Name it in your own words.",
-};
-
-
-
-
-const FREQUENCIES = ["Daily", "A few times a week", "Weekly", "Fortnightly", "Monthly"];
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DAY_NAMES: Record<string, string> = {
-  Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday",
-};
+const STEP_FILMS = [
+  "Duane on choosing your starting point",
+  "Duane on what better looks like, and why it matters",
+  "Duane on what gets in the way",
+  "Duane on turning an idea into one clear action",
+  "Duane on knowing it’s helping",
+];
 
 const filled = (v: string | null | undefined) => !!v?.trim();
 
-function formatTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  if (Number.isNaN(h)) return "";
-  const suffix = h >= 12 ? "pm" : "am";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return m ? `${h12}:${String(m).padStart(2, "0")}${suffix}` : `${h12}${suffix}`;
-}
-
-function parseTime(text: string | null | undefined) {
-  const m = text?.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
-  if (!m) return "";
-  let h = Number(m[1]) % 12;
-  if (m[3].toLowerCase() === "pm") h += 12;
-  return `${String(h).padStart(2, "0")}:${m[2] ?? "00"}`;
-}
-
-function listDays(days: string[]) {
-  const names = DAYS.filter((d) => days.includes(d));
-  const full = names.map((d) => DAY_NAMES[d]);
-  if (full.length <= 1) return full.join("");
-  return `${full.slice(0, -1).join(", ")} and ${full[full.length - 1]}`;
-}
-
-// "Every Sunday at 6pm" — used for the goal sentence and stored as action_when.
-function whenPhrase(frequency: string, days: string[], time: string) {
-  const at = time ? ` at ${formatTime(time)}` : "";
-  if (frequency === "Daily" || days.length === 7) return `Every day${at}`;
-  if (days.length) return `Every ${listDays(days)}${at}`;
-  const base: Record<string, string> = {
-    "A few times a week": "A few times a week",
-    Weekly: "Once a week",
-    Fortnightly: "Every fortnight",
-    Monthly: "Once a month",
-  };
-  return frequency ? `${base[frequency] ?? frequency}${at}` : at.trim();
-}
-
-function draftGoal(frequency: string, days: string[], time: string, action: string) {
-  let act = action.trim().replace(/[.\s]+$/, "").replace(/^(i'?ll|i will|i)\s+/i, "");
-  if (!act) return "";
-  act = act.charAt(0).toLowerCase() + act.slice(1);
-  const when = whenPhrase(frequency, days, time);
-  return when ? `${when}, I'll ${act}.` : `I'll ${act}.`;
-}
-
 type Form = {
-  currentReality: string;
-  lifeVision: string;
   stepUp: string;
-  blocks: string[];
-  blockAnswers: Record<string, string>;
-  biggestBlock: string;
-  triedBefore: string;
+  anything: string;
+  why: string;
+  lifeVision: string;
+  way: string;
+  wayNote: string;
   action: string;
-  frequency: string;
   days: string[];
   time: string;
-  goalTitle: string;
-  motivation: string;
+  after: string;
+  fallback: string;
   success: string;
-  ifObstacle: string;
-  ifResponse: string;
 };
 
 const STEP_FIELDS: Record<number, (keyof Form)[]> = {
-  1: ["currentReality"],
-  2: ["lifeVision", "stepUp"],
-  3: ["blocks", "blockAnswers", "biggestBlock", "triedBefore"],
-  4: ["action", "frequency", "days", "time", "goalTitle", "motivation"],
-  5: ["success", "ifObstacle", "ifResponse"],
+  1: ["stepUp", "anything"],
+  2: ["stepUp", "why", "lifeVision"],
+  3: ["way", "wayNote"],
+  4: ["action", "days", "time", "after", "fallback"],
+  5: ["success"],
 };
 
 function snapshotOf(n: number, f: Form) {
@@ -114,33 +61,30 @@ function snapshotOf(n: number, f: Form) {
 }
 
 function initialForm(plan: ClearPlan, goal: Goal | null): Form {
-  const when = goal?.action_when ?? "";
-  const days = when.startsWith("Every day") ? [] : DAYS.filter((d) => when.includes(d));
+  const when = parseWhen(goal?.action_when);
+  const way = plan.blocks?.[0] ?? "";
   return {
-    currentReality: plan.current_reality ?? "",
-    lifeVision: plan.life_vision ?? "",
     stepUp: plan.step_up_answer ?? "",
-    blocks: plan.blocks ?? [],
-    blockAnswers: plan.block_answers ?? {},
-    biggestBlock: plan.emotional_blocks ?? "",
-    triedBefore: plan.tried_before ?? "",
+    anything: plan.current_reality ?? "",
+    why: plan.why_it_matters ?? goal?.motivation_text ?? "",
+    lifeVision: plan.life_vision ?? "",
+    way,
+    wayNote: (way && plan.block_answers?.[way]) || "",
     action: goal?.action_text ?? "",
-    frequency: goal?.frequency?.trim() ?? "",
-    days,
-    time: parseTime(when),
-    goalTitle: goal?.goal_title ?? "",
-    motivation: goal?.motivation_text ?? "",
-    success: goal?.success_criteria ?? plan.step_up_answer ?? "",
-    ifObstacle: plan.if_obstacle ?? "",
-    ifResponse: plan.if_response ?? "",
+    days: when.days,
+    time: when.time,
+    after: when.after,
+    fallback: plan.if_response ?? "",
+    success: goal?.success_criteria ?? "",
   };
 }
 
-// Where to resume: the first step that isn't complete.
+// Where to resume: the first step that isn't complete. Step 1 is usually
+// done already, on the snapshot.
 function computeInitialStep(plan: ClearPlan, goal: Goal | null): number {
-  if (!filled(withoutStarters(plan.current_reality ?? ""))) return 1;
-  if (!filled(plan.life_vision) || !filled(plan.step_up_answer)) return 2;
-  if (!filled(plan.emotional_blocks) || !(plan.blocks?.length ?? 0)) return 3;
+  if (!filled(plan.step_up_answer)) return 1;
+  if (!filled(plan.why_it_matters ?? goal?.motivation_text)) return 2;
+  if (!(plan.blocks?.length ?? 0)) return 3;
   if (!goal || !filled(goal.frequency)) return 4;
   if (!filled(goal.success_criteria)) return 5;
   return 6;
@@ -148,6 +92,9 @@ function computeInitialStep(plan: ClearPlan, goal: Goal | null): number {
 
 type Status = { kind: "idle" } | { kind: "saving" } | { kind: "error"; message: string };
 
+// Build your plan: five guided steps, one plain question each, with the plan
+// taking shape beside them. Step 1 (the starting point) is answered on the
+// snapshot, so most people arrive at step 2 with it ticked.
 export function ClearWizard({
   area,
   plan,
@@ -155,7 +102,7 @@ export function ClearWizard({
   score,
   auditNote,
   lowWellbeing,
-  nextAuditDue,
+  canChangeArea,
   startAtStep = null,
 }: {
   area: LifeArea;
@@ -165,18 +112,18 @@ export function ClearWizard({
   auditNote: string | null;
   // Emotional Wellbeing scored very low: soften step 3 and point to support.
   lowWellbeing: boolean;
-  nextAuditDue: string;
+  // Before the plan has really started, the area can still be changed.
+  canChangeArea: boolean;
   // Reviewing or adjusting: open on this step instead of where they left off.
   startAtStep?: number | null;
 }) {
+  const router = useRouter();
   const target = Math.min(10, score + 1);
-  const [step, setStep] = useState(() => startAtStep ?? computeInitialStep(plan, initialGoal));
+  const [step, setStep] = useState(() => Math.min(TOTAL_STEPS, startAtStep ?? computeInitialStep(plan, initialGoal)));
   const [form, setForm] = useState<Form>(() => initialForm(plan, initialGoal));
-  // What's actually in the database — pre-filled suggestions (like success
-  // from their "5") aren't saved until they continue.
-  const [saved, setSaved] = useState<Form>(() => ({ ...initialForm(plan, initialGoal), success: initialGoal?.success_criteria ?? "" }));
-  // Once someone edits the drafted goal sentence, stop rewriting it for them.
-  const [goalEdited, setGoalEdited] = useState(() => filled(initialGoal?.goal_title));
+  const [saved, setSaved] = useState<Form>(() => initialForm(plan, initialGoal));
+  const [showVision, setShowVision] = useState(() => filled(plan.life_vision));
+  const [idea, setIdea] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [navigating, setNavigating] = useState(false);
   const queue = useRef<Promise<boolean>>(Promise.resolve(true));
@@ -185,25 +132,20 @@ export function ClearWizard({
   formRef.current = form;
   const savedRef = useRef(saved);
   savedRef.current = saved;
-  const realityRef = useRef<HTMLTextAreaElement>(null);
 
   function set<K extends keyof Form>(key: K, value: Form[K]) {
-    setForm((f) => {
-      const nextForm = { ...f, [key]: value };
-      if (!goalEdited && (key === "action" || key === "frequency" || key === "days" || key === "time")) {
-        nextForm.goalTitle = draftGoal(nextForm.frequency, nextForm.days, nextForm.time, nextForm.action);
-      }
-      return nextForm;
-    });
+    setForm((f) => ({ ...f, [key]: value }));
   }
 
+  const sentence = goalSentence(form.days, form.time, form.after, form.action);
+  const hint = actionHint(form.action, form.days, form.time);
   const dirty = (n: number) => snapshotOf(n, form) !== snapshotOf(n, saved) || (n === 4 && !goalRef.current);
 
   const canContinue =
-    step === 1 ? filled(withoutStarters(form.currentReality))
-    : step === 2 ? filled(form.lifeVision) && filled(form.stepUp)
-    : step === 3 ? form.blocks.length > 0 && filled(form.biggestBlock)
-    : step === 4 ? filled(form.action) && filled(form.frequency) && filled(form.goalTitle)
+    step === 1 ? filled(form.stepUp)
+    : step === 2 ? filled(form.stepUp) && filled(form.why)
+    : step === 3 ? filled(form.way)
+    : step === 4 ? filled(form.action) && form.days.length > 0
     : step === 5 ? filled(form.success)
     : true;
 
@@ -213,32 +155,43 @@ export function ClearWizard({
     const f = formRef.current;
     const run = queue.current.then(async () => {
       if (snapshotOf(n, f) === snapshotOf(n, savedRef.current) && !(n === 4 && !goalRef.current)) return true;
-      if (n === 4 && !goalRef.current && !(filled(f.action) && filled(f.frequency) && filled(f.goalTitle))) return true;
+      if (n === 4 && !goalRef.current && !(filled(f.action) && f.days.length)) return true;
       setStatus({ kind: "saving" });
       let result: { ok: true } | { ok: false; message: string } = { ok: true };
-      const when = whenPhrase(f.frequency, f.days, f.time);
-      if (n === 1) result = await saveClearReflection(plan.id, { current_reality: f.currentReality });
-      else if (n === 2)
-        result = await saveClearReflection(plan.id, { life_vision: f.lifeVision, step_up_answer: f.stepUp, step_up_target: target });
-      else if (n === 3)
+      const core = {
+        goalTitle: goalSentence(f.days, f.time, f.after, f.action),
+        actionText: f.action.trim(),
+        motivationText: f.why.trim(),
+        frequency: frequencyOf(f.days),
+        actionWhen: whenPhrase(f.days, f.time, f.after),
+      };
+      if (n === 1) {
+        result = await saveClearReflection(plan.id, { step_up_answer: f.stepUp, step_up_target: target, current_reality: f.anything });
+      } else if (n === 2) {
+        result = await saveClearReflection(plan.id, { step_up_answer: f.stepUp, step_up_target: target, why_it_matters: f.why, life_vision: f.lifeVision });
+        if (result.ok && goalRef.current) result = await updateGoalCore(goalRef.current.id, core);
+      } else if (n === 3) {
         result = await saveClearReflection(plan.id, {
-          blocks: f.blocks,
-          block_answers: Object.fromEntries(Object.entries(f.blockAnswers).filter(([b]) => f.blocks.includes(b))),
-          emotional_blocks: f.biggestBlock,
-          tried_before: f.triedBefore,
+          blocks: f.way ? [f.way] : [],
+          block_answers: f.way && f.wayNote.trim() ? { [f.way]: f.wayNote.trim() } : {},
+          emotional_blocks: f.wayNote.trim() || f.way,
         });
-      else if (n === 4) {
-        const core = { goalTitle: f.goalTitle, actionText: f.action, motivationText: f.motivation, frequency: f.frequency, actionWhen: when };
-        if (goalRef.current) {
-          result = await updateGoalCore(goalRef.current.id, core);
-        } else {
-          const created = await createGoalFromClear({ clearPlanId: plan.id, focusArea: area.name, ...core });
-          if (created.ok) goalRef.current = created.goal;
-          result = created.ok ? { ok: true } : created;
+      } else if (n === 4) {
+        result = await saveClearReflection(plan.id, {
+          if_obstacle: f.fallback.trim() ? HARD_WEEK : null,
+          if_response: f.fallback.trim() || null,
+        });
+        if (result.ok) {
+          if (goalRef.current) {
+            result = await updateGoalCore(goalRef.current.id, core);
+          } else {
+            const created = await createGoalFromClear({ clearPlanId: plan.id, focusArea: area.name, ...core });
+            if (created.ok) goalRef.current = created.goal;
+            result = created.ok ? { ok: true } : created;
+          }
         }
       } else if (n === 5 && goalRef.current) {
         result = await saveGoalRoadmap(goalRef.current.id, { successCriteria: f.success });
-        if (result.ok) result = await saveClearReflection(plan.id, { if_obstacle: f.ifObstacle, if_response: f.ifResponse });
       }
       if (!result.ok) {
         setStatus({ kind: "error", message: result.message });
@@ -263,11 +216,15 @@ export function ClearWizard({
     if (!canContinue) return;
     setNavigating(true);
     const ok = await persist(step);
-    setNavigating(false);
-    if (ok) {
-      setStep((s) => s + 1);
-      window.scrollTo({ top: 0 });
+    if (!ok) return setNavigating(false);
+    if (step === TOTAL_STEPS) {
+      router.push("/clear/set");
+      router.refresh();
+      return;
     }
+    setNavigating(false);
+    setStep((s) => s + 1);
+    window.scrollTo({ top: 0 });
   }
 
   async function back() {
@@ -283,22 +240,8 @@ export function ClearWizard({
     if (dirty(step)) void persist(step);
   };
 
-  function addPrompt(starter: string) {
-    const current = form.currentReality.trimEnd();
-    const nextText = current ? `${current}\n${starter}` : starter;
-    set("currentReality", nextText);
-    requestAnimationFrame(() => {
-      const el = realityRef.current;
-      if (el) {
-        el.focus();
-        el.setSelectionRange(nextText.length, nextText.length);
-      }
-    });
-  }
-
-  function toggle(key: "blocks" | "days", value: string) {
-    const list = form[key];
-    set(key, list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  function toggleDay(d: string) {
+    set("days", form.days.includes(d) ? form.days.filter((x) => x !== d) : [...form.days, d]);
   }
 
   let statusText: string;
@@ -306,23 +249,24 @@ export function ClearWizard({
   else if (status.kind === "error") statusText = status.message;
   else if (!canContinue)
     statusText =
-      step === 3 ? "Tap at least one, then say which matters most"
-      : step === 4 ? "Add your action and how often"
-      : step === 2 ? "Answer both to continue"
-      : "Write a line or two to continue";
+      step === 3 ? "Tap the one most likely to get in the way"
+      : step === 4 ? "Say what you’ll do, and choose a day"
+      : step === 2 ? "Add why it matters to continue"
+      : "Write a line to continue";
   else if (dirty(step)) statusText = "Not saved yet";
   else statusText = "Saved";
 
-  if (step === 6) return <FinishRedirect />;
+  const ideas = ACTION_IDEAS[area.name] ?? [];
+  const today = new Date().toISOString();
+  const firstTry = firstActionDate(today, whenPhrase(form.days, form.time, form.after));
+  const reviews = upcomingReviews(today, whenPhrase(form.days, form.time, form.after));
 
-  const actionWords = form.action.trim().split(/\s+/).filter(Boolean).length;
-  const checkins = [1, 2]
-    .map((m) => {
-      const d = new Date();
-      d.setMonth(d.getMonth() + m);
-      return d;
-    })
-    .filter((d) => d < new Date(nextAuditDue));
+  // Duane's film for each step, shown in the step itself, as in the audit.
+  const film = (n: number) => (
+    <div className="bp-video">
+      <GuideVideo clip={clipFor(`plan-step-${n}`, `Build your plan: ${STEP_NAMES[n - 1]}`, null)} caption={STEP_FILMS[n - 1]} />
+    </div>
+  );
 
   return (
     <>
@@ -330,177 +274,206 @@ export function ClearWizard({
         {step > 1 ? (
           <button className="tb-back" onClick={back} disabled={navigating}>← Back</button>
         ) : (
-          <span />
+          <Link href="/audit/results" className="tb-back">← My snapshot</Link>
         )}
-        <span className="tb-label">{STEP_LABELS[step - 1]} — Step {step} of {TOTAL_STEPS}</span>
+        <span className="tb-label">Step {step} of {TOTAL_STEPS} · {STEP_NAMES[step - 1]}</span>
       </div>
-      <ol className="clear-stepper" role="progressbar" aria-label="CLEAR progress" aria-valuemin={1} aria-valuemax={TOTAL_STEPS} aria-valuenow={step} aria-valuetext={`Step ${step} of ${TOTAL_STEPS}: ${STEP_LABELS[step - 1]}`}>
-        {"CLEAR".split("").map((letter, i) => (
-          <li key={i} className={i + 1 === step ? "on" : i + 1 < step ? "done" : undefined} title={STEP_LABELS[i]}><span>{letter}</span></li>
+      <ol
+        className="bp-progress"
+        role="progressbar"
+        aria-label="Build your plan"
+        aria-valuemin={1}
+        aria-valuemax={TOTAL_STEPS}
+        aria-valuenow={step}
+        aria-valuetext={`Step ${step} of ${TOTAL_STEPS}: ${STEP_NAMES[step - 1]}`}
+      >
+        {STEP_NAMES.map((name, i) => (
+          <li key={name} className={i + 1 === step ? "on" : i + 1 < step ? "done" : undefined}>
+            <span className="bp-seg" aria-hidden="true" />
+            <span className="bp-name">{name}</span>
+          </li>
         ))}
       </ol>
 
-      <div className="page au-page clear-step">
-        <div className="eyebrow"><span className="eydot" /> CLEAR · {area.name}</div>
+      <div className="page au-page clear-step bp-page">
+        <div className="bp-layout">
+          <div className="bp-main">
+            <div className="eyebrow"><span className="eydot" /> Build your plan · {area.name}</div>
 
-        {step === 1 && (
-          <>
-            <h1 className="clear-h">Current <em>reality</em></h1>
-            <div className="au-sum-card clear-from">
-              <p className="au-detail-k">From your audit</p>
-              <p className="au-latest-big">{area.name} <span>{score}/10</span></p>
-              {auditNote ? <p className="clear-note">&ldquo;{auditNote}&rdquo;</p> : null}
-            </div>
-            <label className="au-start-q" htmlFor="c-reality">What&rsquo;s behind that {score}?</label>
-            <p className="au-start-help">Tap a prompt to start, or write freely.</p>
-            <div className="au-chips">
-              {REALITY_PROMPTS.map((p) => (
-                <button key={p} type="button" onClick={() => addPrompt(p)}>{p.replace(/: $/, "")}</button>
-              ))}
-            </div>
-            <textarea
-              id="c-reality"
-              ref={realityRef}
-              rows={6}
-              value={form.currentReality}
-              onChange={(e) => set("currentReality", e.target.value)}
-              onBlur={saveOnBlur}
-              placeholder="Where this area honestly is today…"
-            />
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <h1 className="clear-h">Life <em>vision</em></h1>
-            <label className="au-start-q" htmlFor="l-vision">The direction: what would a 10 look like?</label>
-            <p className="au-start-help">One or two sentences. This is where you&rsquo;re heading, not this quarter&rsquo;s target.</p>
-            <textarea id="l-vision" rows={3} value={form.lifeVision} onChange={(e) => set("lifeVision", e.target.value)} onBlur={saveOnBlur} placeholder="At a 10, this area would feel…" />
-            <label className="au-start-q" htmlFor="l-step">
-              The next step: what would a {target} look like?
-              {filled(plan.step_up_answer) ? <span className="clear-tag">From your snapshot</span> : null}
-            </label>
-            <p className="au-start-help">Not a complete fix — one honest step up. This becomes the target for this goal.</p>
-            <textarea id="l-step" rows={3} value={form.stepUp} onChange={(e) => set("stepUp", e.target.value)} onBlur={saveOnBlur} placeholder={`A ${target} would mean…`} />
-            <div className="clear-track-wrap"><ScoreTrack score={score} target={target} /></div>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <h1 className="clear-h">What&rsquo;s been <em>in the way</em></h1>
-            <p className="au-start-help">
-              {lowWellbeing
-                ? "Take this at your own pace. Tap any that fit — there’s no wrong answer, and you can keep it brief."
-                : "Tap any that apply. Each one asks a short follow-up. There’s no wrong answer."}
-            </p>
-            <div className="au-chips" role="group" aria-label="What’s been in the way">
-              {Object.keys(BLOCKS).map((b) => (
-                <button key={b} type="button" aria-pressed={form.blocks.includes(b)} onClick={() => toggle("blocks", b)}>{b}</button>
-              ))}
-            </div>
-            {form.blocks.map((b) => (
-              <div key={b} className="clear-followup">
-                <p className="au-detail-k">{b}</p>
-                <label htmlFor={`b-${b}`}>{BLOCKS[b]}</label>
-                <textarea
-                  id={`b-${b}`}
-                  rows={2}
-                  value={form.blockAnswers[b] ?? ""}
-                  onChange={(e) => set("blockAnswers", { ...form.blockAnswers, [b]: e.target.value })}
-                  onBlur={saveOnBlur}
-                />
-              </div>
-            ))}
-            <label className="au-start-q" htmlFor="e-biggest">Of these, which matters most, and why?</label>
-            <textarea id="e-biggest" rows={3} value={form.biggestBlock} onChange={(e) => set("biggestBlock", e.target.value)} onBlur={saveOnBlur} placeholder="Write a sentence or two…" />
-            <label className="au-start-q clear-q-sm" htmlFor="e-tried">
-              When you&rsquo;ve tried to change this before, what happened? <span className="au-small">Optional</span>
-            </label>
-            <textarea id="e-tried" rows={2} value={form.triedBefore} onChange={(e) => set("triedBefore", e.target.value)} onBlur={saveOnBlur} placeholder="What you tried, and what stopped it…" />
-            {lowWellbeing ? (
-              <div className="au-sum-card clear-support">
-                <h3>You don&rsquo;t have to do this alone</h3>
-                <p>
-                  If things feel heavy right now, it&rsquo;s worth talking to someone you trust, your GP, or a qualified
-                  professional. If you&rsquo;re in crisis, contact your local emergency services or a crisis line.
-                </p>
-              </div>
-            ) : null}
-          </>
-        )}
-
-        {step === 4 && (
-          <>
-            <h1 className="clear-h">One <em>action</em></h1>
-            <label className="au-start-q" htmlFor="a-action">What will you do?</label>
-            <p className="au-start-help">Start with a verb. Make it small enough that you&rsquo;d still do it on a bad week.</p>
-            <textarea id="a-action" rows={2} value={form.action} onChange={(e) => set("action", e.target.value)} onBlur={saveOnBlur} placeholder="Check my bank and update my spending sheet" />
-            {actionWords > 25 ? <p className="clear-nudge">That&rsquo;s quite a lot for one action. Could it be smaller?</p> : null}
-            <p className="au-start-q">How often?</p>
-            <div className="au-chips" role="group" aria-label="How often">
-              {FREQUENCIES.map((f) => (
-                <button key={f} type="button" aria-pressed={form.frequency === f} onClick={() => set("frequency", f)}>{f}</button>
-              ))}
-            </div>
-            {form.frequency && form.frequency !== "Daily" ? (
+            {step === 1 && (
               <>
-                <p className="au-start-q clear-q-sm">Which days? <span className="au-small">Optional</span></p>
-                <div className="au-chips" role="group" aria-label="Which days">
-                  {DAYS.map((d) => (
-                    <button key={d} type="button" aria-pressed={form.days.includes(d)} onClick={() => toggle("days", d)}>{d}</button>
+                <h1 className="clear-h">Your starting point</h1>
+                {film(1)}
+                <p className="au-start-help">You&rsquo;ve seen the wider picture. Now turn one area into something you can act on.</p>
+                <div className="au-sum-card clear-from">
+                  <p className="au-detail-k">From your snapshot</p>
+                  <p className="au-latest-big">{area.name} <span>{score}/10</span></p>
+                  {auditNote ? <p className="clear-note">&ldquo;{auditNote}&rdquo;</p> : null}
+                  {canChangeArea ? <Link href="/clear?choose=1" className="au-text-link">Start with a different area</Link> : null}
+                </div>
+                <label className="au-start-q" htmlFor="b-stepup">What would a {target} look like?</label>
+                <p className="au-start-help">Not a complete fix. One honest step up.</p>
+                <textarea id="b-stepup" rows={3} value={form.stepUp} onChange={(e) => set("stepUp", e.target.value)} onBlur={saveOnBlur} placeholder={`A ${target} would mean…`} />
+                <label className="au-start-q clear-q-sm" htmlFor="b-anything">Anything to add about where it is now? <span className="au-small">Optional</span></label>
+                <textarea id="b-anything" rows={2} value={form.anything} onChange={(e) => set("anything", e.target.value)} onBlur={saveOnBlur} />
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <h1 className="clear-h">Why does it matter to you?</h1>
+                {film(2)}
+                <div className="au-sum-card bp-said">
+                  <label className="au-detail-k" htmlFor="b-stepup2">You said a {target} would look like</label>
+                  <textarea id="b-stepup2" rows={2} value={form.stepUp} onChange={(e) => set("stepUp", e.target.value)} onBlur={saveOnBlur} />
+                </div>
+                <label className="au-start-q" htmlFor="b-why">Why it matters</label>
+                <p className="au-start-help">A sentence is enough. This is what you&rsquo;ll come back to on a hard week.</p>
+                <textarea id="b-why" rows={3} value={form.why} onChange={(e) => set("why", e.target.value)} onBlur={saveOnBlur} placeholder="Because…" />
+                {showVision ? (
+                  <>
+                    <label className="au-start-q clear-q-sm" htmlFor="b-vision">Where you&rsquo;re heading: what would a 10 look like? <span className="au-small">Optional</span></label>
+                    <textarea id="b-vision" rows={2} value={form.lifeVision} onChange={(e) => set("lifeVision", e.target.value)} onBlur={saveOnBlur} />
+                  </>
+                ) : (
+                  <button type="button" className="au-text-link as-btn bp-more" onClick={() => setShowVision(true)}>+ Add where you&rsquo;re heading (optional)</button>
+                )}
+                <p className="bp-example"><b>Example (fictional):</b> Alex chose Money &amp; Stability. &ldquo;I&rsquo;m tired of the dread every payday.&rdquo;</p>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <h1 className="clear-h">What might get in the way?</h1>
+                {film(3)}
+                <p className="au-start-help">
+                  {lowWellbeing
+                    ? "Take this at your own pace. Tap the one that fits best; you don’t have to explain it."
+                    : "Tap the one most likely to. You don’t have to explain it."}
+                </p>
+                <div className="au-chips" role="group" aria-label="What might get in the way">
+                  {WAY_OPTIONS.map((w) => (
+                    <button key={w} type="button" aria-pressed={form.way === w} onClick={() => set("way", form.way === w ? "" : w)}>{w}</button>
                   ))}
                 </div>
+                {form.way && form.way !== "Nothing obvious yet" ? (
+                  <>
+                    <label className="au-start-q clear-q-sm" htmlFor="b-waynote">Anything you&rsquo;d like to add? <span className="au-small">Optional</span></label>
+                    <textarea id="b-waynote" rows={2} value={form.wayNote} onChange={(e) => set("wayNote", e.target.value)} onBlur={saveOnBlur} />
+                  </>
+                ) : null}
+                <p className="bp-example"><b>Example (fictional):</b> Alex tapped &ldquo;I put it off when it feels hard.&rdquo;</p>
+                {lowWellbeing ? (
+                  <div className="au-sum-card clear-support">
+                    <h3>You don&rsquo;t have to do this alone</h3>
+                    <p>
+                      If things feel heavy right now, it&rsquo;s worth talking to someone you trust, your GP, or a qualified
+                      professional. If you&rsquo;re in crisis, contact your local emergency services or a crisis line.
+                    </p>
+                  </div>
+                ) : null}
               </>
-            ) : null}
-            <label className="au-start-q clear-q-sm" htmlFor="a-time">What time? <span className="au-small">Optional</span></label>
-            <input id="a-time" type="time" className="clear-time" value={form.time} onChange={(e) => set("time", e.target.value)} onBlur={saveOnBlur} />
-            <div className="au-sum-card clear-goal-draft">
-              <p className="au-detail-k">{goalEdited ? "Your goal" : "Your goal, written for you — edit freely"}</p>
-              <textarea
-                aria-label="Your goal"
-                rows={2}
-                value={form.goalTitle}
-                onChange={(e) => {
-                  setGoalEdited(true);
-                  set("goalTitle", e.target.value);
-                }}
-                onBlur={saveOnBlur}
-                placeholder="Choose your action and how often, and your goal appears here."
-              />
-            </div>
-            <label className="au-start-q" htmlFor="a-why">Why does this matter to you?</label>
-            <textarea id="a-why" rows={2} value={form.motivation} onChange={(e) => set("motivation", e.target.value)} onBlur={saveOnBlur} placeholder="Because…" />
-          </>
-        )}
+            )}
 
-        {step === 5 && (
-          <>
-            <h1 className="clear-h">Roadmap and <em>review</em></h1>
-            <label className="au-start-q" htmlFor="r-success">
-              Success looks like <span className="clear-tag">Your {target}</span>
-            </label>
-            <p className="au-start-help">What would you see or be able to count that tells you the goal is done? Doing the action once is practice; this is the finish line.</p>
-            <textarea id="r-success" rows={2} value={form.success} onChange={(e) => set("success", e.target.value)} onBlur={saveOnBlur} />
-            <p className="au-start-q">If something gets in the way, what will you do?</p>
-            <p className="au-start-help">
-              {filled(form.triedBefore) ? `You said: “${form.triedBefore.trim()}” — plan for that.` : "Think of the most likely thing that could stop you."}
-            </p>
-            <div className="clear-ifthen">
-              <label htmlFor="r-if">If</label>
-              <input id="r-if" type="text" value={form.ifObstacle} onChange={(e) => set("ifObstacle", e.target.value)} onBlur={saveOnBlur} placeholder="I miss Sunday" />
-              <label htmlFor="r-then">then I&rsquo;ll</label>
-              <input id="r-then" type="text" value={form.ifResponse} onChange={(e) => set("ifResponse", e.target.value)} onBlur={saveOnBlur} placeholder="do it Monday before work" />
-            </div>
-            <p className="au-start-q">Your goal check-ins</p>
-            <div className="au-chips clear-dates">
-              {checkins.map((d) => (
-                <span key={d.toISOString()}>{formatDate(d)} · goal check-in</span>
-              ))}
-              <span className="audit">{formatDate(nextAuditDue)} · suggested whole-life audit</span>
-            </div>
-          </>
-        )}
+            {step === 4 && (
+              <>
+                <h1 className="clear-h">What will you do, and when?</h1>
+                {film(4)}
+                <p className="bp-move">1 · Start from an idea</p>
+                <div className="au-chips" role="group" aria-label="Ideas to start from">
+                  {ideas.map((i) => (
+                    <button
+                      key={i.label}
+                      type="button"
+                      aria-pressed={idea === i.label}
+                      onClick={() => {
+                        setIdea(i.label);
+                        set("action", i.what);
+                      }}
+                    >
+                      {i.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    aria-pressed={idea === "own"}
+                    onClick={() => {
+                      setIdea("own");
+                      set("action", "");
+                      requestAnimationFrame(() => document.getElementById("b-action")?.focus());
+                    }}
+                  >
+                    Write my own
+                  </button>
+                </div>
+
+                <p className="bp-move">2 · Make it specific</p>
+                <label className="au-start-q clear-q-sm" htmlFor="b-action">What exactly?</label>
+                <input id="b-action" type="text" value={form.action} onChange={(e) => set("action", e.target.value)} onBlur={saveOnBlur} placeholder="Spend ten minutes on my spending sheet" />
+                <p className="au-start-q clear-q-sm">Which day?</p>
+                <div className="au-chips" role="group" aria-label="Which days">
+                  {DAYS.map((d) => (
+                    <button key={d} type="button" aria-pressed={form.days.includes(d)} onClick={() => toggleDay(d)}>{d}</button>
+                  ))}
+                  <button type="button" aria-pressed={form.days.length === 7} onClick={() => set("days", form.days.length === 7 ? [] : [...DAYS])}>Every day</button>
+                </div>
+                <div className="bp-two">
+                  <div>
+                    <label className="au-start-q clear-q-sm" htmlFor="b-time">What time?</label>
+                    <input id="b-time" type="time" className="clear-time" value={form.time} onChange={(e) => set("time", e.target.value)} onBlur={saveOnBlur} />
+                  </div>
+                  <div>
+                    <label className="au-start-q clear-q-sm" htmlFor="b-after">After what? <span className="au-small">Optional</span></label>
+                    <input id="b-after" type="text" value={form.after} onChange={(e) => set("after", e.target.value)} onBlur={saveOnBlur} placeholder="after dinner" />
+                  </div>
+                </div>
+
+                <p className="bp-move">3 · Make it small enough</p>
+                <label className="au-start-q clear-q-sm" htmlFor="b-fallback">Could you do this on your worst week? If not, what&rsquo;s the smallest version?</label>
+                <input id="b-fallback" type="text" value={form.fallback} onChange={(e) => set("fallback", e.target.value)} onBlur={saveOnBlur} placeholder="Open the app and look at the balance" />
+
+                <div className="au-sum-card bp-action-card" aria-live="polite">
+                  <p className="au-detail-k">Your action</p>
+                  <p className="bp-sentence">{sentence || "Choose an idea or write your own, and your action appears here."}</p>
+                  {sentence ? (
+                    hint ? <p className="bp-hint warn">{hint}</p> : <p className="bp-hint ok">&#10003; Someone watching would know whether you did it.</p>
+                  ) : null}
+                </div>
+              </>
+            )}
+
+            {step === 5 && (
+              <>
+                <h1 className="clear-h">What would tell you this is helping?</h1>
+                {film(5)}
+                <label className="au-start-q clear-q-sm" htmlFor="b-success">How you&rsquo;ll know</label>
+                <p className="au-start-help">Something you&rsquo;d notice in a few weeks. It doesn&rsquo;t need to be a finish line.</p>
+                <textarea id="b-success" rows={3} value={form.success} onChange={(e) => set("success", e.target.value)} onBlur={saveOnBlur} />
+                <div className="au-sum-card bp-said">
+                  <p className="au-detail-k">Your first weekly review</p>
+                  <p>
+                    {reviews[0] ? longDay(reviews[0].date) : "A week from now"}
+                    {firstTry ? `, the day after your first try on ${longDay(firstTry)}` : ""}. About a minute; we&rsquo;ll remind you by email.
+                  </p>
+                </div>
+                <p className="bp-example"><b>Example (fictional):</b> &ldquo;I&rsquo;ll know my balance without checking, and Sundays stop feeling heavy.&rdquo;</p>
+              </>
+            )}
+          </div>
+
+          <aside className="bp-card" aria-label="Your plan so far">
+            <p className="bp-card-k">Your plan so far</p>
+            <dl>
+              <dt>My focus</dt>
+              <dd>{area.name}, from {score} towards {target}</dd>
+              {filled(form.stepUp) ? (<><dt>Better looks like</dt><dd>{form.stepUp}</dd></>) : null}
+              {filled(form.why) ? (<><dt>Why it matters</dt><dd>{form.why}</dd></>) : null}
+              {step > 3 && filled(form.way) ? (<><dt>In the way</dt><dd>{form.way}</dd></>) : null}
+              {step > 4 && sentence ? (<><dt>My action</dt><dd>{sentence}</dd></>) : null}
+              {step > 4 && filled(form.fallback) ? (<><dt>My fallback</dt><dd>{form.fallback}</dd></>) : null}
+            </dl>
+          </aside>
+        </div>
       </div>
 
       <div className="foot-nav">
@@ -510,20 +483,5 @@ export function ClearWizard({
         </button>
       </div>
     </>
-  );
-}
-
-function FinishRedirect() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/clear");
-    router.refresh();
-  }, [router]);
-  return (
-    <div className="page" style={{ textAlign: "center", paddingTop: "4rem" }}>
-      <div className="eyebrow"><span className="eydot" /> CLEAR complete</div>
-      <h1>Your plan is set.</h1>
-      <p className="lead" style={{ margin: "0 auto" }}>Opening your plan…</p>
-    </div>
   );
 }

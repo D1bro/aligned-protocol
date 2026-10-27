@@ -3,47 +3,53 @@ import { getLatestCompletedAudit, getLifeAreas, getAuditWithResponses } from "@/
 import { getOrCreateClearPlan, getGoalForPlan, getClearPlanForAudit, chooseClearArea } from "@/lib/actions/clear";
 import { nextAuditDue } from "@/lib/audit-schedule";
 import { ClearWizard } from "./ClearWizard";
-import { ClearIntro } from "./ClearIntro";
 import { ClearDashboard } from "./ClearDashboard";
-import { getCheckIns, getAllGoals } from "@/lib/actions/checkins";
+import { getCheckIns, getAllGoals, getReviews } from "@/lib/actions/checkins";
+import { nextReview } from "@/lib/review-schedule";
 import { getMainGoal } from "@/lib/actions/goals";
 import { getReminderPreference, remindersConfigured } from "@/lib/actions/preferences";
+import { getCurrentProfile } from "@/lib/session";
+import { planStarted } from "@/lib/plan-action";
 
 const filled = (v: string | null | undefined) => !!v?.trim();
 
 // My plan answers: why does this matter, and how will I follow through?
 // With an active main goal (lib/actions/goals.ts) it shows that goal's plan —
-// the same goal My profile shows. Otherwise, CLEAR for the latest audit,
-// in four states:
+// the same goal My profile shows. Otherwise, Build your plan for the latest
+// audit, in three states:
 //  1. no area yet (or ?choose=1 before starting) -> choose where to start
-//  2. area chosen, not started                    -> introduction (echoes the area)
-//  3. in progress (or ?edit=1)                    -> the five steps
-//  4. finished                                    -> the plan dashboard
-// The area comes from the snapshot's starting point (stored on the CLEAR
-// plan) or, for audits taken before that, the old end-of-audit focus.
+//  2. in progress (or ?edit=N)                   -> the five guided steps
+//  3. finished                                   -> the plan dashboard
+// The area comes from the snapshot's starting point (stored on the plan) or,
+// for audits taken before that, the old end-of-audit focus. Guests (no
+// account yet) can build their plan; once it's set they see Your plan is set,
+// where they save it.
 export default async function ClearPage({
   searchParams,
 }: {
   searchParams: Promise<{ choose?: string; start?: string; edit?: string; new?: string; latest?: string; welcome?: string; suggested?: string }>;
 }) {
-  // ?edit=N opens CLEAR at step N (review / adjust); ?new=1 starts a fresh
-  // goal on the same plan once the last one is done; ?latest=1 opens CLEAR
-  // for the latest audit while another goal is still the main one.
-  const { choose, start, edit, new: newGoal, latest, welcome, suggested } = await searchParams;
+  // ?edit=N opens the plan at step N (review / adjust); ?new=1 starts a fresh
+  // goal on the same plan once the last one is done; ?latest=1 opens the
+  // plan for the latest audit while another goal is still the main one.
+  const { choose, start, edit, new: newGoal, latest, suggested } = await searchParams;
   const editStep = edit ? Math.min(5, Math.max(1, Number(edit) || 1)) : null;
-  const audit = await getLatestCompletedAudit();
+  const [audit, profile] = await Promise.all([getLatestCompletedAudit(), getCurrentProfile()]);
   if (!audit) redirect("/audit");
+  const isGuest = profile?.isAnonymous ?? false;
 
   const main = choose || start || newGoal || latest ? null : await getMainGoal();
   if (main && main.plan && main.area) {
     const { goal, plan, area } = main;
     const finished = filled(goal.frequency) && filled(goal.success_criteria);
+    if (finished && !editStep && isGuest) redirect("/clear/set");
     if (finished && !editStep) {
-      const [allGoals, latestPlan, configured, remindersOn] = await Promise.all([
+      const [allGoals, latestPlan, configured, remindersOn, reviews] = await Promise.all([
         getAllGoals(),
         getClearPlanForAudit(audit.id),
         remindersConfigured(),
         getReminderPreference(),
+        getReviews(goal.id),
       ]);
       return (
         <ClearDashboard
@@ -58,6 +64,7 @@ export default async function ClearPage({
           isMain
           newerAudit={plan.audit_id !== audit.id && !latestPlan ? audit.completed_at : null}
           remindersOn={configured ? remindersOn : null}
+          review={nextReview({ start: goal.created_at ?? audit.completed_at, actionWhen: goal.action_when, reviews: reviews.all })}
         />
       );
     }
@@ -72,7 +79,7 @@ export default async function ClearPage({
         score={main.baselineScore ?? 0}
         auditNote={main.baselineNote}
         lowWellbeing={wellbeing ? (scoreMap.get(wellbeing.id) ?? 10) <= 3 : false}
-        nextAuditDue={nextAuditDue(audit.completed_at).toISOString()}
+        canChangeArea={false}
         startAtStep={editStep}
       />
     );
@@ -84,9 +91,7 @@ export default async function ClearPage({
     getAuditWithResponses(audit.id),
   ]);
   const scoreByArea = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
-  const started = Boolean(
-    existing && (filled(existing.current_reality) || filled(existing.life_vision) || filled(existing.emotional_blocks))
-  );
+  const started = Boolean(existing && planStarted(existing));
   const areaId = existing?.life_area_id ?? audit.focus_area_id ?? null;
   const area = areaId ? areas.find((a) => a.id === areaId) : undefined;
 
@@ -94,7 +99,7 @@ export default async function ClearPage({
     const lowest = Math.min(...areas.map((a) => scoreByArea.get(a.id) ?? 10));
     return (
       <div className="page au-page">
-        <div className="eyebrow"><span className="eydot" /> CLEAR — choose where to start</div>
+        <div className="eyebrow"><span className="eydot" /> Build your plan · choose where to start</div>
         <h1>Which area do you want to develop <em>first?</em></h1>
         <p className="lead">
           Pick the one that, if it improved, would make the others easier too. It doesn&rsquo;t have to be your lowest
@@ -132,12 +137,14 @@ export default async function ClearPage({
   const due = nextAuditDue(audit.completed_at);
   const finished = Boolean(goal && filled(goal.frequency) && filled(goal.success_criteria));
 
+  if (finished && goal && !editStep && isGuest) redirect("/clear/set");
   if (finished && goal && !editStep) {
-    const [checkIns, allGoals, configured, remindersOn] = await Promise.all([
+    const [checkIns, allGoals, configured, remindersOn, reviews] = await Promise.all([
       getCheckIns(goal.id),
       getAllGoals(),
       remindersConfigured(),
       getReminderPreference(),
+      getReviews(goal.id),
     ]);
     return (
       <ClearDashboard
@@ -152,11 +159,9 @@ export default async function ClearPage({
         isMain={goal.status === "active"}
         newerAudit={null}
         remindersOn={configured ? remindersOn : null}
+        review={nextReview({ start: goal.created_at ?? audit.completed_at, actionWhen: goal.action_when, reviews: reviews.all })}
       />
     );
-  }
-  if (!started && !goal && start !== "1") {
-    return <ClearIntro area={area} score={score} plan={plan} nextAuditDue={due} welcome={welcome === "1"} />;
   }
   const note = (responses.find((r) => r.life_area_id === area.id)?.note as string | null | undefined)?.trim() || null;
   const wellbeing = areas.find((a) => a.name === "Emotional Wellbeing");
@@ -169,7 +174,7 @@ export default async function ClearPage({
       score={score}
       auditNote={note}
       lowWellbeing={lowWellbeing}
-      nextAuditDue={due.toISOString()}
+      canChangeArea={!started && !goal}
       startAtStep={editStep}
     />
   );

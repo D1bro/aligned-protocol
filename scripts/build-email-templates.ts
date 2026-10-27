@@ -85,16 +85,16 @@ export const TEMPLATES: Template[] = [
   {
     file: "email_change.html",
     name: "Change email address",
-    // Also what a guest gets when they save their audit by creating an
+    // Also what a guest gets when they save their plan by creating an
     // account (their sign-in gains an email), so it reads right either way.
     subject: "Confirm your email for Aligned",
     heading: "Confirm your email",
     preheader: "One click and your account is ready.",
     blocks: [
       {
-        p: "{{ if .Email }}You asked to change the email address on your Aligned account from {{ .Email }} to {{ .NewEmail }}.{{ else }}Thanks for taking the Aligned Audit. Confirm this is your email address and your results will be saved to your new account.{{ end }}",
+        p: "{{ if .Email }}You asked to change the email address on your Aligned account from {{ .Email }} to {{ .NewEmail }}.{{ else }}One click and your plan is saved. Confirm this is your email address and your snapshot and plan will be kept together in your new account.{{ end }}",
       },
-      { button: { href: link("email_change", "/"), label: "Confirm my email" } },
+      { button: { href: link("email_change", "/"), label: "{{ if .Email }}Confirm my email{{ else }}Confirm and go to my plan{{ end }}" } },
       { signOff: "Duane" },
     ],
     footerNote: "If you didn’t ask for this, you can ignore this email.",

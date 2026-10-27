@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveStartingPoint } from "@/lib/actions/clear";
-import { PROFILE_OFFER } from "@/lib/site-copy";
 
 export type StartArea = { id: string; name: string; score: number; note: string | null };
 
 // The "aha" at the top of the snapshot: the area asking for the most
 // attention, the person's own words about it, and one reflective question
-// pitched one point above their score. Saving it is what creates (or, for a
-// signed-in person, starts) their profile's first piece of work.
+// pitched one point above their score. This is step 1 of Build your plan;
+// saving it leads straight into the other four steps (no account needed
+// until the plan is set).
 export function StartingPoint({
   auditId,
   areas,
@@ -48,12 +48,13 @@ export function StartingPoint({
       setPending(false);
       return;
     }
-    router.push(isGuest ? "/login?signup=1" : "/clear");
+    router.push("/clear?latest=1");
   }
 
   return (
     <div className="au-start">
-      <div className="eyebrow"><span className="eydot" /> Your starting point</div>
+      <div className="eyebrow"><span className="eydot" /> Build your plan · step 1 of 5 · your starting point</div>
+      <p className="au-start-sub">You&rsquo;ve seen the wider picture. Now turn one area into something you can act on.</p>
 
       {isLowest && lowest.length > 1 && !picking ? (
         <>
@@ -107,18 +108,15 @@ export function StartingPoint({
 
       <div className="au-start-actions">
         <button type="button" className="btn btn-p" onClick={submit} disabled={pending}>
-          {pending ? "Saving…" : isGuest ? PROFILE_OFFER.button : `Start with ${chosen.name} →`}
+          {pending ? "Saving…" : "Build my plan →"}
         </button>
         <button type="button" className="au-text-link as-btn" onClick={() => setPicking((p) => !p)} aria-expanded={picking}>
           {picking ? "Keep this area" : "I’d rather start somewhere else"}
         </button>
       </div>
-      {isGuest ? (
-        <p className="au-start-note">
-          Saves this starting point, then creates your free profile to keep it with your snapshot and notes.{" "}
-          {PROFILE_OFFER.next}
-        </p>
-      ) : null}
+      <p className="au-start-note">
+        Four more short steps, about ten minutes.{isGuest ? " No account needed until your plan is set." : ""}
+      </p>
       {error ? <p className="au-status err" role="alert">{error}</p> : null}
 
       {picking ? (

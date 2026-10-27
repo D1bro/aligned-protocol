@@ -12,7 +12,7 @@ export type PlanCardProps = {
   goalTitle: string | null;
   frequency: string | null;
   nextAuditDue: string; // ISO date
-  // Once the plan is set: the next monthly check-in (ISO date).
+  // Once the plan is set: the next review (ISO date).
   nextCheckIn?: string | null;
   // Hide the button where the page already offers the same action.
   hideAction?: boolean;
@@ -25,8 +25,8 @@ export function PlanCard({ areaName, score, target, stage, step, goalTitle, freq
     stage === "done"
       ? { href: "/clear", label: "Open my plan" }
       : stage === "in_progress"
-        ? { href: "/clear", label: "Continue CLEAR →" }
-        : { href: "/clear", label: "Begin CLEAR →" };
+        ? { href: "/clear", label: "Continue my plan →" }
+        : { href: "/clear", label: "Build my plan →" };
 
   return (
     <section className="plan-card" aria-label="Your plan">
@@ -40,14 +40,14 @@ export function PlanCard({ areaName, score, target, stage, step, goalTitle, freq
         </p>
       ) : (
         <p className="plan-card-status">
-          {stage === "in_progress" ? `CLEAR in progress — step ${step} of 5.` : "Ready to turn this into one clear goal."}
+          {stage === "in_progress" ? `Plan in progress: step ${step} of 5.` : "Ready to turn this into one clear plan."}
         </p>
       )}
       <div className="plan-card-foot">
         {hideAction ? null : (
           <Link href={cta.href} className={stage === "done" ? "btn btn-o" : "btn btn-p"}>{cta.label}</Link>
         )}
-        <span>{nextCheckIn ? `Goal check-in ${formatDate(nextCheckIn)}` : `Suggested next audit ${formatDate(nextAuditDue)}`}</span>
+        <span>{nextCheckIn ? `Next review ${formatDate(nextCheckIn)}` : `Suggested next audit ${formatDate(nextAuditDue)}`}</span>
       </div>
     </section>
   );

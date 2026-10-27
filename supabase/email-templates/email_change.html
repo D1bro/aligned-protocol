@@ -10,9 +10,9 @@
 </td></tr>
 <tr><td style="background:#FFFFFF;padding:34px 36px 30px;border-radius:0 0 16px 16px">
 <h1 style="margin:0 0 18px;font-size:24px;line-height:1.3;font-weight:700;color:#1C1B22;letter-spacing:-0.2px">Confirm your email</h1>
-<p style="margin:0 0 16px;font-size:16px;line-height:1.65;color:#1C1B22">{{ if .Email }}You asked to change the email address on your Aligned account from {{ .Email }} to {{ .NewEmail }}.{{ else }}Thanks for taking the Aligned Audit. Confirm this is your email address and your results will be saved to your new account.{{ end }}</p>
+<p style="margin:0 0 16px;font-size:16px;line-height:1.65;color:#1C1B22">{{ if .Email }}You asked to change the email address on your Aligned account from {{ .Email }} to {{ .NewEmail }}.{{ else }}One click and your plan is saved. Confirm this is your email address and your snapshot and plan will be kept together in your new account.{{ end }}</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px"><tr><td style="background:#D3A758;border-radius:10px">
-<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email_change&amp;next=%2F" style="display:inline-block;padding:14px 26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#100F18;text-decoration:none;border-radius:10px">Confirm my email</a>
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email_change&amp;next=%2F" style="display:inline-block;padding:14px 26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#100F18;text-decoration:none;border-radius:10px">{{ if .Email }}Confirm my email{{ else }}Confirm and go to my plan{{ end }}</a>
 </td></tr></table>
 <p style="margin:8px 0 0;font-size:16px;line-height:1.6;color:#1C1B22">Duane</p>
 </td></tr>

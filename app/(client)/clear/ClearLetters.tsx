@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-// The five CLEAR answers as letters: tap one to read what they wrote.
+// Their answers to the five guided steps: tap a step to read what they wrote.
 export function ClearLetters({ items }: { items: { letter: string; name: string; text: string }[] }) {
   const [open, setOpen] = useState(0);
   const item = items[open];
   return (
     <div className="pl-letters">
-      <div className="pl-letter-row" role="tablist" aria-label="CLEAR answers">
+      <div className="pl-letter-row" role="tablist" aria-label="Your answers">
         {items.map((it, i) => (
           <button
             key={it.letter}

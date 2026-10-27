@@ -21,6 +21,7 @@ const PUBLIC_PATHS = [
   "/app-icon",
   "/manifest.webmanifest",
   "/opengraph-image",
+  "/offers",
   "/api/cron",
   "/api/reminders",
   "/api/stripe/webhook",
@@ -33,7 +34,12 @@ const PUBLIC_PATHS = [
 // client-side. It only becomes a permanent, findable account if the person
 // chooses to save it (see lib/actions/auth.ts's signUp, which converts this
 // same account in place rather than starting a second one).
+//
+// Guests can also build their plan (/clear, exactly) and see it set
+// (/clear/set) before saving it. Reviews and everything else need a saved
+// account.
 const GUEST_PATHS = ["/audit"];
+const GUEST_EXACT = ["/clear", "/clear/set"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -80,7 +86,7 @@ export async function updateSession(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
   if (isPublic) return response;
 
-  const isGuestPath = GUEST_PATHS.some((p) => path === p || path.startsWith(p + "/"));
+  const isGuestPath = GUEST_PATHS.some((p) => path === p || path.startsWith(p + "/")) || GUEST_EXACT.includes(path);
 
   if (isGuestPath) {
     // The welcome page (/audit) needs no session. The temporary guest

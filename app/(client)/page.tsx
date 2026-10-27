@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getLatestCompletedAudit, getAuditWithResponses, getLifeAreas } from "@/lib/actions/audit";
 import { getPlanState } from "@/lib/actions/clear";
 import { getMainGoal } from "@/lib/actions/goals";
-import { getAllGoals } from "@/lib/actions/checkins";
+import { getAllGoals, getReviews } from "@/lib/actions/checkins";
 import { getIdentityStatement } from "@/lib/actions/preferences";
 import { getLessonProgress } from "@/lib/actions/learn";
 import { PATHS } from "@/lib/learn-content";
@@ -19,16 +19,22 @@ import { LifeMap } from "@/components/audit/LifeMap";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { AreaBadge, IconBadge } from "@/components/ui/Icon";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
-import { ProfileSteps, type Step } from "@/components/profile/ProfileSteps";
+import { WeekDots } from "@/components/coaching/Momentum";
 import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
-import { daysUntil, formatDate, nextAuditDue, nextCheckInDue } from "@/lib/audit-schedule";
+import { daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
+import { longDay, nextReview } from "@/lib/review-schedule";
+import { weekStreak } from "@/lib/momentum";
+import { fallbackOf } from "@/lib/plan-action";
 
 const filled = (v: string | null | undefined) => !!v?.trim();
 
-// My profile answers: what am I working on, and what should I do next?
-// Order: welcome, one next action, real progress, learning, then the wider
-// audit context. The full plan lives on My plan; the history on My journey.
-export default async function ProfilePage() {
+// My profile, built around the current week. The top answers three things:
+// what matters to me now, what am I doing this week, and when will I review
+// it. Coaching comes next for coaching clients; the whole-life map, learning
+// and support options sit further down. The full plan lives on My plan; the
+// history on My journey.
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ welcome?: string; reviewed?: string }> }) {
+  const { welcome, reviewed } = await searchParams;
   const [profile, details] = await Promise.all([getCurrentProfile(), getMyDetails()]);
   const firstName = greetingName({ preferred_name: details.preferred_name, full_name: profile?.full_name }) ?? undefined;
   const audit = await getLatestCompletedAudit();
@@ -96,15 +102,19 @@ export default async function ProfilePage() {
   const areaIdx = area ? areas.findIndex((a) => a.id === area.id) : -1;
   const baseline = main ? main.baselineScore : areaIdx !== -1 ? scores[areaIdx] : null;
   const target = main ? main.target : baseline !== null ? Math.min(10, planState.plan?.step_up_target ?? baseline + 1) : null;
-
   const checkIns = main?.checkIns ?? [];
-  const lastCheckIn = checkIns[checkIns.length - 1];
-  const checkInDue = goal && planned ? nextCheckInDue(lastCheckIn?.created_at ?? goal.created_at ?? audit.completed_at) : null;
-  const checkInDays = checkInDue ? daysUntil(checkInDue) : null;
-  const checkInNow = checkInDays !== null && checkInDays <= 0;
-  const when = goal?.action_when?.trim() || goal?.frequency?.trim() || null;
-  const practised = checkIns.filter((c) => c.did_it !== "not_yet");
+  const latestScore = checkIns.length ? checkIns[checkIns.length - 1].area_score : baseline;
   const goalsDone = allGoals.filter((g) => g.status === "completed").length;
+
+  // This week, once the plan is set: the commitment from their last weekly
+  // review (or the plan's action), the fallback, and the next review.
+  const reviews = planned ? await getReviews(goal!.id) : null;
+  const next = planned && reviews ? nextReview({ start: goal!.created_at ?? audit.completed_at, actionWhen: goal!.action_when, reviews: reviews.all }) : null;
+  const run = reviews ? weekStreak(reviews.all) : null;
+  const why = main?.plan?.why_it_matters?.trim() || goal?.motivation_text?.trim() || "";
+  const commitment = reviews?.weekly.at(-1)?.next_commitment?.trim() || goal?.goal_title?.trim() || goal?.action_text?.trim() || "";
+  const fallback = fallbackOf(main?.plan);
+  const reviewName = next?.kind === "monthly" ? "monthly review" : "weekly review";
 
   // Steps from the last shared coaching session that are linked to this goal.
   const lastShared = coaching.summaries[0] ?? null;
@@ -116,53 +126,16 @@ export default async function ProfilePage() {
   const auditDue = nextAuditDue(audit.completed_at);
   const auditDays = daysUntil(auditDue);
 
-  // The one next action.
-  const action = planned
-    ? checkInNow
-      ? { href: "/clear/check-in", label: "Do my goal check-in →", quiet: { href: "/clear", label: "Open my plan" } }
-      : { href: "/clear", label: "Open my plan →", quiet: { href: "/clear/check-in", label: "Check in early" } }
-    : goal
-      ? { href: "/clear", label: "Finish my plan →", quiet: null }
-      : !area
-        ? { href: "/clear", label: "Choose where to start →", quiet: null }
-        : planState.stage === "in_progress"
-          ? { href: "/clear", label: `Continue my plan — step ${planState.step} of 5 →`, quiet: null }
-          : planState.stage === "done"
-            ? { href: "/clear?new=1", label: "Set my next goal →", quiet: { href: "/clear", label: "See my last plan" } }
-            : { href: "/clear", label: "Make my plan →", quiet: null };
-
-  const steps: Step[] = [
-    { label: "Audit completed", state: "done", detail: `${formatDate(audit.completed_at)} · ${audit.total_score ?? 0}/100` },
-    planned
-      ? { label: "Plan created", state: "done", detail: `Set ${formatDate(goal!.created_at!)}` }
-      : {
-          label: "Plan created",
-          state: "current",
-          detail:
-            goal || planState.stage === "in_progress"
-              ? "Started — your answers are saved"
-              : planState.stage === "done"
-                ? "Last goal closed — set your next one"
-                : "Five short questions, about ten minutes",
-        },
-    planned
-      ? practised.length
-        ? {
-            label: "Action underway",
-            state: "done",
-            detail: `Recorded at your goal check-in, ${formatDate(practised[practised.length - 1].created_at)}`,
-          }
-        : { label: "Action underway", state: "current", detail: "Not recorded yet — your goal check-in records what you’ve done" }
-      : { label: "Action underway", state: "todo", detail: "Once your plan is set" },
-    planned && checkInDue
-      ? {
-          label: "Review next",
-          state: checkInNow ? "current" : "todo",
-          stateLabel: checkInNow ? "Due now" : "Upcoming",
-          detail: `Goal check-in · ${checkInNow ? "due now" : formatDate(checkInDue)}`,
-        }
-      : { label: "Review next", state: "todo", detail: "Monthly goal check-in, once your plan is set" },
-  ];
+  // Before the plan is set: the one next step.
+  const action = goal
+    ? { href: "/clear", label: "Finish my plan →" }
+    : !area
+      ? { href: "/clear", label: "Choose where to start →" }
+      : planState.stage === "in_progress"
+        ? { href: "/clear", label: `Continue my plan: step ${planState.step} of 5 →` }
+        : planState.stage === "done"
+          ? { href: "/clear?new=1", label: "Set my next goal →" }
+          : { href: "/clear", label: "Build my plan →" };
 
   const path = PATHS[0];
   const doneSlugs = new Set(lessons.filter((l) => l.completed_at).map((l) => l.lesson_slug));
@@ -176,20 +149,124 @@ export default async function ProfilePage() {
 
   return (
     <div className="page au-page profile-v2">
-      {/* The top of the page: who you are, and your life map, together. */}
-      <section className="profile-top" aria-labelledby="profile-top-h">
-        <div className="profile-top-text">
-          <div className="profile-topline">
-            <div className="eyebrow"><span className="eydot" /> My profile</div>
-            {editDetails}
+      {welcome === "plan" && next ? (
+        <p className="clear-welcome" role="status"><b>Your plan is saved.</b> Your first review is {longDay(next.date)}.</p>
+      ) : null}
+      {reviewed ? (
+        <p className="clear-welcome" role="status"><b>Review saved.</b> This week is updated with your next commitment.</p>
+      ) : null}
+
+      <div className="profile-topline">
+        <div className="eyebrow"><span className="eydot" /> My profile</div>
+        {editDetails}
+      </div>
+      <h1 id="profile-top-h" className="au-latest-h pf-h">{firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
+
+      {planned && area && next ? (
+        <section className="pf-week" aria-label="This week">
+          <div className="pf-tile">
+            <h2 className="pl-k">What matters to me now?</h2>
+            <p className="pf-big">
+              <span className="focus-glow"><AreaBadge order={area.sort_order} size={18} /></span> {area.name}
+            </p>
+            {latestScore !== null && target !== null ? <p className="pf-sub">From {latestScore} towards {target}</p> : null}
+            {why ? <p className="pl-quote pf-why">&ldquo;{why}&rdquo;</p> : null}
           </div>
-          <h1 id="profile-top-h" className="au-latest-h">{firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
-          <p className="profile-sub">Start from where you are today.</p>
+          <div className="pf-tile is-gold">
+            <h2 className="pl-k">What am I doing this week?</h2>
+            <p className="pf-commit">{commitment}</p>
+            {fallback ? <p className="pf-sub">On a hard week: {fallback.charAt(0).toLowerCase() + fallback.slice(1)}</p> : null}
+            {goalSteps.length ? (
+              <div className="next-action-coaching">
+                <p className="au-detail-k">Agreed with your coach</p>
+                <ul>{goalSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>
+              </div>
+            ) : null}
+            <Link href="/clear" className="au-text-link">See my plan</Link>
+          </div>
+          <div className="pf-tile">
+            <h2 className="pl-k">When will I review it?</h2>
+            <p className="pf-big">{next.due ? "Due now" : longDay(next.date)}</p>
+            <p className="pf-sub">
+              {next.kind === "monthly" ? "Your monthly review: score the area again" : `Weekly review · about a minute`}
+            </p>
+            {run ? <WeekDots weeks={run.weeks} what="Did a weekly review" /> : null}
+            <p className="pf-sub">{run?.streak ? `${run.streak}-week run. Keep it going.` : "Your run of weeks starts with your first review."}</p>
+            <Link href="/clear/review" className={next.due ? "btn btn-p" : "btn btn-g"}>
+              {next.due ? `Do my ${reviewName} →` : "Review early"}
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <section className="next-action" aria-labelledby="next-action-h">
+          <div className="eyebrow">
+            <span className="eydot" /> Your next step{area ? ` · ${area.name}` : ""}
+          </div>
+          {area && baseline !== null && target !== null ? (
+            <p className="next-action-meta">Started at {baseline}/10 · working towards {target}</p>
+          ) : null}
+          <div className="next-action-head">
+            {area ? <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span> : null}
+            <h2 id="next-action-h">
+              {goal
+                ? `Finish your plan for ${area?.name ?? "this goal"}`
+                : !area
+                  ? "Choose one area to work on"
+                  : planState.stage === "in_progress"
+                    ? `Finish your plan for ${area.name}`
+                    : planState.stage === "done"
+                      ? "Goal done. What’s next?"
+                      : `Turn ${area.name} into one clear plan`}
+            </h2>
+          </div>
+          <p className="next-action-sub">
+            {goal || planState.stage === "in_progress"
+              ? "Your answers are saved. Pick up where you left off."
+              : planState.stage === "done"
+                ? "Set your next goal for this area, or choose a new area."
+                : "Five guided steps. It ends with one action, when you’ll do it, and a short weekly review."}
+          </p>
+          <div className="next-action-cta">
+            <Link href={action.href} className="btn btn-p">{action.label}</Link>
+          </div>
+        </section>
+      )}
+
+      {main?.otherActive.length ? (
+        <p className="next-action-note">
+          This is your main goal. You have {main.otherActive.length} other active goal
+          {main.otherActive.length === 1 ? "" : "s"} — <Link href="/clear#other-goals">choose your main goal in My plan</Link>.
+        </p>
+      ) : null}
+
+      {/* Coaching clients: next session, agreed steps, and the coach's suggestion. */}
+      <CoachingCard
+        data={coaching}
+        goals={allGoals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" }))}
+        hasGoal={!!goal}
+        credits={credits}
+      />
+
+      {/* Daily Alignment is Tier 2: staff only until Tier 2 exists. */}
+      {canUseDailyAlignment(profile?.role) ? <DailyAlignmentCard /> : null}
+
+      {offerDetails ? <DetailsPrompt /> : null}
+
+      {/* Further down: the whole picture, learning and history. */}
+      <section className="profile-top pf-lower" aria-labelledby="pf-map-h">
+        <div className="profile-top-text">
+          <h2 id="pf-map-h" className="pl-h">Your whole life</h2>
           {identity.available ? <IdentityStatement initial={identity.text} /> : null}
           <div className="profile-links">
             <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
             <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
+            <Link href="/summary" className="au-text-link">My journey</Link>
           </div>
+          {goalsDone ? (
+            <p className="profile-won">
+              <span aria-hidden="true">✓</span> {goalsDone} goal{goalsDone === 1 ? "" : "s"} completed
+            </p>
+          ) : null}
         </div>
         <figure className="profile-top-map">
           <div className="au-chart profile-map-card">
@@ -215,106 +292,31 @@ export default async function ProfilePage() {
         </figure>
       </section>
 
-      {/* Coaching clients: next session, agreed steps, and the coach's suggestion. */}
-      <CoachingCard
-        data={coaching}
-        goals={allGoals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" }))}
-        hasGoal={!!goal}
-        credits={credits}
-      />
-
-      {/* Daily Alignment is Tier 2: staff only until Tier 2 exists. */}
-      {canUseDailyAlignment(profile?.role) ? <DailyAlignmentCard /> : null}
-      <div className="profile-grid">
-        <section className="next-action" aria-labelledby="next-action-h">
-          <div className="eyebrow">
-            <span className="eydot" /> {planned ? "Your next action" : "Your next step"}{area ? ` · ${area.name}` : ""}
-          </div>
-          {area && baseline !== null && target !== null ? (
-            <p className="next-action-meta">Started at {baseline}/10 · working towards {target}</p>
-          ) : null}
-          <div className="next-action-head">
-            {area ? <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span> : null}
-            <h2 id="next-action-h">
-            {planned
-              ? goal!.action_text?.trim() || goal!.goal_title?.trim()
-              : goal
-                ? `Finish your plan for ${area?.name ?? "this goal"}`
-                : !area
-                  ? "Choose one area to work on"
-                  : planState.stage === "in_progress"
-                    ? `Finish your plan for ${area.name}`
-                    : planState.stage === "done"
-                      ? "Goal done. What’s next?"
-                      : `Turn ${area.name} into one clear goal`}
-            </h2>
-          </div>
-          {planned ? (
-            <dl className="next-action-facts">
-              {when ? (<><dt>When</dt><dd>{when}</dd></>) : null}
-              <dt>Goal check-in</dt>
-              <dd>{checkInNow ? "Due now" : formatDate(checkInDue!)}</dd>
-            </dl>
+      <div className="pf-more">
+        <section className="profile-card" aria-labelledby="learning-h">
+          <h2 id="learning-h"><IconBadge name="book" size={15} /> {nextLesson ? "Continue learning" : "Academy"}</h2>
+          <p className="profile-card-k">{path.title}</p>
+          {nextLesson ? (
+            <Link href={`/learn/${path.slug}/${nextLesson.slug}`} className="profile-lesson">
+              <b>{nextLesson.title}</b>
+              <span>Lesson {path.lessons.indexOf(nextLesson) + 1} · about {nextLesson.minutes} min</span>
+            </Link>
           ) : (
-            <p className="next-action-sub">
-              {goal || planState.stage === "in_progress"
-                ? "Your answers are saved. Pick up where you left off."
-                : planState.stage === "done"
-                  ? "Set your next goal for this area, or choose a new area."
-                  : "CLEAR is five short questions. It ends with one action, when you’ll do it, and a monthly goal check-in."}
-            </p>
+            <p className="profile-lesson-done"><span aria-hidden="true">✓</span> Path complete</p>
           )}
-          <div className="next-action-cta">
-            <Link href={action.href} className="btn btn-p">{action.label}</Link>
-            {action.quiet ? <Link href={action.quiet.href} className="au-text-link">{action.quiet.label}</Link> : null}
+          <div className="learn-bar" role="img" aria-label={`${lessonsDone} of ${path.lessons.length} lessons complete`}>
+            <span style={{ width: `${(lessonsDone / path.lessons.length) * 100}%` }} />
           </div>
-          {goalSteps.length ? (
-            <div className="next-action-coaching">
-              <p className="au-detail-k">Agreed with your coach for this goal</p>
-              <ul>{goalSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>
-            </div>
-          ) : null}
-          {main?.otherActive.length ? (
-            <p className="next-action-note">
-              This is your main goal. You have {main.otherActive.length} other active goal
-              {main.otherActive.length === 1 ? "" : "s"} — <Link href="/clear#other-goals">choose your main goal in My plan</Link>.
-            </p>
-          ) : null}
+          <p className="profile-card-foot">
+            {lessonsDone} of {path.lessons.length} lessons complete · <Link href="/learn" className="au-text-link">Academy</Link>
+          </p>
         </section>
-
-        <div className="profile-side">
-          {offerDetails ? <DetailsPrompt /> : null}
-          <section className="profile-card" aria-labelledby="progress-h">
-            <h2 id="progress-h"><IconBadge name="journey" size={15} /> Your progress</h2>
-            <ProfileSteps steps={steps} />
-            {goalsDone ? (
-              <p className="profile-won">
-                <span aria-hidden="true">✓</span> {goalsDone} goal{goalsDone === 1 ? "" : "s"} completed
-              </p>
-            ) : null}
-          </section>
-
-          <section className="profile-card" aria-labelledby="learning-h">
-            <h2 id="learning-h"><IconBadge name="book" size={15} /> {nextLesson ? "Continue learning" : "Academy"}</h2>
-            <p className="profile-card-k">{path.title}</p>
-            {nextLesson ? (
-              <Link href={`/learn/${path.slug}/${nextLesson.slug}`} className="profile-lesson">
-                <b>{nextLesson.title}</b>
-                <span>Lesson {path.lessons.indexOf(nextLesson) + 1} · about {nextLesson.minutes} min</span>
-              </Link>
-            ) : (
-              <p className="profile-lesson-done"><span aria-hidden="true">✓</span> Path complete</p>
-            )}
-            <div className="learn-bar" role="img" aria-label={`${lessonsDone} of ${path.lessons.length} lessons complete`}>
-              <span style={{ width: `${(lessonsDone / path.lessons.length) * 100}%` }} />
-            </div>
-            <p className="profile-card-foot">
-              {lessonsDone} of {path.lessons.length} lessons complete · <Link href="/learn" className="au-text-link">Academy</Link>
-            </p>
-          </section>
-        </div>
+        <section className="profile-card" aria-labelledby="support-h">
+          <h2 id="support-h"><IconBadge name="chat" size={15} /> Support with your plan</h2>
+          <p className="admin-card-sub">Optional: a daily practice, a live weekly hour with a small group, or six weeks with an Aligned Coach.</p>
+          <p className="profile-card-foot"><Link href="/offers" className="au-text-link">Compare the options →</Link></p>
+        </section>
       </div>
-
     </div>
   );
 }

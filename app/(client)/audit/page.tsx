@@ -206,9 +206,9 @@ async function LatestAudit({
           <div className="au-latest-actions">
             <Link href="/audit/results" className="btn btn-p">View my full snapshot</Link>
             {isGuest ? (
-              <Link href="/login?signup=1" className="btn btn-o">Save it to a free profile</Link>
+              <Link href="/audit/results#step-up" className="btn btn-o">Build my plan</Link>
             ) : (
-              <Link href="/clear" className="btn btn-o">Go to CLEAR</Link>
+              <Link href="/clear" className="btn btn-o">Go to my plan</Link>
             )}
             <Link href="/audit/1" className="au-text-link">
               {days <= 0 ? "Retake the audit" : "Revisit early"}
