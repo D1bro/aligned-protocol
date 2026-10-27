@@ -63,6 +63,7 @@ export default function PrivacyPage() {
         <li><b>Vercel</b> — hosts the website and counts anonymous visits.</li>
         <li><b>Resend</b> — sends our emails.</li>
         <li><b>Stripe</b> — takes card payments, including monthly membership payments.</li>
+        <li><b>Anthropic</b> — when a coaching transcript has been added, drafts the session summary and the coach&rsquo;s reflection from it. Anthropic doesn&rsquo;t use it to train its models.</li>
       </ul>
       <p>
         Some of these providers are based in, or may access information from, the United States. Where that happens the
