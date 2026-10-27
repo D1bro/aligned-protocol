@@ -17,9 +17,11 @@ export default function PrivacyPage() {
     <LegalPage title="Privacy policy">
       <h2>Who we are</h2>
       <p>
-        Aligned (the-aligned.com) is run by Duane Bryan <b>[to confirm: business name and legal status, e.g. sole trader or
-        company and number]</b>, <b>[to confirm: postal address]</b>. We are the &ldquo;controller&rdquo; of your personal
-        information. ICO registration number: <b>[to confirm]</b>. Contact us about anything in this policy at {mail}.
+        Aligned (the-aligned.com) is run by Aligned Media Ltd, a company registered in England and Wales (company number
+        17117977), whose registered office is 369 Grimshaw Lane, Middleton, Manchester, M24 1GQ. Its director is Duane
+        Bryan. We are the &ldquo;controller&rdquo; of your personal
+        information, and we&rsquo;re registered with the Information Commissioner&rsquo;s Office (registration reference
+        ZC272357). Contact us about anything in this policy at {mail}.
       </p>
 
       <h2>The short version</h2>
@@ -63,11 +65,12 @@ export default function PrivacyPage() {
         <li><b>Vercel</b> — hosts the website and counts anonymous visits.</li>
         <li><b>Resend</b> — sends our emails.</li>
         <li><b>Stripe</b> — takes card payments, including monthly membership payments.</li>
+        <li><b>Anthropic</b> — when a coaching transcript has been added, drafts the session summary and the coach&rsquo;s reflection from it. Anthropic doesn&rsquo;t use it to train its models.</li>
       </ul>
       <p>
         Some of these providers are based in, or may access information from, the United States. Where that happens the
         transfer is protected by the UK&rsquo;s approved safeguards (such as the UK–US data bridge or standard contractual
-        clauses). <b>[to confirm with each provider&rsquo;s data processing terms]</b>
+        clauses).
       </p>
 
       <h2>How long we keep it</h2>
