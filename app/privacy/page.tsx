@@ -17,9 +17,11 @@ export default function PrivacyPage() {
     <LegalPage title="Privacy policy">
       <h2>Who we are</h2>
       <p>
-        Aligned (the-aligned.com) is run by Duane Bryan <b>[to confirm: business name and legal status, e.g. sole trader or
-        company and number]</b>, <b>[to confirm: postal address]</b>. We are the &ldquo;controller&rdquo; of your personal
-        information. ICO registration number: <b>[to confirm]</b>. Contact us about anything in this policy at {mail}.
+        Aligned (the-aligned.com) is run by Aligned Media Ltd, a company registered in England and Wales (company number
+        17117977), whose registered office is 369 Grimshaw Lane, Middleton, Manchester, M24 1GQ. Its director is Duane
+        Bryan. We are the &ldquo;controller&rdquo; of your personal
+        information, and we&rsquo;re registered with the Information Commissioner&rsquo;s Office (registration reference
+        ZC272357). Contact us about anything in this policy at {mail}.
       </p>
 
       <h2>The short version</h2>

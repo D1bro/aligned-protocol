@@ -17,8 +17,9 @@ export default function TermsPage() {
       <h2>About these terms</h2>
       <p>
         These terms cover your use of Aligned (the-aligned.com): the free audit and profile, the Aligned Practice and
-        Aligned Momentum memberships, and coaching. Aligned is run by Duane Bryan <b>[to confirm: business name and legal
-        status]</b>. By using the
+        Aligned Momentum memberships, and coaching. Aligned is run by Aligned Media Ltd, a company registered in England
+        and Wales (company number 17117977), registered office 369 Grimshaw Lane, Middleton, Manchester, M24 1GQ
+        (&ldquo;we&rdquo;, &ldquo;us&rdquo;). By using the
         site you agree to these terms and to our <Link href="/privacy">privacy policy</Link>.
       </p>
 
