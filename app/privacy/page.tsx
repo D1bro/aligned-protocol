@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         <li>Your audit answers, notes and plans are yours. We use them to give you the service, nothing else.</li>
         <li>We never sell your information or use it for advertising.</li>
         <li>Some of what you write can be sensitive (for example about health or emotions). We only keep it because you choose to enter it, and you can ask us to delete it at any time.</li>
-        <li>If you work with Duane as your coach, Duane can see your audit, plan and what you choose to share — not your private reflections or private preparation.</li>
+        <li>If you work with an Aligned Coach, your coach can see your audit, plan, weekly and monthly reviews and what you choose to share — not your daily practice, journal, private reflections or private preparation.</li>
       </ul>
 
       <h2>What we collect</h2>
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         <li><b>Journal (Aligned Practice and Momentum):</b> the entries you choose to write and save. Private to you: your coach and our team can&rsquo;t read them. You can export or delete them yourself at any time, including after a membership ends.</li>
         <li><b>Membership (if you join Practice or Momentum):</b> which membership you have, its price, status and renewal date. Stripe holds your card and takes the monthly payments; we never see or store your card number.</li>
         <li><b>Your details (optional):</b> preferred name, phone number, town or city, country and time zone.</li>
-        <li><b>Coaching (if you work with Duane):</b> session dates and times, Duane&rsquo;s private notes, conversation transcripts (only with your agreement), session summaries, agreed actions, your updates and anything you choose to share before a session.</li>
+        <li><b>Coaching (if you work with an Aligned Coach):</b> session dates and times, your coach&rsquo;s private notes, conversation transcripts (only with your agreement), session summaries, agreed actions, your updates and anything you choose to share before a session.</li>
         <li><b>Billing (if you pay for coaching):</b> billing name and postal address, invoices, payments, credit notes and refunds. Card payments are handled by Stripe; we never see or store your card number.</li>
         <li><b>Emails:</b> a record of the emails we send you (for example invoices, session summaries and reminders) and whether you&rsquo;ve turned reminders off.</li>
         <li><b>Coaching enquiries:</b> what you tell us when you ask about coaching.</li>

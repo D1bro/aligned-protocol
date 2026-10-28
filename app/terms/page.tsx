@@ -41,7 +41,7 @@ export default function TermsPage() {
       <h2>Your content</h2>
       <p>
         What you write — answers, notes, plans and reflections — stays yours. You let us store and use it only to provide
-        the service to you (and, if you work with Duane, to support your coaching). Please don&rsquo;t enter information
+        the service to you (and, if you work with an Aligned Coach, to support your coaching). Please don&rsquo;t enter information
         about other people that they wouldn&rsquo;t want shared.
       </p>
 
