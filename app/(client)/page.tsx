@@ -22,7 +22,6 @@ import { LifeMap } from "@/components/audit/LifeMap";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { AreaBadge, IconBadge } from "@/components/ui/Icon";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
-import { WeekDots } from "@/components/coaching/Momentum";
 import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
 import { daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
 import { longDay, nextReview } from "@/lib/review-schedule";
@@ -30,6 +29,30 @@ import { weekStreak } from "@/lib/momentum";
 import { fallbackOf } from "@/lib/plan-action";
 
 const filled = (v: string | null | undefined) => !!v?.trim();
+// "Friday 6 Nov" for a review date (YYYY-MM-DD), and today's date in their zone.
+const shortDay = (ymd: string) =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(new Date(`${ymd}T12:00:00Z`));
+function todayLabel(zone: string | null | undefined) {
+  const opts = { weekday: "long", day: "numeric", month: "long" } as const;
+  try { return new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: zone || "Europe/London" }).format(new Date()); }
+  catch { return new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: "Europe/London" }).format(new Date()); }
+}
+
+// The focus area's latest score as a ring out of 10, with the target marked.
+function AreaRing({ score, target }: { score: number; target: number | null }) {
+  const c = 2 * Math.PI * 38;
+  const at = (n: number) => (Math.max(0, Math.min(10, n)) / 10) * c;
+  return (
+    <svg width="88" height="88" viewBox="0 0 88 88" role="img" aria-label={`Scored ${score} out of 10${target !== null ? `, aiming for ${target}` : ""}`} className="pfw-ring">
+      <circle cx="44" cy="44" r="38" fill="none" stroke="var(--bg5)" strokeWidth="7" />
+      <circle cx="44" cy="44" r="38" fill="none" stroke="var(--gold)" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${at(score)} ${c}`} transform="rotate(-90 44 44)" />
+      {target !== null && target > score ? (
+        <circle cx="44" cy="44" r="38" fill="none" stroke="var(--gold2)" strokeOpacity=".45" strokeWidth="7" strokeLinecap="round" strokeDasharray={`0 ${at(target)} 0.01 ${c}`} transform="rotate(-90 44 44)" />
+      ) : null}
+      <text x="44" y="52" textAnchor="middle" fontSize="24" fontWeight="700" fill="var(--text)" className="pfw-ring-n">{score}</text>
+    </svg>
+  );
+}
 
 // My profile, built around the current week. The top answers three things:
 // what matters to me now, what am I doing this week, and when will I review
@@ -161,42 +184,60 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       ) : null}
 
       <div className="profile-topline">
-        <div className="eyebrow"><span className="eydot" /> My profile</div>
+        <div className="eyebrow"><span className="eydot" /> {todayLabel(details.timezone)}</div>
         {editDetails}
       </div>
       <h1 id="profile-top-h" className="au-latest-h pf-h">{firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
 
       {planned && area && next ? (
-        <section className="pf-week" aria-label="This week">
-          <div className="pf-tile">
-            <h2 className="pl-k">What matters to me now?</h2>
-            <p className="pf-big">
-              <span className="focus-glow"><AreaBadge order={area.sort_order} size={18} /></span> {area.name}
-            </p>
-            {latestScore !== null && target !== null ? <p className="pf-sub">From {latestScore} towards {target}</p> : null}
-            {why ? <p className="pl-quote pf-why">&ldquo;{why}&rdquo;</p> : null}
+        <section className="pfw" aria-label="This week">
+          <div className="pfw-col">
+            <h2 className="pfw-k">What matters now</h2>
+            <div className="pfw-area">
+              {latestScore !== null ? <AreaRing score={latestScore} target={target} /> : <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span>}
+              <div>
+                <p className="pfw-area-name">{area.name}</p>
+                {latestScore !== null && target !== null ? <p className="pfw-sub">{latestScore} now · aiming for {target}</p> : null}
+              </div>
+            </div>
+            {why ? <p className="pl-quote pfw-why">&ldquo;{why}&rdquo;</p> : null}
           </div>
-          <div className="pf-tile is-gold">
-            <h2 className="pl-k">What am I doing this week?</h2>
-            <p className="pf-commit">{commitment}</p>
-            {fallback ? <p className="pf-sub">On a hard week: {fallback.charAt(0).toLowerCase() + fallback.slice(1)}</p> : null}
+          <div className="pfw-col is-gold">
+            <h2 className="pfw-k">This week I will</h2>
+            <p className="pfw-commit">{commitment}</p>
+            {goal?.action_when?.trim() || fallback ? (
+              <ul className="pfw-tags">
+                {goal?.action_when?.trim() && goal.action_when.trim().length <= 48 ? <li className="is-gold">{goal.action_when.trim()}</li> : null}
+                {fallback ? <li>Hard week: {fallback.charAt(0).toLowerCase() + fallback.slice(1)}</li> : null}
+              </ul>
+            ) : null}
             {goalSteps.length ? (
               <div className="next-action-coaching">
                 <p className="au-detail-k">Agreed with your coach</p>
                 <ul>{goalSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>
               </div>
             ) : null}
-            <Link href="/clear" className="au-text-link">See my plan</Link>
+            <Link href="/clear" className="pfw-link">See my plan →</Link>
           </div>
-          <div className="pf-tile">
-            <h2 className="pl-k">When will I review it?</h2>
-            <p className="pf-big">{next.due ? "Due now" : longDay(next.date)}</p>
-            <p className="pf-sub">
-              {next.kind === "monthly" ? "Your monthly review: score the area again" : `Weekly review · about a minute`}
-            </p>
-            {run ? <WeekDots weeks={run.weeks} what="Did a weekly review" /> : null}
-            <p className="pf-sub">{run?.streak ? `${run.streak}-week run. Keep it going.` : "Your run of weeks starts with your first review."}</p>
-            <Link href="/clear/review" className={next.due ? "btn btn-p" : "btn btn-g"}>
+          <div className="pfw-col">
+            <h2 className="pfw-k">{next.kind === "monthly" ? "Next review · monthly" : "Next review"}</h2>
+            <div className="pfw-when">
+              <p className="pfw-date">{next.due ? "Due now" : shortDay(next.date)}</p>
+              <p className="pfw-sub">
+                {next.due ? (next.kind === "monthly" ? "Score the area again" : "About a minute") : `${next.daysAway === 1 ? "tomorrow" : `in ${next.daysAway} days`} · ${next.kind === "monthly" ? "score the area again" : "about a minute"}`}
+              </p>
+            </div>
+            {run ? (
+              <div className="pfw-run">
+                <div className="pfw-bars" role="img" aria-label={`A weekly review in ${run.weeks.filter(Boolean).length} of the last ${run.weeks.length} weeks`}>
+                  {run.weeks.map((on, i) => <span key={i} className={on ? "on" : undefined} />)}
+                </div>
+                <p className="pfw-sub">
+                  {run.streak ? `${run.streak} ${run.streak === 1 ? "week" : "weeks"} in a row.` : "Your run starts with your first review."} Every fourth review is the monthly one.
+                </p>
+              </div>
+            ) : null}
+            <Link href="/clear/review" className={next.due ? "btn btn-p pfw-btn" : "btn btn-g pfw-btn"}>
               {next.due ? `Do my ${reviewName} →` : "Review early"}
             </Link>
           </div>
@@ -251,10 +292,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         credits={credits}
       />
 
-      {/* The daily practice: today's wins for members, locked with the way to
-          join for everyone else. Then Momentum's weekly session. */}
-      {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : <DailyAlignmentCard locked joinOpen={await joiningOpen()} />}
-      {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
+      {/* Today: the daily practice (today's wins for members, locked with the
+          way to join for everyone else), then Momentum's weekly session. */}
+      <section className="pf-today" aria-labelledby="pf-today-h">
+        <h2 id="pf-today-h" className="pf-section-k">Today</h2>
+        {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : <DailyAlignmentCard locked joinOpen={await joiningOpen()} />}
+        {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
+      </section>
 
       {offerDetails ? <DetailsPrompt /> : null}
 

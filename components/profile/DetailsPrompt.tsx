@@ -9,9 +9,8 @@ export function DetailsPrompt() {
   const [hidden, setHidden] = useState(false);
   if (hidden) return null;
   return (
-    <section className="profile-card details-prompt" aria-labelledby="details-prompt-h">
-      <h2 id="details-prompt-h">Add your details when you&rsquo;re ready.</h2>
-      <p>Keep your contact information and location up to date.</p>
+    <section className="details-strip" aria-labelledby="details-prompt-h">
+      <p><b id="details-prompt-h">Add your details when you&rsquo;re ready.</b> Your time zone keeps your daily practice on your day.</p>
       <div className="details-prompt-actions">
         <Link href="/details" className="btn btn-o bl-btn">Add my details</Link>
         <button
