@@ -87,7 +87,15 @@ export const AFTER_REGISTERING = [
   "Act on it, then a one-minute weekly review keeps it going.",
 ];
 
-export const FAQS = [
+// Who sees what, under "Who can see my answers?". Keep it in step with the
+// database rules (coaches: audits, plans and reviews of their own clients;
+// nobody else: Daily Alignment, the journal, and anything marked private).
+export const WHO_SEES = {
+  coach: ["Your audit scores and notes", "Your plan: your goal, your action and how you’ll know", "Your weekly and monthly reviews", "Anything you choose to share before a session"],
+  you: ["Your daily practice and weekly reflections", "Your journal", "Any reflection or preparation you mark private"],
+};
+
+export const FAQS: { q: string; a: string; whoSees?: boolean }[] = [
   { q: "Is it free?", a: "Yes. The audit and your profile are free." },
   { q: "How long does it take?", a: "About ten minutes for the audit. Building your first plan takes about ten more, whenever you’re ready." },
   { q: "Do I need an account?", a: "Not to start. You see your snapshot and build your plan first, then save it in a free account." },
@@ -97,7 +105,8 @@ export const FAQS = [
   },
   {
     q: "Who can see my answers?",
-    a: "Your answers are private to your account. If you choose to work with Duane as your coach, Duane can see your audit and plan to support you. Private reflections stay private.",
+    a: "Everything is private to your account. If you work with an Aligned Coach, they see what helps them coach you, and nothing you keep private.",
+    whoSees: true,
   },
   { q: "What if I stop halfway?", a: "Your answers save as you go. Come back on the same device and you’ll carry on where you left off." },
 ];

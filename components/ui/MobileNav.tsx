@@ -7,7 +7,7 @@ import { signOut } from "@/lib/actions/auth";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Icon, type IconName } from "@/components/ui/Icon";
 
-export type MobileNavLink = { href: string; label: string; icon: IconName; match: (p: string) => boolean; group?: string };
+export type MobileNavLink = { href: string; label: string; icon: IconName; match: (p: string) => boolean; group?: string; locked?: boolean };
 
 // The menu links, with a small heading wherever the group changes.
 export function NavLinks({ links, pathname, onNavigate }: { links: MobileNavLink[]; pathname: string; onNavigate?: () => void }) {
@@ -19,6 +19,12 @@ export function NavLinks({ links, pathname, onNavigate }: { links: MobileNavLink
           <Link href={l.href} className={`ni ${l.match(pathname) ? "active" : ""}`} onClick={onNavigate}>
             <Icon name={l.icon} />
             {l.label}
+            {l.locked ? (
+              <span className="ni-lock" title="Part of Aligned Practice">
+                <svg width="11" height="11" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M7 9V6.5a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+                <span className="sr-only">(Aligned Practice)</span>
+              </span>
+            ) : null}
           </Link>
         </div>
       ))}

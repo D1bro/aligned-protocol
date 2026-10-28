@@ -15,7 +15,7 @@ import { getMyCoaching } from "@/lib/actions/member-coaching";
 import { getMyCredits } from "@/lib/actions/packages";
 import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { canUseDailyAlignment } from "@/lib/alignment";
-import { getMomentumDetails, getMyAccess } from "@/lib/actions/membership";
+import { getMomentumDetails, getMyAccess, joiningOpen } from "@/lib/actions/membership";
 import { hasMomentum } from "@/lib/membership";
 import { MomentumCard } from "@/components/membership/MomentumCard";
 import { LifeMap } from "@/components/audit/LifeMap";
@@ -251,8 +251,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         credits={credits}
       />
 
-      {/* Members: the daily practice, and Momentum's weekly session. */}
-      {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : null}
+      {/* The daily practice: today's wins for members, locked with the way to
+          join for everyone else. Then Momentum's weekly session. */}
+      {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : <DailyAlignmentCard locked joinOpen={await joiningOpen()} />}
       {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
 
       {offerDetails ? <DetailsPrompt /> : null}

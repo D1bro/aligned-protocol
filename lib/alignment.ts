@@ -197,6 +197,19 @@ export function describeCounts(c: WeekCounts): { answers: string; days: string }
   return { answers, days: parts.join(" · ") };
 }
 
+// The day's three wins: arriving (the morning audio or a moment's pause),
+// setting an intention (any of the three morning answers), and reflecting
+// (any evening answer or note). Each is a win however small; none is scored.
+export type AlignmentWins = { arrive: boolean; intention: boolean; reflect: boolean; count: number };
+type WinFields = Partial<Pick<DailyAlignmentInput, "presence_done" | "priority" | "value" | "wellbeing_action" | "evening_note" | ScoreField>>;
+const filled = (v: string | null | undefined) => !!v && v.trim() !== "";
+export function alignmentWins(day: WinFields | null | undefined): AlignmentWins {
+  const arrive = day?.presence_done === true;
+  const intention = !!day && (filled(day.priority) || filled(day.value) || filled(day.wellbeing_action));
+  const reflect = !!day && (filled(day.evening_note) || SCORE_FIELDS.some((f) => day[f] != null));
+  return { arrive, intention, reflect, count: Number(arrive) + Number(intention) + Number(reflect) };
+}
+
 // Saving is for today and earlier only: a reflection on a day that hasn't
 // happened yet isn't one. Weeks likewise stop at the current week.
 export function isFutureDay(date: string, timezone: string, now = new Date()): boolean {
