@@ -32,10 +32,6 @@ export default async function AlignmentPage({ searchParams }: { searchParams: Pr
   const initialTimezone = typeof details?.timezone === "string" ? details.timezone : undefined;
   const query = await searchParams;
   const initialView = query.view === "week" || query.view === "privacy" ? query.view : "today";
-  return (
-    <>
-      <div className="practice-nav-wrap"><PracticeNav on="daily" /></div>
-      <AlignmentLive initialDate={query.date} initialTimezone={initialTimezone} initialView={initialView} />
-    </>
-  );
+  // The workspace draws its own tabs, Journal among them.
+  return <AlignmentLive initialDate={query.date} initialTimezone={initialTimezone} initialView={initialView} />;
 }

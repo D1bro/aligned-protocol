@@ -133,3 +133,15 @@ test("Daily Alignment is for Practice and Momentum members, and staff", () => {
   assert.equal(canUseDailyAlignment("client", "practice"), true);
   assert.equal(canUseDailyAlignment("client", "momentum"), true);
 });
+
+test("the day's three wins: arrive, an intention, a reflection", async () => {
+  const { alignmentWins } = await import("../lib/alignment.ts");
+  assert.deepEqual(alignmentWins(null), { arrive: false, intention: false, reflect: false, count: 0 });
+  assert.equal(alignmentWins({ presence_done: true }).count, 1);
+  assert.equal(alignmentWins({ presence_done: null, priority: "  " }).intention, false, "blank text isn't a win");
+  assert.equal(alignmentWins({ value: "courage" }).intention, true);
+  assert.equal(alignmentWins({ wellbeing_action: "a walk" }).intention, true);
+  assert.equal(alignmentWins({ values_choice: "not_needed" }).reflect, true, "any evening answer counts");
+  assert.equal(alignmentWins({ evening_note: "rested" }).reflect, true);
+  assert.deepEqual(alignmentWins({ presence_done: true, priority: "plan", wellbeing: "partly" }), { arrive: true, intention: true, reflect: true, count: 3 });
+});

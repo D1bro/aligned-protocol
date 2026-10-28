@@ -26,12 +26,13 @@ const TABS: MobileNavLink[] = [
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
 // The daily practice (intention, reflection, journal) is for Practice and
-// Momentum members and staff (lib/alignment.ts). Membership is for everyone.
+// Momentum members and staff (lib/alignment.ts); everyone else sees it with a
+// lock, and the page offers the way to join. Membership is for everyone.
 const ALIGNMENT_LINK: MobileNavLink = { group: "You", href: "/alignment", label: "Daily practice", icon: "sunrise", match: (p) => p.startsWith("/alignment") };
 const MEMBERSHIP_LINK: MobileNavLink = { group: "Grow", href: "/membership", label: "Membership", icon: "star", match: (p) => p.startsWith("/membership") };
 const linksFor = (staff: boolean, practice: boolean) => [
   CLIENT_LINKS[0],
-  ...(practice || staff ? [ALIGNMENT_LINK] : []),
+  { ...ALIGNMENT_LINK, locked: !(practice || staff) },
   ...CLIENT_LINKS.slice(1),
   MEMBERSHIP_LINK,
   ...(staff ? [STAFF_LINK] : []),

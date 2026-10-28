@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   addCalendarDays, checkDailyAlignment, checkWeeklyAlignment, isAlignmentDate,
   isAlignmentSchemaMissing, isAlignmentTimeZone, localDate, normalizeTimeZone, weekStart,
-  isFutureDay, isFutureWeek, ALIGNMENT_EXPORT_SCHEMA, canUseDailyAlignment,
-  type AlignmentDaily, type AlignmentWeekly, type AlignmentData, type AlignmentResult,
+  isFutureDay, isFutureWeek, ALIGNMENT_EXPORT_SCHEMA, canUseDailyAlignment, alignmentWins,
+  type AlignmentWins, type AlignmentDaily, type AlignmentWeekly, type AlignmentData, type AlignmentResult,
   type DailyAlignmentInput, type WeeklyAlignmentInput,
 } from "@/lib/alignment";
 import { getMyAccess } from "@/lib/actions/membership";
@@ -167,12 +167,17 @@ export async function exportAlignmentData(): Promise<
 
 // For the My profile card: has today's entry actually been saved? Uses the
 // time zone from Your details when set (else UTC, said plainly on the card).
-export async function getTodayAlignment(): Promise<{ available: boolean; saved: boolean; date: string; timezone: string }> {
+export async function getTodayAlignment(): Promise<{ available: boolean; saved: boolean; wins: AlignmentWins; date: string; timezone: string }> {
   const { supabase, userId } = await requireMember();
   const { data: profile, error: pErr } = await supabase.from("profiles").select("timezone").eq("id", userId).single();
   const timezone = normalizeTimeZone(pErr ? null : profile?.timezone);
   const date = localDate(timezone);
-  const { data, error } = await supabase.from("daily_alignments").select("id").eq("client_id", userId).eq("entry_date", date).maybeSingle();
-  if (error) return { available: false, saved: false, date, timezone };
-  return { available: true, saved: !!data, date, timezone };
+  const { data, error } = await supabase
+    .from("daily_alignments")
+    .select("presence_done, priority, value, wellbeing_action, evening_note, wellbeing, meaningful_action, participation, values_choice")
+    .eq("client_id", userId)
+    .eq("entry_date", date)
+    .maybeSingle();
+  if (error) return { available: false, saved: false, wins: alignmentWins(null), date, timezone };
+  return { available: true, saved: !!data, wins: alignmentWins(data as Parameters<typeof alignmentWins>[0]), date, timezone };
 }

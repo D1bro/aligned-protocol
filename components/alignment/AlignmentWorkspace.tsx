@@ -3,12 +3,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  addCalendarDays, describeCounts, isAlignmentDate, isAlignmentTimeZone, localDate, summariseWeek, weekStart,
+  addCalendarDays, alignmentWins, describeCounts, isAlignmentDate, isAlignmentTimeZone, localDate, summariseWeek, weekDates, weekStart,
   type AlignmentData, type AlignmentDaily, type AlignmentScore, type AlignmentWeekly, type DailyAlignmentInput,
   type ScoreField, type WeeklyAlignmentInput,
 } from "@/lib/alignment";
 import { AUDIO } from "@/lib/audit-guides";
-import { GuideAudio } from "@/components/audit/GuideAudio";
+import { PracticeAudio } from "./PracticeAudio";
 
 // Daily Alignment: Today, Weekly review, Privacy & history. Nothing is sent
 // to the server until "Save privately" (or "Save review privately"); drafts
@@ -62,6 +62,22 @@ function weeklyInput(e: AlignmentWeekly): WeeklyAlignmentInput {
 }
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const orNull = (value: string) => (value === "" ? null : value);
+// Starting points for the day's value; their own word is always welcome.
+const VALUE_IDEAS = ["Care", "Honesty", "Connection", "Courage", "Steadiness"];
+const WIN_NAMES = [
+  { key: "arrive", label: "Arrived" },
+  { key: "intention", label: "Intention set" },
+  { key: "reflect", label: "Evening reflection" },
+] as const;
+const dayLetter = (date: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "narrow" }).format(new Date(`${date}T12:00:00Z`));
+const dayName = (date: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long" }).format(new Date(`${date}T12:00:00Z`));
+function WinMark({ done }: { done: boolean }) {
+  return done ? (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="dp-mark"><circle cx="9" cy="9" r="9" fill="currentColor" /><path d="M5 9.2l2.6 2.6L13 6.4" fill="none" stroke="var(--bg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+  ) : (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="dp-mark"><circle cx="9" cy="9" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+  );
+}
 
 export function AlignmentWorkspace({ service, initialDate, initialTimezone, initialView = "today" }: { service: AlignmentService; initialDate?: string; initialTimezone?: string; initialView?: View }) {
   const id = useId();
@@ -101,6 +117,9 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
   const counts = week && today ? summariseWeek(weekDays, week, today) : null;
   const mainGoal = data?.goals[0] ?? null;
   const linkedGoal = daily.goal_id ? data?.goals.find((g) => g.id === daily.goal_id) ?? null : null;
+  // Wins: the day on screen as it stands (drafts included); other days as saved.
+  const wins = alignmentWins(daily);
+  const weekWins = week ? weekDates(week).map((d) => ({ date: d, wins: d === date ? wins.count : alignmentWins(savedDays[d]).count, future: !!today && d > today })) : [];
 
   // The member's zone: Your details if set, else this device's zone (said
   // plainly), else UTC (also said plainly). Never written back to the profile.
@@ -252,16 +271,17 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
 
   return (
     <>
-      <div className="topbar"><Link href="/" className="tb-back">← My profile</Link><span className="tb-label">Daily Alignment</span></div>
+      <div className="topbar"><Link href="/" className="tb-back">← My profile</Link><span className="tb-label">Daily practice</span></div>
       <div className="page alignment-page">
         <header className="alignment-head">
-          <div className="eyebrow"><span className="eydot" /> Daily Alignment</div>
+          <div className="eyebrow"><span className="eydot" /> Daily practice{today ? <> · {dateLabel(today, true).replace(/ \d{4}$/, "")}</> : null}</div>
           <h1>Start from where you are <em>today.</em></h1>
-          <p className="alignment-lede">You do not need to feel ready to take one useful step. Use what helps; leave the rest.</p>
+          <p className="alignment-lede">Three small wins: arrive, set an intention, reflect this evening. Use what helps; leave the rest.</p>
           <p className="alignment-help">Nothing is saved until you choose <b>Save privately</b>.</p>
         </header>
 
-        <div className="alignment-tabs" role="tablist" aria-label="Daily Alignment">
+        <div className="dp-tabs">
+        <div className="alignment-tabs" role="tablist" aria-label="Daily practice">
           {([{ key: "today", label: "Today" }, { key: "week", label: "Weekly review" }, { key: "privacy", label: "Privacy & history" }] as const).map((tab, index, all) => (
             <button
               key={tab.key}
@@ -288,6 +308,8 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
               {tab.label}
             </button>
           ))}
+        </div>
+        <Link href="/alignment/journal" className="dp-tab-link">Journal</Link>
         </div>
 
         <div className="alignment-date">
@@ -320,26 +342,33 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
         {!loadError ? (
           <>
             {/* Today */}
-            <section role="tabpanel" id={`${id}-panel-today`} aria-labelledby={`${id}-tab-today`} hidden={view !== "today"} className="alignment-stack">
-              <section className="alignment-card" aria-labelledby={`${id}-arrive`}>
-                <p className="alignment-kicker">Morning · your daily intention</p>
-                <h2 id={`${id}-arrive`}>Arrive for a moment.</h2>
-                <GuideAudio clip={AUDIO.D01} caption="Listen first if you like, then set your intention below." />
+            <section role="tabpanel" id={`${id}-panel-today`} aria-labelledby={`${id}-tab-today`} hidden={view !== "today"} className="dp-layout">
+              <div className="alignment-stack dp-main">
+              <section className="alignment-card dp-win dp-win-lead" aria-labelledby={`${id}-arrive`}>
+                <p className="alignment-kicker">Morning · win 1</p>
+                <h2 id={`${id}-arrive`}>Arrive for a moment</h2>
+                <PracticeAudio clip={AUDIO.D01} onFinish={() => updateDay({ presence_done: true })} />
                 <p className="alignment-help">
                   Feel your feet. Notice your breathing and what is around you. Let thoughts and feelings be here without
-                  needing to solve them. Ask: <em>&ldquo;What matters in how I live today?&rdquo;</em>
+                  needing to solve them. Ask: <em>&ldquo;What matters in how I live today?&rdquo;</em> Five minutes if you have
+                  them. One breath counts too.
                 </p>
-                <p className="alignment-small">Five minutes if you have them. One breath counts too.</p>
-                <label className="alignment-check">
+                <label className={`dp-done${daily.presence_done ? " is-done" : ""}`}>
                   <input type="checkbox" checked={daily.presence_done === true} disabled={disabled} onChange={(e) => updateDay({ presence_done: e.target.checked ? true : null })} />
-                  <span>I took a moment to arrive <span className="alignment-small">Optional</span></span>
+                  <span>
+                    <b>Done. I took a moment to arrive.</b>
+                    <span className="alignment-small">{AUDIO.D01.src ? "Ticks itself when the audio finishes, or tick it yourself." : "Tick it when you have."}</span>
+                  </span>
                 </label>
               </section>
 
-              <section className="alignment-card" aria-labelledby={`${id}-priority-h`}>
-                <h2 id={`${id}-priority-h`} className="alignment-q">
+              <section className="alignment-card dp-win" aria-labelledby={`${id}-intention-h`}>
+                <p className="alignment-kicker">Morning · win 2</p>
+                <h2 id={`${id}-intention-h`}>Set today&rsquo;s intention</h2>
+                <p className="alignment-help">Answer one, two or all three.</p>
+                <h3 className="alignment-q">
                   <label htmlFor={`${id}-priority`}>What is one meaningful thing I will give time to today?</label>
-                </h2>
+                </h3>
                 <input className="alignment-field" id={`${id}-priority`} maxLength={500} placeholder="For example: spend twenty minutes on the project proposal before opening messages." value={daily.priority ?? ""} disabled={disabled} onChange={(e) => updateDay({ priority: orNull(e.target.value) })} />
                 {linkedGoal ? (
                   <p className="alignment-small alignment-goal">
@@ -355,11 +384,17 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
                 ) : (
                   <p className="alignment-small">It can be part of <Link href="/clear">My plan</Link>, or simply something that matters today.</p>
                 )}
-              </section>
 
-              <section className="alignment-card" aria-labelledby={`${id}-value-h`}>
-                <h2 id={`${id}-value-h`} className="alignment-q"><label htmlFor={`${id}-value`}>What value do I want to practise today?</label></h2>
-                <input className="alignment-field" id={`${id}-value`} maxLength={80} placeholder="For example: care, honesty, connection, courage or steadiness" value={daily.value ?? ""} disabled={disabled} onChange={(e) => updateDay({ value: orNull(e.target.value) })} />
+                <h3 className="alignment-q dp-q"><label htmlFor={`${id}-value`}>What value do I want to practise today?</label></h3>
+                <div className="dp-chips" role="group" aria-label="Value ideas">
+                  {VALUE_IDEAS.map((v) => {
+                    const on = (daily.value ?? "").trim().toLowerCase() === v.toLowerCase();
+                    return (
+                      <button key={v} type="button" className={`dp-chip${on ? " is-on" : ""}`} aria-pressed={on} disabled={disabled} onClick={() => updateDay({ value: on ? null : v })}>{v}</button>
+                    );
+                  })}
+                </div>
+                <input className="alignment-field" id={`${id}-value`} maxLength={80} placeholder="Or your own word" value={daily.value ?? ""} disabled={disabled} onChange={(e) => updateDay({ value: orNull(e.target.value) })} />
                 <details className="alignment-pause">
                   <summary>When I feel pulled off course</summary>
                   <ol className="alignment-pause-steps">
@@ -370,19 +405,17 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
                   </ol>
                   <p className="alignment-small">Nothing here is recorded.</p>
                 </details>
-              </section>
 
-              <section className="alignment-card" aria-labelledby={`${id}-care-h`}>
-                <h2 id={`${id}-care-h`} className="alignment-q"><label htmlFor={`${id}-care`}>What is one small way I will care for myself today?</label></h2>
+                <h3 className="alignment-q dp-q"><label htmlFor={`${id}-care`}>What is one small way I will care for myself today?</label></h3>
                 <input className="alignment-field" id={`${id}-care`} maxLength={300} placeholder="For example: a walk, a proper meal, rest, some movement or calling someone" value={daily.wellbeing_action ?? ""} disabled={disabled} onChange={(e) => updateDay({ wellbeing_action: orNull(e.target.value) })} />
                 <p className="alignment-small">Rest counts. Asking for help counts.</p>
               </section>
 
-              <section className="alignment-card" aria-labelledby={`${id}-evening`}>
-                <p className="alignment-kicker">Evening</p>
-                <h2 id={`${id}-evening`}>A reflection of this day, not a grade.</h2>
-                <GuideAudio clip={AUDIO.D02} />
-                <p className="alignment-help">Answer what is useful. Anything left blank stays blank.</p>
+              <section className="alignment-card dp-win dp-win-evening" aria-labelledby={`${id}-evening`}>
+                <p className="alignment-kicker">Evening · win 3</p>
+                <h2 id={`${id}-evening`}>Reflect on the day</h2>
+                <p className="alignment-help">A reflection of this day, not a grade. Answer what is useful; anything left blank stays blank.</p>
+                <PracticeAudio clip={AUDIO.D02} quiet />
                 {QUESTIONS.map((q) => (
                   <fieldset key={q.key} className="alignment-score-row" disabled={disabled}>
                     <legend>{q.title}</legend>
@@ -412,6 +445,46 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
                 </div>
                 <button className="btn btn-p" type="button" disabled={disabled || unavailable || !dirty} onClick={() => save("day")}>{busy ? "Saving…" : "Save privately"}</button>
               </div>
+              </div>
+
+              <aside className="dp-rail" aria-label={date === today ? "Today’s wins" : "This day’s wins"}>
+                <section className="dp-rail-card">
+                  <div className="dp-ring-row">
+                    <svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label={`${wins.count} of 3 wins`}>
+                      <circle cx="32" cy="32" r="27" fill="none" stroke="var(--bg5)" strokeWidth="6" />
+                      <circle cx="32" cy="32" r="27" fill="none" stroke="var(--gold)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${(wins.count / 3) * 169.6} 169.6`} transform="rotate(-90 32 32)" className="dp-ring" />
+                      <text x="32" y="38" textAnchor="middle" fontSize="17" fontWeight="700" fill="var(--text)" className="dp-ring-n">{wins.count}/3</text>
+                    </svg>
+                    <div>
+                      <p className="dp-rail-h">{date === today ? "Today’s wins" : `${dayName(date || today || "2026-01-01")}’s wins`}</p>
+                      <p className="alignment-small">{wins.count === 3 ? "All three. Well done." : "Every one counts."}</p>
+                    </div>
+                  </div>
+                  <ul className="dp-win-list">
+                    {WIN_NAMES.map((w) => (
+                      <li key={w.key} className={wins[w.key] ? "is-done" : undefined}><WinMark done={wins[w.key]} />{w.label}</li>
+                    ))}
+                  </ul>
+                  {dirty && wins.count ? <p className="alignment-small">Save privately to keep {wins.count === 1 ? "it" : "them"}.</p> : null}
+                </section>
+                <section className="dp-rail-card">
+                  <p className="dp-rail-h">This week</p>
+                  <ol className="dp-week">
+                    {weekWins.map((d) => (
+                      <li key={d.date} className={`${d.wins === 3 ? "is-full" : d.wins ? "is-some" : ""}${d.date === date ? " is-on" : ""}${d.future ? " is-future" : ""}`}>
+                        <span aria-hidden="true" />
+                        <b aria-hidden="true">{dayLetter(d.date)}</b>
+                        <span className="sr-only">{dayName(d.date)}: {d.future ? "still to come" : `${d.wins} of 3 wins`}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p className="alignment-small">Full gold: all three wins. Soft gold: some.</p>
+                </section>
+                <section className="dp-rail-note">
+                  <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M7 9V6.5a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
+                  <p><b>Private to you.</b> Your coach can&rsquo;t see your daily practice or journal.</p>
+                </section>
+              </aside>
             </section>
 
             {/* Weekly review */}

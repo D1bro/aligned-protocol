@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getLifeAreas, getInProgressAudit, getLatestCompletedAudit } from "@/lib/actions/audit";
 import { AREA_SHORT_NAMES, FILMS } from "@/lib/audit-guides";
 import { MUSINGS, PATHS } from "@/lib/learn-content";
-import { ABOUT_DUANE, AFTER_REGISTERING, EXAMPLE, FAQS, HERO, HOW, SITE } from "@/lib/site-copy";
+import { ABOUT_DUANE, AFTER_REGISTERING, EXAMPLE, FAQS, HERO, HOW, SITE, WHO_SEES } from "@/lib/site-copy";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { ProfileOffer } from "@/components/site/ProfileOffer";
@@ -202,15 +202,31 @@ export default async function HomePage() {
         <section id="explore" className="home-sec" aria-labelledby="explore-h">
           <div className="home-in">
             <div className="eyebrow"><span className="eydot" /> Explore</div>
-            <h2 id="explore-h">The ten areas the audit looks at</h2>
-            <ul className="home-areas">
-              {areas.map((a) => (
+            <div className="home-areas-head">
+              <div>
+                <h2 id="explore-h">The ten areas the audit looks at</h2>
+                <p className="home-lead">You score each one from 1 to 10. Together they show where your life feels aligned, and where one small change would matter most.</p>
+              </div>
+              <div className="home-scale">
+                <span className="home-scale-bar" aria-hidden="true" />
+                <p><span>1 · out of alignment</span><span>10 · fully aligned</span></p>
+              </div>
+            </div>
+            <ol className="home-areas">
+              {areas.map((a, i) => (
                 <li key={a.id}>
-                  <b>{a.name}</b>
-                  <span>{a.description}</span>
+                  <span className="home-area-n" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h3>{a.name}</h3>
+                    <p>{a.description}</p>
+                  </div>
                 </li>
               ))}
-            </ul>
+            </ol>
+            <p className="home-areas-cta">
+              <Link href={cta.href} className="btn btn-p">{cta.returning ? cta.label : "Take the free audit"}</Link>
+              {cta.returning ? null : <span>Free, and no account needed to start.</span>}
+            </p>
             {published.lessons.length || published.musings.length ? (
               <ul className="learn-cards home-learn">
                 {published.lessons.map((l) => (
@@ -236,6 +252,23 @@ export default async function HomePage() {
               <details key={f.q}>
                 <summary>{f.q}</summary>
                 <p>{f.a}</p>
+                {f.whoSees ? (
+                  <div className="who-sees">
+                    <div>
+                      <h3>Your coach can see</h3>
+                      <ul>{WHO_SEES.coach.map((x) => <li key={x}>{x}</li>)}</ul>
+                      <p className="who-sees-foot">Only if you work with an Aligned Coach.</p>
+                    </div>
+                    <div className="is-private">
+                      <h3>
+                        <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M7 9V6.5a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" strokeWidth="1.8" /></svg>
+                        Only you can see
+                      </h3>
+                      <ul>{WHO_SEES.you.map((x) => <li key={x}>{x}</li>)}</ul>
+                      <p className="who-sees-foot">Not your coach, not our team. You can export or delete them yourself.</p>
+                    </div>
+                  </div>
+                ) : null}
               </details>
             ))}
           </div>
