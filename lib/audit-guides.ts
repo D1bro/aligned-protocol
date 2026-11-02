@@ -106,6 +106,8 @@ export const FILMS = {
   F03: film({ file: null, title: "A worked example", label: "Worked example · from snapshot to action" }),
   F04: film({ file: null, title: "Your profile", label: "Getting started with your profile" }),
   F05: film({ file: null, title: "Your reviews", label: "How the weekly and monthly reviews work" }),
+  // Nov 2026: for guests, straight after the audit, above "Save my Alignment Map".
+  S01: film({ file: "s01-save-start", title: "Make this your starting point", label: "Saving your starting point · Duane", durationSeconds: 39.8 }),
   L01: film({ file: null, title: "Seeing where you are", label: "Academy · lesson 1" }),
   L02: film({ file: null, title: "Choosing one place to start", label: "Academy · lesson 2" }),
   L03: film({ file: null, title: "What matters here", label: "Academy · lesson 3" }),

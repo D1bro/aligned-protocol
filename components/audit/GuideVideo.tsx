@@ -4,7 +4,7 @@ import type { GuideClip } from "@/lib/audit-guides";
 // Never autoplays; controls stay visible so people can pause or replay.
 // preload="none" means nothing downloads until someone presses play.
 // Captions are a separate English track, switchable with the CC control.
-export function GuideVideo({ clip, caption, soon = "Video coming soon" }: { clip: GuideClip; caption?: string; soon?: string }) {
+export function GuideVideo({ clip, caption, soon = "Video coming soon" }: { clip: GuideClip; caption?: React.ReactNode; soon?: string }) {
   return (
     <figure className="au-video">
       <div className="au-video-frame">

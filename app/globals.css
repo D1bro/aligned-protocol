@@ -2086,6 +2086,11 @@ a.nav-user-who:hover b { color: var(--gold); }
 .ss-act { flex: 1 1 290px; display: grid; gap: .75rem; text-align: center; }
 .ss-btn { justify-content: center; padding: 1.05rem 1.6rem; font-size: 16.5px; border-radius: 16px; box-shadow: 0 10px 28px rgba(211,167,88,.3); }
 .ss-act .ss-btn { width: 100%; }
+.ss-act.has-film { flex-basis: 400px; text-align: left; }
+.ss-act.has-film .au-video { margin-bottom: .35rem; }
+.ss-act.has-film .ss-small, .ss-act.has-film .ss-skip { text-align: center; }
+.au-video-credit { display: block; margin-top: .3rem; font-family: var(--font-dm-sans), 'DM Sans', sans-serif; font-size: 12px; color: var(--text3); }
+.au-video-credit a { color: inherit; text-decoration: underline; }
 .ss-small { font-size: 14px; color: var(--text2); line-height: 1.55; }
 .ss-skip { margin-top: .3rem; font-size: 14px; color: var(--text3); }
 .ss-skip:hover { color: var(--text2); }
