@@ -5,7 +5,7 @@ import { getPlanState } from "@/lib/actions/clear";
 import { formatDate, nextAuditDue } from "@/lib/audit-schedule";
 import type { PlanCardProps } from "@/components/audit/PlanCard";
 import { createClient } from "@/lib/supabase/server";
-import { AREA_GUIDES, AREA_SHORT_NAMES, CLOSING_GUIDE } from "@/lib/audit-guides";
+import { AREA_GUIDES, AREA_SHORT_NAMES, CLOSING_GUIDE, FILMS } from "@/lib/audit-guides";
 import type { SnapshotArea } from "@/components/audit/SnapshotView";
 import type { StartArea } from "@/components/audit/StartingPoint";
 import { ResultsBody } from "@/components/audit/ResultsBody";
@@ -124,7 +124,24 @@ export default async function ResultsPage() {
             after the map; Duane's film follows it. */}
         {isGuest ? (
           <>
-            <SaveStart skipHref={planCard ? "/clear" : "#step-up"} />
+            <SaveStart
+              skipHref={planCard ? "/clear" : "#step-up"}
+              film={FILMS.S01 ? (
+                <GuideVideo
+                  clip={FILMS.S01}
+                  caption={
+                    <>
+                      Duane on saving your starting point · 40 seconds
+                      {/* The music's CC BY 4.0 licence asks for this credit beside the film. */}
+                      <small className="au-video-credit">
+                        Music: &ldquo;<a href="https://www.scottbuckley.com.au/library/hymn-to-the-dawn/">Hymn To The Dawn</a>&rdquo; by Scott Buckley,{" "}
+                        <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Excerpted and faded.
+                      </small>
+                    </>
+                  }
+                />
+              ) : null}
+            />
             <div className="ss-after">
               <GuideVideo clip={CLOSING_GUIDE} caption="Duane on reading your snapshot and choosing where to start · about 3 minutes" />
             </div>

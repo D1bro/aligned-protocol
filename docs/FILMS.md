@@ -8,6 +8,7 @@ Every film position is listed in one file: `lib/audit-guides.ts`. The codes are 
 | A00 | Audit welcome page | `INTRO_GUIDE` |
 | A01–A10 | Each audit question | `AREA_GUIDES[1]` … `AREA_GUIDES[10]` |
 | F02 | Results page, next to the starting point | `CLOSING_GUIDE` (also `FILMS.F02`) |
+| S01 | Results page, for guests: above "Save my Alignment Map" | `FILMS.S01` |
 | F03 | Worked demonstration (not placed yet) | `FILMS.F03` |
 | F04–F05 | Profile and check-in guidance (not placed yet) | `FILMS.F04`, `FILMS.F05` |
 | L01–L04 | Academy lessons, once published | `FILMS.L01` … `FILMS.L04` |

@@ -21,7 +21,7 @@ function Tick() {
 // turns the guest into a free account in place (lib/actions/auth.ts), so
 // their map, scores and notes are already theirs; "Not now" goes on to the
 // plan, and the guest bar keeps offering to save.
-export function SaveStart({ skipHref = "#step-up" }: { skipHref?: string }) {
+export function SaveStart({ skipHref = "#step-up", film }: { skipHref?: string; film?: React.ReactNode }) {
   const [stage, setStage] = useState<Stage>({ kind: "offer" });
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -142,7 +142,9 @@ export function SaveStart({ skipHref = "#step-up" }: { skipHref?: string }) {
             <p className="ss-lead">This is where you are today. It doesn&rsquo;t have to be where you stay. Save your Alignment Map with a free account and start building towards the life you want.</p>
             <ul className="ss-points">{POINTS.map((p) => <li key={p}><Tick />{p}</li>)}</ul>
           </div>
-          <div className="ss-act">
+          {/* Duane's film ends "Click below to save your results", so the button sits right under it. */}
+          <div className={film ? "ss-act has-film" : "ss-act"}>
+            {film}
             <button type="button" className="btn btn-p ss-btn" onClick={() => setStage({ kind: "form" })}>Save my Alignment Map · Free</button>
             <p className="ss-small">Free account. No card, no subscription.</p>
             <p className="ss-small">Already have an account? <Link href="/login">Sign in</Link> and it comes with you.</p>
