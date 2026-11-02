@@ -108,7 +108,7 @@ export default async function AuditEntryPage({ searchParams }: { searchParams: P
             scores={EXAMPLE_SCORES}
             names={areas.map((a) => a.name)}
             labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-            title="Example life map with sample scores"
+            title="Example Alignment Map with sample scores"
           />
         </div>
       </section>

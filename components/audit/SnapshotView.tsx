@@ -6,7 +6,7 @@ import { AreaBadge } from "@/components/ui/Icon";
 
 export type SnapshotArea = { name: string; short: string; score: number; note: string | null; prompt: string | null; order: number };
 
-// The snapshot: the life map beside a list of all ten areas, each with its own
+// The snapshot: the Alignment Map beside a list of all ten areas, each with its own
 // icon and bar, and a panel showing the person's own notes for whichever area they pick.
 // Opens on the highlighted area (their starting point).
 export function SnapshotView({

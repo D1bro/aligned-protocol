@@ -1,4 +1,4 @@
-// Ten-area "life map": one spoke per area, scored outwards from the centre
+// Ten-area "Alignment Map": one spoke per area, scored outwards from the centre
 // (0) to the outer ring (10). Rings mark every 2 points. Pure SVG, no state,
 // so it renders on the server, in the snapshot, and in the welcome preview.
 
@@ -19,7 +19,7 @@ export function LifeMap({
   compareScores,
   highlightIndex = null,
   activeIndex = null,
-  title = "Life map of your ten alignment scores",
+  title = "Alignment Map of your ten alignment scores",
 }: {
   scores: number[];
   names: string[];

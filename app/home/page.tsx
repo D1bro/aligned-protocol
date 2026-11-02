@@ -84,7 +84,7 @@ export default async function HomePage() {
                 names={areas.map((a) => a.name)}
                 labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
                 highlightIndex={EXAMPLE.focusIndex}
-                title="Fictional example life map"
+                title="Fictional example Alignment Map"
               />
               <figcaption>Fictional example</figcaption>
             </figure>

@@ -261,7 +261,7 @@ select option { background: var(--bg3); color: var(--text); }
 /* ============================================================================
    AUDIT — welcome, question pages, focus and snapshot (au-*)
    One honest 1–10 score per area, Duane's video guidance beside it on
-   desktop and above it on mobile, and a ten-area "life map" for results.
+   desktop and above it on mobile, and a ten-area "Alignment Map" for results.
    ========================================================================== */
 .au-page, .au-results { max-width: 1080px; }
 .au-progress { display: flex; gap: 4px; padding: 0 3rem; background: var(--bg2); padding-bottom: 10px; }
@@ -1550,7 +1550,7 @@ ul.alignment-week-grid { list-style: none; padding: 0; }
 .alignment-history-item .alignment-small { flex-basis: 100%; color: var(--text3); }
 @media (max-width: 700px) { .alignment-pause-steps { grid-template-columns: 1fr; } }
 
-/* My profile: welcome and life map together at the top */
+/* My profile: welcome and Alignment Map together at the top */
 .profile-v2 { max-width: 1120px; }
 .profile-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 2rem; align-items: center; margin-bottom: 1.5rem; }
 .profile-top-text { display: grid; gap: .6rem; justify-items: start; min-width: 0; }
@@ -1572,7 +1572,7 @@ ul.alignment-week-grid { list-style: none; padding: 0; }
 
 /* ============================================================================
    Stage 1 look: serif headings with a gold key word, one line-icon set,
-   richer cards, the phone tab bar, the score ring beside the life map, and
+   richer cards, the phone tab bar, the score ring beside the Alignment Map, and
    the C-L-E-A-R stepper. These come last, so they win over the rules above.
    ========================================================================== */
 :root { --serif: var(--font-serif), 'Cormorant Garamond', Georgia, serif; --tabbar-h: 62px; }
@@ -1639,7 +1639,7 @@ a.nav-user-who:hover b { color: var(--gold); }
 .focus-glow .icon-badge { width: 54px; height: 54px; border-color: rgba(211,167,88,.55); box-shadow: 0 0 0 7px rgba(211,167,88,.07), 0 0 0 14px rgba(211,167,88,.03), 0 0 30px rgba(211,167,88,.22); }
 @media (max-width: 480px) { .focus-glow .icon-badge { width: 44px; height: 44px; } .focus-glow { padding: 4px; } }
 
-/* Profile: score ring and facts above the life map, in one card */
+/* Profile: score ring and facts above the Alignment Map, in one card */
 .profile-top { grid-template-columns: minmax(0, 1fr) minmax(0, 450px); align-items: start; }
 .profile-top-text { padding-top: 1.5rem; }
 @media (max-width: 960px) { .profile-top { grid-template-columns: 1fr; } .profile-top-text { padding-top: 0; } }

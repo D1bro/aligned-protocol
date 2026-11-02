@@ -159,7 +159,7 @@ export function OverviewTab({
         ) : (
           <p className="admin-card-sub">No completed audit yet.</p>
         )}
-        <Link href={`/coach/clients/${p.client.id}?tab=goals`} className="au-text-link">Life map and answers</Link>
+        <Link href={`/coach/clients/${p.client.id}?tab=goals`} className="au-text-link">Alignment Map and answers</Link>
       </section>
     </div>
   );

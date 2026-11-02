@@ -145,7 +145,7 @@ export const AUDIO = {
   D02: audio({ file: null, title: "Evening reflection", label: "Evening reflection · a few minutes with Duane" }),
 } satisfies Record<string, GuideAudioClip>;
 
-// Short labels for the life map, where full area names don't fit.
+// Short labels for the Alignment Map, where full area names don't fit.
 export const AREA_SHORT_NAMES: Record<number, string> = {
   1: "Health",
   2: "Mindset",
