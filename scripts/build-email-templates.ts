@@ -92,9 +92,9 @@ export const TEMPLATES: Template[] = [
     preheader: "One click and your account is ready.",
     blocks: [
       {
-        p: "{{ if .Email }}You asked to change the email address on your Aligned account from {{ .Email }} to {{ .NewEmail }}.{{ else }}One click and your plan is saved. Confirm this is your email address and your snapshot and plan will be kept together in your new account.{{ end }}",
+        p: "{{ if .Email }}You asked to change the email address on your Aligned account from {{ .Email }} to {{ .NewEmail }}.{{ else }}One click and your results are saved. Confirm this is your email address and your Alignment Map, and anything you’ve built since, will be kept in your new account.{{ end }}",
       },
-      { button: { href: link("email_change", "/"), label: "{{ if .Email }}Confirm my email{{ else }}Confirm and go to my plan{{ end }}" } },
+      { button: { href: link("email_change", "/"), label: "{{ if .Email }}Confirm my email{{ else }}Confirm and save my results{{ end }}" } },
       { signOff: "Duane" },
     ],
     footerNote: "If you didn’t ask for this, you can ignore this email.",

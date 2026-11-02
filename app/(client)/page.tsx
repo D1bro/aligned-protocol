@@ -142,7 +142,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const action = goal
     ? { href: "/clear", label: "Finish my plan →" }
     : !area
-      ? { href: "/clear", label: "Choose where to start →" }
+      ? { href: "/clear", label: "Choose my first area →" }
       : planState.stage === "in_progress"
         ? { href: "/clear", label: `Continue my plan: step ${planState.step} of 5 →` }
         : planState.stage === "done"
@@ -154,6 +154,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const lessonsDone = path.lessons.filter((l) => doneSlugs.has(l.slug)).length;
   const nextLesson = path.lessons.find((l) => !doneSlugs.has(l.slug)) ?? null;
 
+  // The suggestion when no area is chosen yet: the lowest score (first on a tie).
+  const lowestScore = scores.length ? Math.min(...scores) : null;
+  const roomToGrow = lowestScore !== null ? { name: areas[scores.indexOf(lowestScore)].name, score: lowestScore } : null;
+
   const strongest = areas
     .map((a, i) => ({ name: AREA_SHORT_NAMES[a.sort_order] ?? a.name, score: scores[i] }))
     .sort((x, y) => y.score - x.score)
@@ -164,6 +168,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       {welcome === "plan" && next ? (
         <p className="clear-welcome" role="status"><b>Your plan is saved.</b> Your first review is {longDay(next.date)}.</p>
       ) : null}
+      {welcome === "saved" ? (
+        <p className="clear-welcome" role="status"><b>Your starting point is saved.</b> Your Alignment Map from {formatDate(audit.completed_at)} is here whenever you want it.</p>
+      ) : null}
       {reviewed ? (
         <p className="clear-welcome" role="status"><b>Review saved.</b> This week is updated with your next commitment.</p>
       ) : null}
@@ -172,7 +179,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <div className="eyebrow"><span className="eydot" /> {todayLabel(details.timezone)}</div>
         {editDetails}
       </div>
-      <h1 id="profile-top-h" className="au-latest-h pf-h">{firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
+      <h1 id="profile-top-h" className="au-latest-h pf-h">{welcome === "saved" ? (firstName ? <>Welcome, <em>{firstName}.</em></> : <><em>Welcome.</em></>) : firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
 
       {planned && area && next ? (
         <section className="next-action" aria-labelledby="next-action-h">
@@ -231,7 +238,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
               {goal
                 ? `Finish your plan for ${area?.name ?? "this goal"}`
                 : !area
-                  ? "Choose one area to work on"
+                  ? "Choose your first area to work on"
                   : planState.stage === "in_progress"
                     ? `Finish your plan for ${area.name}`
                     : planState.stage === "done"
@@ -244,7 +251,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
               ? "Your answers are saved. Pick up where you left off."
               : planState.stage === "done"
                 ? "Set your next goal for this area, or choose a new area."
-                : "Five guided steps. It ends with one action, when you’ll do it, and a short weekly review."}
+                : !area && roomToGrow
+                  ? `Many people start with the area that has the most room to grow; for you that’s ${roomToGrow.name}, ${roomToGrow.score}/10. It’s your choice. Five guided steps turn it into one clear action for this week.`
+                  : "Five guided steps. It ends with one action, when you’ll do it, and a short weekly review."}
           </p>
           <div className="next-action-cta">
             <Link href={action.href} className="btn btn-p">{action.label}</Link>
@@ -267,9 +276,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         credits={credits}
       />
 
-      {/* The daily practice (today's wins for members, locked with the way to
-          join for everyone else), then Momentum's weekly session. */}
-      {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : <DailyAlignmentCard locked joinOpen={await joiningOpen()} />}
+      {/* The daily practice (today's wins for members), then Momentum's
+          weekly session. */}
+      {/* Free members see it locked only once their plan is set: just after
+          saving their results, the one next step is choosing an area. */}
+      {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : planned ? <DailyAlignmentCard locked joinOpen={await joiningOpen()} /> : null}
       {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
 
       {offerDetails ? <DetailsPrompt /> : null}
