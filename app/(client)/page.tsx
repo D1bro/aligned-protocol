@@ -41,7 +41,7 @@ function todayLabel(zone: string | null | undefined) {
 
 // My profile, built around the current week. The top answers three things:
 // what matters to me now, what am I doing this week, and when will I review
-// it. Coaching comes next for coaching clients; the whole-life map, learning
+// it. Coaching comes next for coaching clients; the Alignment Map, learning
 // and support options sit further down. The full plan lives on My plan; the
 // history on My journey.
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ welcome?: string; reviewed?: string }> }) {
@@ -68,7 +68,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <h1 id="profile-top-h" className="au-latest-h">{firstName ? <>Welcome, <em>{firstName}.</em></> : "Welcome."}</h1>
             <p className="lead">
               Start with the Aligned Audit: ten honest questions about where your life stands right now. It takes about
-              ten minutes, and gives you your life map and a clear place to start.
+              ten minutes, and gives you your Alignment Map and a clear place to start.
             </p>
             <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
           </div>
@@ -78,10 +78,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 scores={mapAreas.map(() => 0)}
                 names={mapAreas.map((a) => a.name)}
                 labels={mapAreas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-                title="Your life map, waiting for your first audit"
+                title="Your Alignment Map, waiting for your first audit"
               />
             </div>
-            <figcaption>Your life map appears here after your first audit.</figcaption>
+            <figcaption>Your Alignment Map appears here after your first audit.</figcaption>
           </figure>
         </section>
         {offerDetails ? <DetailsPrompt /> : null}
@@ -320,7 +320,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             />
           </div>
           <figcaption>
-            Your whole-life map, self-reported.{area ? ` Highlighted: ${area.name}, the area you’re working on.` : ""}
+            Your Alignment Map, self-reported.{area ? ` Highlighted: ${area.name}, the area you’re working on.` : ""}
           </figcaption>
         </figure>
       </section>

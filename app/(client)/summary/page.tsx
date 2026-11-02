@@ -16,7 +16,7 @@ type Event = { date: string; kind: "audit" | "goal" | "done" | "checkin" | "less
 
 const LESSON_TITLE = new Map(PATHS.flatMap((p) => p.lessons.map((l) => [l.slug, l.title] as const)));
 
-// My journey: how their life map has changed between audits, how each area
+// My journey: how their Alignment Map has changed between audits, how each area
 // moved, and everything they've done along the way.
 export default async function JourneyPage({ searchParams }: { searchParams: Promise<{ compare?: string }> }) {
   const { compare } = await searchParams;
@@ -38,8 +38,8 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
         <h1 className="au-latest-h">{alignment ? <>Your journey, at <em>your pace.</em></> : <>Your journey starts with <em>the audit.</em></>}</h1>
         <p className="lead">
           {alignment
-            ? "Keep your weekly reflections here. Once you take the audit, you can also see how your life map changes over time."
-            : "Once you’ve taken it, this page shows how your life map changes over time."}
+            ? "Keep your weekly reflections here. Once you take the audit, you can also see how your Alignment Map changes over time."
+            : "Once you’ve taken it, this page shows how your Alignment Map changes over time."}
         </p>
         <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
         {alignment ? <AlignmentReviews /> : null}
@@ -129,9 +129,9 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
       ) : null}
 
       <div className="journey-grid">
-        <section className="au-chart" aria-label="Your life map over time">
+        <section className="au-chart" aria-label="Your Alignment Map over time">
           <div className="au-chart-top">
-            <strong>{before ? "Then and now" : "Your life map"}</strong>
+            <strong>{before ? "Then and now" : "Your Alignment Map"}</strong>
             <span>Self-reported · 1–10</span>
           </div>
           <LifeMap
@@ -139,7 +139,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
             compareScores={before ?? undefined}
             names={areas.map((a) => a.name)}
             labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-            title={before ? "Life map now, with your previous audit as a dashed outline" : "Your life map"}
+            title={before ? "Alignment Map now, with your previous audit as a dashed outline" : "Your Alignment Map"}
           />
           {before && previous ? (
             <p className="au-chart-caption">
