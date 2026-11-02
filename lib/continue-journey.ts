@@ -2,7 +2,7 @@
 // signing in with work from a guest audit): into their first plan if they
 // have a starting point and the plan isn't finished; My profile with a
 // "your plan is saved" welcome if they built it as a guest; otherwise My
-// profile, which always leads with their next step. Kept free of server-only imports
+// profile with "your starting point is saved", leading with their next step. Kept free of server-only imports
 // so the rule can be tested directly.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { planStarted } from "./plan-action.ts";
@@ -15,7 +15,8 @@ export function nextAfterJoining(p: { hasAudit: boolean; plan: PlanProgress }): 
   // still their main one.
   if (p.plan === "chosen" || p.plan === "in_progress") return "/clear?latest=1";
   if (p.plan === "done") return "/?welcome=plan";
-  return "/";
+  // Saved straight from the snapshot: "your starting point is saved".
+  return "/?welcome=saved";
 }
 
 const filled = (v: unknown) => typeof v === "string" && v.trim().length > 0;

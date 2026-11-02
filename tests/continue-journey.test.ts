@@ -12,6 +12,6 @@ test("a plan built as a guest lands on My profile, saved", () => {
 });
 
 test("no starting point or no audit lands on My profile", () => {
-  assert.equal(nextAfterJoining({ hasAudit: true, plan: "none" }), "/");
+  assert.equal(nextAfterJoining({ hasAudit: true, plan: "none" }), "/?welcome=saved");
   assert.equal(nextAfterJoining({ hasAudit: false, plan: "none" }), "/");
 });

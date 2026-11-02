@@ -79,7 +79,7 @@ export function SavePlan({ firstReview }: { firstReview: string }) {
   }
 
   return (
-    <section className="ps-save" aria-labelledby="ps-save-h">
+    <section id="save" className="ps-save" aria-labelledby="ps-save-h">
       <h2 id="ps-save-h">Save my plan</h2>
       <p>Create your free account so your plan, reviews and progress are here next time. No card needed.</p>
       <form onSubmit={submit} className="ps-form">

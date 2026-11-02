@@ -137,7 +137,7 @@ export async function saveGuestPlan(formData: FormData): Promise<SavePlanResult>
   const {
     data: { user: current },
   } = await supabase.auth.getUser();
-  if (!current?.is_anonymous) return { ok: false, message: "This plan is already saved to an account." };
+  if (!current?.is_anonymous) return { ok: false, message: "This is already saved to an account." };
 
   const { data: updated, error } = await supabase.auth.updateUser({ email, password, data: { full_name: name, role: "client" } });
   if (error) {
@@ -145,7 +145,7 @@ export async function saveGuestPlan(formData: FormData): Promise<SavePlanResult>
     return {
       ok: false,
       exists,
-      message: exists ? "There’s already an account with this email. Sign in instead and your plan comes with you." : error.message,
+      message: exists ? "There’s already an account with this email. Sign in instead and your work comes with you." : error.message,
     };
   }
   await supabase.from("profiles").update({ email, full_name: name }).eq("id", current.id);

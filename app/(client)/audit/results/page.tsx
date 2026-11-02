@@ -11,6 +11,7 @@ import type { StartArea } from "@/components/audit/StartingPoint";
 import { ResultsBody } from "@/components/audit/ResultsBody";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { GuideVideo } from "@/components/audit/GuideVideo";
+import { SaveStart } from "@/components/audit/SaveStart";
 
 export default async function ResultsPage() {
   const audit = await getLatestCompletedAudit();
@@ -106,7 +107,7 @@ export default async function ResultsPage() {
             </p>
           )}
         </div>
-        <GuideVideo clip={CLOSING_GUIDE} caption="Duane on reading your snapshot and choosing where to start · about 3 minutes" />
+        {isGuest ? null : <GuideVideo clip={CLOSING_GUIDE} caption="Duane on reading your snapshot and choosing where to start · about 3 minutes" />}
       </div>
 
       <ResultsBody
@@ -119,6 +120,16 @@ export default async function ResultsPage() {
         total={total}
         planCard={planCard}
       >
+        {/* Guests: keeping their results is the one next step, straight
+            after the map; Duane's film follows it. */}
+        {isGuest ? (
+          <>
+            <SaveStart skipHref={planCard ? "/clear" : "#step-up"} />
+            <div className="ss-after">
+              <GuideVideo clip={CLOSING_GUIDE} caption="Duane on reading your snapshot and choosing where to start · about 3 minutes" />
+            </div>
+          </>
+        ) : null}
         <p className="au-strengths">
           <span>Already working for you:</span>{" "}
           {strongest.map((a, i) => (
@@ -130,6 +141,7 @@ export default async function ResultsPage() {
         </p>
       </ResultsBody>
 
+      {isGuest ? null : (
       <section className="au-next" aria-labelledby="au-next-h">
         <h2 id="au-next-h" className="sec-head">What comes next</h2>
         <ol className="au-next-cards">
@@ -178,6 +190,7 @@ export default async function ResultsPage() {
           </li>
         </ol>
       </section>
+      )}
     </div>
   );
 }
