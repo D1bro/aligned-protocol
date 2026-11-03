@@ -20,6 +20,10 @@ import { GettingStarted } from "@/components/profile/GettingStarted";
 import { MonthIntention } from "@/components/profile/MonthIntention";
 import { getMonthIntention, getWeekActions } from "@/lib/actions/planning";
 import { intentionSuggestions, weekProgress } from "@/lib/planning";
+import { getMonthReflections } from "@/lib/actions/life";
+import { addMonths, monthName, yearRow, ymOf } from "@/lib/life-months";
+import { localDate } from "@/lib/time";
+import { YearStrip } from "@/components/journey/YearStrip";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { getMomentumDetails, getMyAccess, joiningOpen } from "@/lib/actions/membership";
 import { hasMomentum } from "@/lib/membership";
@@ -123,7 +127,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching, audits, intention, week] = await Promise.all([
+  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching, audits, intention, week, reflections] = await Promise.all([
     getAuditWithResponses(audit.id),
     getLifeAreas(),
     getPlanState(audit.id),
@@ -135,6 +139,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     getRecentCompletedAudits(50),
     getMonthIntention(),
     getWeekActions(),
+    getMonthReflections(),
   ]);
   const credits = coaching.sessions.length ? await getMyCredits() : null;
 
@@ -208,6 +213,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     .slice(0, 3);
 
   const firstAudit = audits.at(-1) ?? audit;
+  // The current chapter (this year) and, early in a month, an invitation to
+  // look back on the last one if they haven't.
+  const todayYmd = localDate(new Date());
+  const thisYm = ymOf(todayYmd);
+  const lastYm = addMonths(thisYm, -1);
+  const askLastMonth = reflections.available && Number(todayYmd.slice(8, 10)) <= 10 && !reflections.months[lastYm];
   const showJourney = planned || audits.length > 1;
   const lockedPractice = !practice && planned;
   // The small cards after the first row share a row with the Alignment Map.
@@ -396,6 +407,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 <Icon name="journey" size={18} />
                 <h2 id="ms-journey-h">My Journey</h2>
               </div>
+              <YearStrip months={yearRow(Number(thisYm.slice(0, 4)), thisYm)} reflections={reflections.months} label={`Your current chapter, ${thisYm.slice(0, 4)}`} />
+              {askLastMonth ? (
+                <Link href={`/journey/months/${lastYm}`} className="au-text-link">How was {monthName(lastYm).split(" ")[0]}? Look back on it →</Link>
+              ) : null}
               <p className="pf-sub">Since {formatDate(firstAudit.completed_at)}</p>
               <dl className="ms-facts">
                 <div><dt>{audits.length === 1 ? "Audit" : "Audits"}</dt><dd>{audits.length}</dd></div>

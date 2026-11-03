@@ -1,57 +1,57 @@
 // Ideas offered at step 1 of building a plan ("What would a 5 look like?"),
 // by life area (life_areas.sort_order, as in AREA_SHORT_NAMES). Starting
 // points only: tapping one fills the box and they change it into their own
-// words. DRAFT (3 Nov 2026), written for Duane to edit; the approved wording
-// replaces this list.
+// words. DRAFT in Duane's voice (3 Nov 2026), for him to edit in the "Goal
+// ideas by life area" doc; his approved wording replaces this list.
 export const GOAL_IDEAS: Record<number, string[]> = {
   1: [
-    "I’d have a regular bedtime most nights and wake up with more energy.",
-    "I’d move my body for 20 minutes, three times a week.",
-    "I’d drink water through the day and eat one proper meal I’ve planned.",
+    "I’d go to bed at a time I’ve chosen, not whenever I finally put my phone down.",
+    "I’d get outside and walk for 20 minutes on three days, even the busy ones.",
+    "I’d eat something proper before I’m running on coffee and fumes.",
   ],
   2: [
-    "I’d notice when I start a spiral of negative thinking and pause before it runs away with me.",
-    "I’d end each day by writing down one thing that went well.",
-    "I’d see setbacks as information, not proof I’m failing.",
+    "I’d catch the story I’m telling myself and ask whether it’s actually true.",
+    "I’d write down three things that went right before bed, however small.",
+    "I’d treat a bad day as information, not a verdict on who I am.",
   ],
   3: [
-    "I’d say what I think in one meeting or conversation each week.",
-    "I’d follow through on small promises to myself, so I start to trust myself again.",
-    "I’d try one thing I’ve been putting off because I was afraid of getting it wrong.",
+    "I’d say what I actually think once a week, instead of what keeps the peace.",
+    "I’d keep the small promises I make to myself, so I have evidence I can trust me.",
+    "I’d do the one thing I’ve been putting off, knowing it doesn’t have to be perfect.",
   ],
   4: [
-    "I’d have one unhurried, phone-free conversation with someone close each week.",
-    "I’d reach out first to a friend I’ve lost touch with.",
-    "I’d say what I need calmly, instead of hoping people will guess.",
+    "I’d give one person my full attention each week, with the phone in another room.",
+    "I’d be the one who gets in touch first, rather than waiting to be remembered.",
+    "I’d say what I need clearly and kindly, instead of hoping people will work it out.",
   ],
   5: [
-    "I’d start each working day knowing my one most important task.",
-    "I’d spend an hour a week on the work that moves me forward, not just the urgent work.",
-    "I’d have a clear next step for where I want my work to go this year.",
+    "I’d know my one priority before I open my inbox.",
+    "I’d protect one hour a week for the work that builds my future, not just the work that’s shouting loudest.",
+    "I’d be able to say where I want my work to be in a year, and what the next step is.",
   ],
   6: [
-    "I’d know what’s coming in and going out each month, without dreading looking.",
-    "I’d check my account once a week and update a simple spending sheet.",
-    "I’d put a small, fixed amount aside every month, however small.",
+    "I’d look at my account once a week without that knot in my stomach.",
+    "I’d know what comes in, what goes out and what’s left, on one simple page.",
+    "I’d pay myself first: a small amount set aside every month, however small it starts.",
   ],
   7: [
-    "I’d be able to say, in a sentence, what matters most to me right now.",
-    "I’d spend some time each week on something that feels meaningful, not just necessary.",
-    "I’d make my next big decision by checking it against what I value.",
+    "I’d be able to say in one sentence what matters most to me right now.",
+    "I’d give a couple of hours a week to something that feels meaningful, not just necessary.",
+    "I’d check my next big decision against what I value, not what I think I should want.",
   ],
   8: [
-    "I’d plan tomorrow the evening before, in five minutes.",
-    "I’d have a simple morning routine I keep on most weekdays.",
-    "I’d finish what I start on one thing each day before picking up the next.",
+    "I’d spend five minutes each evening deciding what tomorrow is for.",
+    "I’d keep a simple morning routine on most weekdays, with a short version for the hard ones.",
+    "I’d finish one important thing each day before starting three new ones.",
   ],
   9: [
-    "I’d name what I’m feeling before I react to it.",
-    "I’d have one small thing I do each day that helps me feel steady.",
-    "I’d talk to someone I trust when things feel heavy, instead of carrying it alone.",
+    "I’d notice what I’m feeling and name it before I react.",
+    "I’d have one small daily habit that brings me back to steady.",
+    "I’d tell someone I trust when things feel heavy, instead of carrying it on my own.",
   ],
   10: [
-    "I’d say no to one thing a week that doesn’t fit who I want to be.",
-    "I’d speak to myself the way I’d speak to a good friend.",
-    "I’d keep one boundary that protects my time or energy.",
+    "I’d say no to one thing a week that doesn’t fit who I’m becoming.",
+    "I’d speak to myself the way I’d speak to someone I care about.",
+    "I’d hold one boundary that protects my time, my energy or my peace.",
   ],
 };
