@@ -41,8 +41,9 @@ export function LifeGrid({
       </div>
 
       <div className="lm-grid" role="list" aria-label="Your 1,000 months, a row per year">
-        {rows.map((r) => (
-          <div key={r.year} role="listitem" className={r.year === currentYear ? "lm-row is-now" : "lm-row"}>
+        {rows.map((r, i) => (
+          // The last few rows fade softly, so the edge of the grid doesn't read as an end point.
+          <div key={r.year} role="listitem" className={`lm-row${r.year === currentYear ? " is-now" : ""}`} style={rows.length - i <= 6 ? { opacity: 0.2 + 0.13 * (rows.length - i - 1) } : undefined}>
             <span className="lm-rowyear">{r.year % 5 === 0 || r.year === currentYear || r.year === first ? r.year : ""}</span>
             <span className="lm-rowcells">
               {r.months.map((m) => {
