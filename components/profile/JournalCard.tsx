@@ -8,7 +8,7 @@ const day = (ymd: string) =>
 // Quick access to the one journal (the same entries as /journal), with the
 // opening of the latest entry. Private: only the writer sees My Space.
 export async function JournalCard() {
-  const { entries } = await getJournal(1).catch(() => ({ entries: [] }));
+  const { entries } = await getJournal({ limit: 1 }).catch(() => ({ entries: [] }));
   const latest = entries[0] ?? null;
   const opening = latest?.body.trim().split("\n")[0] ?? "";
   return (
@@ -25,7 +25,10 @@ export async function JournalCard() {
       ) : (
         <p className="pf-sub">Write freely, or use a prompt if you&rsquo;d like one. Only you can read it.</p>
       )}
-      <Link href="/journal" className="btn btn-g">{latest ? "Open my journal →" : "Write my first entry →"}</Link>
+      <div className="ms-foot">
+        <Link href="/journal?new=1#write" className="btn btn-g">{latest ? "Write today →" : "Write my first entry →"}</Link>
+        {latest ? <Link href="/journal" className="au-text-link">Open my journal</Link> : null}
+      </div>
     </section>
   );
 }

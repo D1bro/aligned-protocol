@@ -84,7 +84,7 @@ export default async function MonthPage({ params }: { params: Promise<{ month: s
           ) : (
             <p className="pf-sub">No entries this month.</p>
           )}
-          <Link href="/journal" className="au-text-link">Open my journal →</Link>
+          <Link href={`/journal?month=${ym}`} className="au-text-link">{story.journal.entries.length ? `All of ${monthName(ym).split(" ")[0]} in my journal →` : "Open my journal →"}</Link>
         </section>
       ) : null}
     </div>
