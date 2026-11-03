@@ -24,6 +24,7 @@ import { getMonthReflections } from "@/lib/actions/life";
 import { addMonths, monthName, yearRow, ymOf } from "@/lib/life-months";
 import { localDate } from "@/lib/time";
 import { YearStrip } from "@/components/journey/YearStrip";
+import { DuskHero } from "@/components/ui/DuskHero";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { getMomentumDetails, getMyAccess, joiningOpen } from "@/lib/actions/membership";
 import { hasMomentum } from "@/lib/membership";
@@ -82,11 +83,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const [mapAreas, week] = await Promise.all([getLifeAreas(), practice ? getWeekActions() : null]);
     return (
       <div className="page au-page profile-v2">
-        <div className="profile-topline">
-          <div className="eyebrow"><span className="eydot" /> My Space</div>
-          {editDetails}
-        </div>
-        <h1 className="au-latest-h pf-h">{firstName ? <>Welcome, <em>{firstName}.</em></> : "Welcome."}</h1>
+        <DuskHero>
+          <div className="profile-topline">
+            <div className="eyebrow"><span className="eydot" /> My Space</div>
+            {editDetails}
+          </div>
+          <h1 className="au-latest-h pf-h">{firstName ? <>Welcome, <em>{firstName}.</em></> : "Welcome."}</h1>
+          <p className="dusk-sub">A space to reflect, plan and take meaningful action towards the life you want.</p>
+        </DuskHero>
         <div className="ms-grid">
           <Cell span={6}>
             <section className="next-action ms-start" aria-labelledby="next-action-h">
@@ -238,11 +242,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <p className="clear-welcome" role="status"><b>Review saved.</b> This week is updated with your next commitment.</p>
       ) : null}
 
-      <div className="profile-topline">
-        <div className="eyebrow"><span className="eydot" /> {todayLabel(details.timezone)}</div>
-        {editDetails}
-      </div>
-      <h1 id="profile-top-h" className="au-latest-h pf-h">{welcome === "saved" ? (firstName ? <>Welcome, <em>{firstName}.</em></> : <><em>Welcome.</em></>) : firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
+      <DuskHero>
+        <div className="profile-topline">
+          <div className="eyebrow"><span className="eydot" /> {todayLabel(details.timezone)}</div>
+          {editDetails}
+        </div>
+        <h1 id="profile-top-h" className="au-latest-h pf-h">{welcome === "saved" ? (firstName ? <>Welcome, <em>{firstName}.</em></> : <><em>Welcome.</em></>) : firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
+        <p className="dusk-sub">A space to reflect, plan and take meaningful action towards the life you want.</p>
+      </DuskHero>
 
       <div className="ms-grid">
         {planned && area && next ? (
@@ -315,10 +322,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                   <Icon name="target" size={18} />
                   <h2 id="ms-week-h">This Week</h2>
                 </div>
-                <div className="ms-intention">
-                  <p className="profile-card-k">Weekly focus</p>
-                  <p className="pf-commit">{commitment}</p>
-                </div>
+                {/* The focus their last weekly review set; until then it's the goal above. */}
+                {reviewCommitment ? (
+                  <div className="ms-intention">
+                    <p className="profile-card-k">Weekly focus</p>
+                    <p className="pf-commit">{reviewCommitment}</p>
+                  </div>
+                ) : null}
                 {progress && progress.total ? (
                   <p className="ms-note"><b>{progress.done} of {progress.total}</b> action{progress.total === 1 ? "" : "s"} done this week</p>
                 ) : null}
