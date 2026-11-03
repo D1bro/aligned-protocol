@@ -21,6 +21,7 @@ import {
   whenPhrase,
 } from "@/lib/plan-action";
 import { firstActionDate, longDay, upcomingReviews } from "@/lib/review-schedule";
+import { GOAL_IDEAS } from "@/lib/goal-ideas";
 
 const TOTAL_STEPS = 5;
 const STEP_CLIPS = [PLAN_FILMS.P01, PLAN_FILMS.P02, PLAN_FILMS.P03, PLAN_FILMS.P04, PLAN_FILMS.P05];
@@ -314,6 +315,13 @@ export function ClearWizard({
                 </div>
                 <label className="au-start-q" htmlFor="b-stepup">What would a {target} look like?</label>
                 <p className="au-start-help">Not a complete fix. One honest step up.</p>
+                {GOAL_IDEAS[area.sort_order]?.length ? (
+                  <ul className="ms-chips bp-ideas" aria-label="Ideas to start from: tap one, then make it yours">
+                    {GOAL_IDEAS[area.sort_order].map((idea) => (
+                      <li key={idea}><button type="button" onClick={() => set("stepUp", idea)}>{idea}</button></li>
+                    ))}
+                  </ul>
+                ) : null}
                 <textarea id="b-stepup" rows={3} value={form.stepUp} onChange={(e) => set("stepUp", e.target.value)} onBlur={saveOnBlur} placeholder={`A ${target} would mean…`} />
                 <label className="au-start-q clear-q-sm" htmlFor="b-anything">Anything to add about where it is now? <span className="au-small">Optional</span></label>
                 <textarea id="b-anything" rows={2} value={form.anything} onChange={(e) => set("anything", e.target.value)} onBlur={saveOnBlur} />

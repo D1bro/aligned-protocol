@@ -12,7 +12,7 @@ export async function JournalCard() {
   const latest = entries[0] ?? null;
   const opening = latest?.body.trim().split("\n")[0] ?? "";
   return (
-    <section className="pf-tile ms-card" aria-labelledby="ms-journal-h">
+    <section className="pf-tile ms-tile" aria-labelledby="ms-journal-h">
       <div className="ms-head">
         <Icon name="pen" size={18} />
         <h2 id="ms-journal-h">My Journal</h2>

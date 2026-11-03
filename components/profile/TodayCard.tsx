@@ -1,54 +1,63 @@
 import Link from "next/link";
 import { getTodayAlignment } from "@/lib/actions/alignment";
-import { firstActionDate, longDay } from "@/lib/review-schedule";
-import { localDate } from "@/lib/time";
+import { firstActionDate, longDay, plannedDays } from "@/lib/review-schedule";
+import type { PlanAction } from "@/lib/planning";
 import { Icon } from "@/components/ui/Icon";
 import { Mark, WINS } from "@/components/profile/DailyAlignmentCard";
+import { TodayActions } from "@/components/profile/TodayActions";
 
-// Today on My Space. The action comes from their plan (never a separate to-do
-// list), with any steps agreed with their coach; Practice and Momentum members
-// also see today's three wins from the daily practice.
+// Today on My Space: today's actions, from their plan (never a separate
+// to-do list) plus any they add, linked to a goal where it fits; any steps
+// agreed with their coach; and, for Practice and Momentum members, today's
+// three wins from the daily practice.
 export async function TodayCard({
   action,
   actionWhen,
   fallback,
   coachSteps,
   practice,
+  goalId,
+  goals,
+  week,
 }: {
   action: string;
   actionWhen: string | null;
   fallback: string | null;
   coachSteps: { id: string; body: string }[];
   practice: boolean;
+  goalId: string | null;
+  goals: { id: string; title: string }[];
+  week: { available: boolean; today: string; actions: PlanAction[] };
 }) {
-  const now = new Date();
-  const nextDay = action ? firstActionDate(now.toISOString(), actionWhen) : null;
-  const isToday = nextDay === localDate(now);
+  const todays = week.actions.filter((a) => a.action_date === week.today);
+  const planTick = todays.find((a) => a.source === "plan" && a.goal_id === goalId) ?? null;
+  const nextDay = action ? firstActionDate(`${week.today}T12:00:00Z`, actionWhen) : null;
+  // With no set days (a focus from their weekly review), it can be done any day.
+  const plannedToday = nextDay === week.today || !plannedDays(actionWhen).length;
+  const plan = action && goalId && (plannedToday || planTick) ? { goalId, body: action, done: !!planTick?.done_at } : null;
   const today = practice ? await getTodayAlignment().catch(() => null) : null;
   const wins = today?.wins ?? { arrive: false, intention: false, reflect: false, count: 0 };
 
   return (
-    <section className="pf-tile ms-card ms-today" aria-labelledby="ms-today-h">
+    <section className="pf-tile ms-tile ms-today" aria-labelledby="ms-today-h">
       <div className="ms-head">
         <Icon name="sunrise" size={18} />
         <h2 id="ms-today-h">Today</h2>
       </div>
-      {action ? (
-        <div className="ms-today-action">
-          <p className="profile-card-k">Your action</p>
-          <p className="pf-commit">{action}</p>
-          {isToday || nextDay || fallback ? (
-            <ul className="pf-tags">
-              {isToday ? <li className="is-gold">Planned for today</li> : nextDay ? <li>Next: {longDay(nextDay).split(" ")[0]}</li> : null}
-              {fallback ? <li>Hard day: {fallback.charAt(0).toLowerCase() + fallback.slice(1)}</li> : null}
-            </ul>
-          ) : null}
-          {coachSteps.length ? (
-            <div className="next-action-coaching">
-              <p className="au-detail-k">Agreed with your coach</p>
-              <ul>{coachSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>
-            </div>
-          ) : null}
+      {week.available ? (
+        <TodayActions plan={plan} own={todays.filter((a) => a.source === "own")} goals={goals} defaultGoalId={goalId} />
+      ) : null}
+      {action && !plan ? (
+        <p className="pf-sub">
+          Nothing from your plan today{nextDay ? `; next: ${longDay(nextDay).split(" ")[0]}` : ""}.
+          {!week.available ? <> Your action: {action}</> : null}
+        </p>
+      ) : null}
+      {plan && fallback ? <ul className="pf-tags"><li>Hard day: {fallback.charAt(0).toLowerCase() + fallback.slice(1)}</li></ul> : null}
+      {coachSteps.length ? (
+        <div className="next-action-coaching">
+          <p className="au-detail-k">Agreed with your coach</p>
+          <ul>{coachSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>
         </div>
       ) : null}
       {practice ? (
@@ -63,9 +72,7 @@ export async function TodayCard({
           </ul>
           <Link href="/alignment" className="btn btn-p">{today?.saved ? "Continue today →" : "Open today →"}</Link>
         </div>
-      ) : (
-        <Link href="/plan" className="au-text-link">See my plan →</Link>
-      )}
+      ) : null}
     </section>
   );
 }

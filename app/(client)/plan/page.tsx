@@ -10,6 +10,9 @@ import { getMainGoal } from "@/lib/actions/goals";
 import { getReminderPreference, remindersConfigured } from "@/lib/actions/preferences";
 import { getCurrentProfile } from "@/lib/session";
 import { planStarted } from "@/lib/plan-action";
+import { getMonthIntention, getWeekActions, isSuggestionDismissed } from "@/lib/actions/planning";
+import { auditSuggestions, weekProgress } from "@/lib/planning";
+import { plannedDays } from "@/lib/review-schedule";
 
 const filled = (v: string | null | undefined) => !!v?.trim();
 
@@ -44,13 +47,33 @@ export default async function ClearPage({
     const finished = filled(goal.frequency) && filled(goal.success_criteria);
     if (finished && !editStep && isGuest) redirect("/plan/set");
     if (finished && !editStep) {
-      const [allGoals, latestPlan, configured, remindersOn, reviews] = await Promise.all([
+      const [allGoals, latestPlan, configured, remindersOn, reviews, intention, week] = await Promise.all([
         getAllGoals(),
         getClearPlanForAudit(audit.id),
         remindersConfigured(),
         getReminderPreference(),
         getReviews(goal.id),
+        getMonthIntention(),
+        getWeekActions(),
       ]);
+      // A newer audit with no plan of its own: what's changed, unless dismissed.
+      const newer = plan.audit_id !== audit.id && !latestPlan;
+      let changed: { auditId: string; suggestions: ReturnType<typeof auditSuggestions> } | null = null;
+      if (newer && !(await isSuggestionDismissed(audit.id))) {
+        const [{ responses: latestResponses }, allAreas] = await Promise.all([getAuditWithResponses(audit.id), getLifeAreas()]);
+        const target = Math.min(10, plan.step_up_target ?? (main.baselineScore ?? 0) + 1);
+        changed = {
+          auditId: audit.id,
+          suggestions: auditSuggestions({
+            area,
+            target,
+            areas: allAreas,
+            before: new Map(main.responses.map((r) => [r.life_area_id, r.satisfaction_score as number])),
+            after: new Map(latestResponses.map((r) => [r.life_area_id, r.satisfaction_score as number])),
+          }),
+        };
+      }
+      const reviewCommitment = reviews.weekly.at(-1)?.next_commitment?.trim() || "";
       return (
         <ClearDashboard
           area={area}
@@ -62,7 +85,13 @@ export default async function ClearPage({
           checkIns={main.checkIns}
           otherGoals={allGoals.filter((g) => g.id !== goal.id)}
           isMain
-          newerAudit={plan.audit_id !== audit.id && !latestPlan ? audit.completed_at : null}
+          newerAudit={newer ? audit.completed_at : null}
+          changed={changed}
+          chain={{
+            intention: intention.intention?.intention ?? null,
+            focus: reviewCommitment || goal.goal_title?.trim() || goal.action_text?.trim() || "",
+            progress: week.available ? weekProgress(week.weekStart, reviewCommitment ? [] : plannedDays(goal.action_when), week.actions) : null,
+          }}
           remindersOn={configured ? remindersOn : null}
           review={nextReview({ start: goal.created_at ?? audit.completed_at, actionWhen: goal.action_when, reviews: reviews.all })}
         />
