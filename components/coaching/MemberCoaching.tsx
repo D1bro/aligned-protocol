@@ -123,11 +123,11 @@ export function MemberCoaching({
                 </p>
                 {c.suggested_focus.why ? <p className="sw-p">{c.suggested_focus.why}</p> : null}
                 <p>
-                  <Link href={`/clear?choose=1&suggested=${encodeURIComponent(c.suggested_focus.area_id)}`} className="btn btn-o">
+                  <Link href={`/plan?choose=1&suggested=${encodeURIComponent(c.suggested_focus.area_id)}`} className="btn btn-o">
                     Choose where to start →
                   </Link>
                 </p>
-                <p className="admin-card-sub">It&rsquo;s your choice: pick this area or another in My plan.</p>
+                <p className="admin-card-sub">It&rsquo;s your choice: pick this area or another in My Plan.</p>
               </div>
             ) : null}
             {c.resources?.length ? (
@@ -152,7 +152,7 @@ export function MemberCoaching({
         <h3>Your audit and plan</h3>
         <p className="admin-card-sub">Your coach works from the same audit and plan you see here.</p>
         <p>
-          <Link href="/audit/results" className="au-text-link">My snapshot</Link> · <Link href="/clear" className="au-text-link">My plan</Link>
+          <Link href="/audit/results" className="au-text-link">My snapshot</Link> · <Link href="/plan" className="au-text-link">My Plan</Link>
         </p>
       </div>
 

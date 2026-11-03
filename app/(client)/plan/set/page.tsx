@@ -16,7 +16,7 @@ const filled = (v: string | null | undefined) => !!v?.trim();
 // dashboard, with optional support underneath.
 export default async function PlanSetPage() {
   const [main, profile] = await Promise.all([getMainGoal(), getCurrentProfile()]);
-  if (!main || !main.area || !filled(main.goal.frequency) || !filled(main.goal.success_criteria)) redirect("/clear");
+  if (!main || !main.area || !filled(main.goal.frequency) || !filled(main.goal.success_criteria)) redirect("/plan");
   const { goal, plan, area } = main;
   const isGuest = profile?.isAnonymous ?? false;
   const score = main.baselineScore ?? 0;
@@ -72,7 +72,7 @@ export default async function PlanSetPage() {
           ) : (
             <div className="ps-save">
               <Link href="/" className="btn btn-p">Go to my dashboard →</Link>
-              <Link href="/clear" className="au-text-link">See my full plan</Link>
+              <Link href="/plan" className="au-text-link">See my full plan</Link>
             </div>
           )}
         </div>

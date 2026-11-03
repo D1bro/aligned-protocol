@@ -88,7 +88,7 @@ export function OverviewTab({
             {str(mainGoal.action_when) ?? str(mainGoal.frequency) ? (<><dt>When</dt><dd>{str(mainGoal.action_when) ?? str(mainGoal.frequency)}</dd></>) : null}
           </dl>
         ) : (
-          <p className="admin-card-sub">No active goal. Their plan lives in My plan; nothing is set here for them.</p>
+          <p className="admin-card-sub">No active goal. Their plan lives in My Plan; nothing is set here for them.</p>
         )}
         <Link href={`/coach/clients/${p.client.id}?tab=goals`} className="au-text-link">Goals and audit</Link>
       </section>

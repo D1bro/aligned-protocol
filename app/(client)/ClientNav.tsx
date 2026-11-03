@@ -3,38 +3,39 @@
 import { usePathname } from "next/navigation";
 import { MobileNav, NavFooter, NavLinks, type MobileNavLink } from "@/components/ui/MobileNav";
 
-export const CLIENT_LINKS: MobileNavLink[] = [
-  { group: "You", href: "/", label: "My profile", icon: "home", match: (p) => p === "/" },
-  { group: "You", href: "/audit", label: "The Aligned Audit", icon: "target", match: (p) => p.startsWith("/audit") },
-  { group: "You", href: "/clear", label: "My plan", icon: "map", match: (p) => p.startsWith("/clear") || p.startsWith("/goals") },
-  { group: "You", href: "/summary", label: "My journey", icon: "journey", match: (p) => p.startsWith("/summary") },
-  { group: "Learn", href: "/learn", label: "Academy", icon: "book", match: (p) => p.startsWith("/learn") },
-  { group: "Learn", href: "/musings", label: "Musings", icon: "quote", match: (p) => p.startsWith("/musings") },
-  { group: "Learn", href: "/podcast", label: "Podcast", icon: "mic", match: (p) => p.startsWith("/podcast") },
-  { group: "Learn", href: "/tools", label: "Tools", icon: "pen", match: (p) => p.startsWith("/tools") },
-  { group: "Grow", href: "/coaching", label: "Coaching", icon: "chat", match: (p) => p.startsWith("/coaching") },
+// Brief v4.0 (Nov 2026): four destinations first, then the daily practice
+// and journal, then everything else under "More".
+const DESTINATIONS: MobileNavLink[] = [
+  { group: "You", href: "/", label: "My Space", icon: "home", match: (p) => p === "/" },
+  { group: "You", href: "/audit", label: "Protocol", icon: "target", match: (p) => p.startsWith("/audit") },
+  { group: "You", href: "/plan", label: "My Plan", icon: "map", match: (p) => p.startsWith("/plan") },
+  { group: "You", href: "/journey", label: "My Journey", icon: "journey", match: (p) => p.startsWith("/journey") },
+];
+const MORE_LINKS: MobileNavLink[] = [
+  { group: "More", href: "/learn", label: "Academy", icon: "book", match: (p) => p.startsWith("/learn") },
+  { group: "More", href: "/musings", label: "Musings", icon: "quote", match: (p) => p.startsWith("/musings") },
+  { group: "More", href: "/podcast", label: "Podcast", icon: "mic", match: (p) => p.startsWith("/podcast") },
+  { group: "More", href: "/tools", label: "Tools", icon: "bulb", match: (p) => p.startsWith("/tools") },
+  { group: "More", href: "/coaching", label: "Coaching", icon: "chat", match: (p) => p.startsWith("/coaching") },
+  { group: "More", href: "/membership", label: "Membership", icon: "star", match: (p) => p.startsWith("/membership") },
 ];
 
-// The phone tab bar: the four "You" pages, with short names (More holds the rest).
-const TABS: MobileNavLink[] = [
-  { ...CLIENT_LINKS[0], label: "Home" },
-  { ...CLIENT_LINKS[1], label: "Audit" },
-  { ...CLIENT_LINKS[2], label: "Plan" },
-  { ...CLIENT_LINKS[3], label: "Journey" },
-];
+// The phone tab bar: the four destinations (More opens the drawer with the rest).
+const TABS: MobileNavLink[] = DESTINATIONS;
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
 // The daily practice (intention, reflection, journal) is for Practice and
 // Momentum members and staff (lib/alignment.ts); everyone else sees it with a
-// lock, and the page offers the way to join. Membership is for everyone.
-const ALIGNMENT_LINK: MobileNavLink = { group: "You", href: "/alignment", label: "Daily practice", icon: "sunrise", match: (p) => p.startsWith("/alignment") };
-const MEMBERSHIP_LINK: MobileNavLink = { group: "Grow", href: "/membership", label: "Membership", icon: "star", match: (p) => p.startsWith("/membership") };
+// lock, and the page offers the way to join.
+const practiceLinks = (locked: boolean): MobileNavLink[] => [
+  { group: "Practice", href: "/alignment", label: "Daily practice", icon: "sunrise", match: (p) => p.startsWith("/alignment"), locked },
+  { group: "Practice", href: "/journal", label: "Journal", icon: "pen", match: (p) => p.startsWith("/journal"), locked },
+];
 const linksFor = (staff: boolean, practice: boolean) => [
-  CLIENT_LINKS[0],
-  { ...ALIGNMENT_LINK, locked: !(practice || staff) },
-  ...CLIENT_LINKS.slice(1),
-  MEMBERSHIP_LINK,
+  ...DESTINATIONS,
+  ...practiceLinks(!(practice || staff)),
+  ...MORE_LINKS,
   ...(staff ? [STAFF_LINK] : []),
 ];
 

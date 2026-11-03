@@ -6,7 +6,7 @@ import { canBill } from "@/lib/actions/billing";
 import { loadBilling, loadCoaching, loadOfferedPackages } from "@/lib/member-view";
 
 // "See as client": what one client sees on their Coaching page and the
-// coaching card on My profile, read by their coach or an admin. Loaded
+// coaching card on My Space, read by their coach or an admin. Loaded
 // through the same functions as the member's own pages. Nothing private to
 // the client (unshared preparation) or to the coach (notes, transcripts,
 // unshared summaries) is included.

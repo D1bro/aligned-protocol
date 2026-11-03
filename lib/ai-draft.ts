@@ -14,7 +14,7 @@ export type AiDraft = {
   review_flags: string[];
   // For the coach only (never shared): observations, themes, what to explore.
   coach_note: string;
-  // Shared with the client once approved; the client still chooses in My plan.
+  // Shared with the client once approved; the client still chooses in My Plan.
   suggested_focus: { area: string; goal: string; why: string };
   // For the coach only: what to check in on next time.
   prep: string[];

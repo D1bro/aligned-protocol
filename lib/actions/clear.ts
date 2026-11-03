@@ -184,8 +184,8 @@ export async function chooseClearArea(auditId: string, lifeAreaId: string) {
   } else {
     await supabase.from("clear_plans").insert({ client_id: clientId, audit_id: auditId, life_area_id: lifeAreaId });
   }
-  revalidatePath("/clear");
-  redirect("/clear");
+  revalidatePath("/plan");
+  redirect("/plan");
 }
 
 // CLEAR saves return a result instead of throwing, so a failed save shows a
@@ -199,7 +199,7 @@ export async function saveClearReflection(planId: string, fields: ClearPlanField
   const supabase = await createClient();
   const { data, error } = await supabase.from("clear_plans").update(fields).eq("id", planId).select("id");
   if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
-  revalidatePath("/clear");
+  revalidatePath("/plan");
   return { ok: true };
 }
 
@@ -248,7 +248,7 @@ export async function createGoalFromClear(input: {
     .single();
   if (error) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/");
-  revalidatePath("/goals");
+  revalidatePath("/plan");
   return { ok: true, goal: data as Goal };
 }
 
@@ -270,7 +270,7 @@ export async function updateGoalCore(
     .select("id");
   if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/");
-  revalidatePath("/goals");
+  revalidatePath("/plan");
   return { ok: true };
 }
 
@@ -291,7 +291,7 @@ export async function saveGoalRoadmap(
     .select("id");
   if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/");
-  revalidatePath("/goals");
+  revalidatePath("/plan");
   return { ok: true };
 }
 
@@ -302,7 +302,7 @@ export async function setGoalStatus(goalId: string, status: "completed" | "aband
   const { data, error } = await supabase.from("goals").update({ status }).eq("id", goalId).select("id");
   if (error || !data?.length) return { ok: false, message: SAVE_FAILED };
   revalidatePath("/");
-  revalidatePath("/goals");
+  revalidatePath("/plan");
   return { ok: true };
 }
 

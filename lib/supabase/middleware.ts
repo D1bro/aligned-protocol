@@ -35,11 +35,11 @@ const PUBLIC_PATHS = [
 // chooses to save it (see lib/actions/auth.ts's signUp, which converts this
 // same account in place rather than starting a second one).
 //
-// Guests can also build their plan (/clear, exactly) and see it set
-// (/clear/set) before saving it. Reviews and everything else need a saved
+// Guests can also build their plan (/plan, exactly) and see it set
+// (/plan/set) before saving it. Reviews and everything else need a saved
 // account.
 const GUEST_PATHS = ["/audit"];
-const GUEST_EXACT = ["/clear", "/clear/set"];
+const GUEST_EXACT = ["/plan", "/plan/set"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

@@ -350,7 +350,7 @@ export const TOOLS: Tool[] = [
         placeholder: "",
         rows: 2,
         section: "Bring it into your plan",
-        sectionIntro: "Your answers stay here. Compare your next action with My plan and refine the plan yourself if it helps; nothing is changed for you.",
+        sectionIntro: "Your answers stay here. Compare your next action with My Plan and refine the plan yourself if it helps; nothing is changed for you.",
       },
       { key: "plan_become", label: "I want to become someone who…", placeholder: "", rows: 2 },
       { key: "plan_action", label: "My next action is…", placeholder: "", rows: 2 },

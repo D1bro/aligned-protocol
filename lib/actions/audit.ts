@@ -158,7 +158,7 @@ export async function saveResponse(input: {
 // Sum of the ten satisfaction scores -> total_score out of 100. Marks the
 // audit completed, which the DB then refuses to let anyone edit further.
 // There's no focus choice at the end of the audit any more — choosing where
-// to start happens at the beginning of CLEAR instead (see app/(client)/clear).
+// to start happens at the beginning of CLEAR instead (see app/(client)/plan).
 export async function completeAudit(auditId: string): Promise<{ ok: false; message: string } | void> {
   const supabase = await createClient();
   const [{ data: responses, error: respErr }, areas] = await Promise.all([

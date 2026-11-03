@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 // The four offers, at founding prices. Public: linked from Your plan is set
-// and My profile, and readable before anyone has an account.
+// and My Space, and readable before anyone has an account.
 export default async function OffersPage() {
   const open = await joiningOpen();
   return (

@@ -92,7 +92,7 @@ export async function saveMyDetails(input: Partial<Record<keyof DetailsInput, un
   return { ok: true };
 }
 
-// "Later" on the My profile invitation: stop showing it.
+// "Later" on the My Space invitation: stop showing it.
 export async function dismissDetailsPrompt(): Promise<void> {
   const { supabase, userId } = await requireMember();
   await supabase.from("profiles").update({ details_prompt_dismissed_at: new Date().toISOString() }).eq("id", userId);

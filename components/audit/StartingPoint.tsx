@@ -48,7 +48,7 @@ export function StartingPoint({
       setPending(false);
       return;
     }
-    router.push("/clear?latest=1");
+    router.push("/plan?latest=1");
   }
 
   return (

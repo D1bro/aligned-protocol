@@ -14,7 +14,7 @@ export default async function DetailsPage() {
 
   return (
     <div className="page au-page details-page">
-      <Link href="/" className="tb-back" style={{ marginBottom: "1rem", display: "inline-flex" }}>← My profile</Link>
+      <Link href="/" className="tb-back" style={{ marginBottom: "1rem", display: "inline-flex" }}>← My Space</Link>
       <div className="eyebrow"><span className="eydot" /> Your details</div>
       <h1 className="au-latest-h">Your <em>details</em></h1>
       <p className="lead">

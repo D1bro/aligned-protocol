@@ -57,17 +57,17 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
             <p>
               You already have a plan{main.area ? ` for ${main.area.name}` : ""}. Check it against this lesson and
               refine it if something has changed. Your lesson answers stay here; they don&rsquo;t change your goal.{" "}
-              <Link href="/clear" className="au-text-link">Open my plan</Link>
+              <Link href="/plan" className="au-text-link">Open my plan</Link>
             </p>
           ) : main ? (
             <p>
               Your plan is started. Take what you&rsquo;ve noticed into it.{" "}
-              <Link href="/clear" className="au-text-link">Continue my plan</Link>
+              <Link href="/plan" className="au-text-link">Continue my plan</Link>
             </p>
           ) : (
             <p>
               When you&rsquo;re ready, Build your plan turns this into one clear action.{" "}
-              <Link href="/clear" className="au-text-link">Go to My plan</Link>
+              <Link href="/plan" className="au-text-link">Go to My Plan</Link>
             </p>
           )}
           {tool || lesson.guide ? (

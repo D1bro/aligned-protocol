@@ -1,6 +1,6 @@
 // Where someone goes straight after joining (confirming a new profile, or
 // signing in with work from a guest audit): into their first plan if they
-// have a starting point and the plan isn't finished; My profile with a
+// have a starting point and the plan isn't finished; My Space with a
 // "your plan is saved" welcome if they built it as a guest; otherwise My
 // profile with "your starting point is saved", leading with their next step. Kept free of server-only imports
 // so the rule can be tested directly.
@@ -13,7 +13,7 @@ export function nextAfterJoining(p: { hasAudit: boolean; plan: PlanProgress }): 
   if (!p.hasAudit) return "/";
   // ?latest=1: the plan for this newest audit, even if an older goal is
   // still their main one.
-  if (p.plan === "chosen" || p.plan === "in_progress") return "/clear?latest=1";
+  if (p.plan === "chosen" || p.plan === "in_progress") return "/plan?latest=1";
   if (p.plan === "done") return "/?welcome=plan";
   // Saved straight from the snapshot: "your starting point is saved".
   return "/?welcome=saved";

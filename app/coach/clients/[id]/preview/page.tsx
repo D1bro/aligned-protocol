@@ -37,7 +37,7 @@ export default async function ClientPreviewPage({
         <p className="cpv-k">Preview · read-only</p>
         <h1>What {first === "they" ? "they see" : `${first} sees`}</h1>
         <p>
-          Their coaching card on My profile and their Coaching page, with their real data. Buttons are switched off here.
+          Their coaching card on My Space and their Coaching page, with their real data. Buttons are switched off here.
           Not shown, because {first === "they" ? "they don’t" : `${first} doesn’t`} see them: your private notes, transcripts,
           reflections and any summary you haven&rsquo;t shared.{" "}
           {first === "they" ? "Their" : `${first}’s`} own unshared preparation is private to them, so it&rsquo;s blank here.
@@ -49,7 +49,7 @@ export default async function ClientPreviewPage({
         <>
           {coached ? (
             <>
-              <p className="cpv-where">My profile</p>
+              <p className="cpv-where">My Space</p>
               <div className="cpv-screen" inert>
                 <CoachingCard data={p.coaching} goals={p.goals} hasGoal={p.goals.length > 0} credits={credits} />
               </div>

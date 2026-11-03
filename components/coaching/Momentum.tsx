@@ -13,7 +13,7 @@ export function StepBar({ states }: { states: StepState[] }) {
   );
 }
 
-// The last few weeks, filled where they updated a step (or, on My profile,
+// The last few weeks, filled where they updated a step (or, on My Space,
 // did their weekly review).
 export function WeekDots({ weeks, what = "Updated a step" }: { weeks: boolean[]; what?: string }) {
   const n = weeks.filter(Boolean).length;

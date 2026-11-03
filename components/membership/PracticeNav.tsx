@@ -10,7 +10,7 @@ export function PracticeNav({ on }: { on: "daily" | "journal" }) {
         <Link href="/alignment?view=week">Weekly review</Link>
         <Link href="/alignment?view=privacy">Privacy &amp; history</Link>
       </div>
-      <Link href="/alignment/journal" className="dp-tab-link" aria-current={on === "journal" ? "page" : undefined}>Journal</Link>
+      <Link href="/journal" className="dp-tab-link" aria-current={on === "journal" ? "page" : undefined}>Journal</Link>
     </nav>
   );
 }

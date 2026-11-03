@@ -110,7 +110,7 @@ export default async function MembershipPage({
           <h2 id="ms-includes-h" className="pl-k">What&rsquo;s yours</h2>
           <ul>
             <li><Link href="/alignment">Daily intention and reflection</Link><span>Morning intention with Duane&rsquo;s audio, and an evening reflection</span></li>
-            <li><Link href="/alignment/journal">Journal</Link><span>Private, with prompts if you want them</span></li>
+            <li><Link href="/journal">Journal</Link><span>Private, with prompts if you want them</span></li>
             <li><Link href="/tools">Tools</Link><span>Values, identity and direction exercises</span></li>
             {access.tier === "momentum" ? <li><a href="#momentum">Your weekly session</a><span>A live hour with a small group</span></li> : null}
           </ul>

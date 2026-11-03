@@ -1,6 +1,6 @@
 import { BUSINESS_TZ, localDate } from "./time.ts";
 
-// The client's momentum on the Coaching page and My profile: how far the
+// The client's momentum on the Coaching page and My Space: how far the
 // steps from their last session have moved, how many weeks in a row they've
 // updated a step, and how long until the next session. Worked out from data
 // they already have; nothing is stored.

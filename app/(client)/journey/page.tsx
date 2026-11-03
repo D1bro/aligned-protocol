@@ -16,7 +16,7 @@ type Event = { date: string; kind: "audit" | "goal" | "done" | "checkin" | "less
 
 const LESSON_TITLE = new Map(PATHS.flatMap((p) => p.lessons.map((l) => [l.slug, l.title] as const)));
 
-// My journey: how their Alignment Map has changed between audits, how each area
+// My Journey: how their Alignment Map has changed between audits, how each area
 // moved, and everything they've done along the way.
 export default async function JourneyPage({ searchParams }: { searchParams: Promise<{ compare?: string }> }) {
   const { compare } = await searchParams;
@@ -34,7 +34,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
   if (!audits.length) {
     return (
       <div className="page au-page">
-        <div className="eyebrow"><span className="eydot" /> My journey</div>
+        <div className="eyebrow"><span className="eydot" /> My Journey</div>
         <h1 className="au-latest-h">{alignment ? <>Your journey, at <em>your pace.</em></> : <>Your journey starts with <em>the audit.</em></>}</h1>
         <p className="lead">
           {alignment
@@ -97,7 +97,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="page au-page">
-      <div className="eyebrow"><span className="eydot" /> My journey</div>
+      <div className="eyebrow"><span className="eydot" /> My Journey</div>
       <h1 className="au-latest-h">
         {changes && biggestUp && biggestUp.delta > 0
           ? `${biggestUp.name} is up ${biggestUp.delta} since ${previous?.id === audits[1]?.id ? "your last audit" : formatDate(previous!.completed_at)}.`
@@ -123,8 +123,8 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
       {checkIns.length === 0 ? (
         <p className="plan-note">
           {main
-            ? <>No monthly reviews yet. Your weekly reviews lead up to the first one, which scores the area again and adds it here. <Link href="/clear/review">Do my review</Link></>
-            : <>No monthly reviews yet. Build your plan in <Link href="/clear">My plan</Link> and your reviews will build your journey here.</>}
+            ? <>No monthly reviews yet. Your weekly reviews lead up to the first one, which scores the area again and adds it here. <Link href="/plan/review">Do my review</Link></>
+            : <>No monthly reviews yet. Build your plan in <Link href="/plan">My Plan</Link> and your reviews will build your journey here.</>}
         </p>
       ) : null}
 

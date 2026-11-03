@@ -17,7 +17,7 @@ function Mark({ done }: { done: boolean }) {
   );
 }
 
-// On My profile, for everyone signed in. Practice and Momentum members (and
+// On My Space, for everyone signed in. Practice and Momentum members (and
 // staff) see today's three wins as saved; everyone else sees the practice
 // locked, with the way to join.
 export async function DailyAlignmentCard({ locked = false, joinOpen = false }: { locked?: boolean; joinOpen?: boolean }) {
@@ -67,7 +67,7 @@ export async function DailyAlignmentCard({ locked = false, joinOpen = false }: {
       <div className="alignment-entry-actions">
         <Link href="/alignment" className="btn btn-p">{today?.saved ? "Continue today →" : "Open today →"}</Link>
         <div className="dp-entry-links">
-          <Link href="/alignment/journal" className="au-text-link">Journal</Link>
+          <Link href="/journal" className="au-text-link">Journal</Link>
           <Link href="/alignment?view=week" className="au-text-link">Review my week</Link>
         </div>
       </div>

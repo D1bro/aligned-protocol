@@ -157,7 +157,7 @@ export function buildMessage(m: MessageInput): Message {
             c.coachSteps.length ? { small: "What I'll do" } : null,
             c.coachSteps.length ? { box: c.coachSteps.map((x) => `• ${x}`) } : null,
             c.startWith ? { small: "Where to start" } : null,
-            c.startWith ? { p: `I'd suggest starting with ${c.startWith}. It's your choice in My plan.` } : null,
+            c.startWith ? { p: `I'd suggest starting with ${c.startWith}. It's your choice in My Plan.` } : null,
             c.resources.length ? { small: "Resources" } : null,
             c.resources.length ? { box: c.resources.map((r) => (r.url ? `${r.title}: ${r.url}` : r.title)) } : null,
             c.nextMeeting ? { small: "Next session" } : null,

@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 import { getMainGoal } from "@/lib/actions/goals";
 import { CheckInForm } from "./CheckInForm";
 
-// The monthly goal check-in, on their main goal (the one My profile and My
+// The monthly goal check-in, on their main goal (the one My Space and My
 // plan show).
 export default async function CheckInPage() {
   const main = await getMainGoal();
-  if (!main || !main.area || !main.goal.frequency?.trim() || !main.goal.success_criteria?.trim()) redirect("/clear");
+  if (!main || !main.area || !main.goal.frequency?.trim() || !main.goal.success_criteria?.trim()) redirect("/plan");
   const { goal, plan, area, checkIns, baselineScore } = main;
   const auditScore = baselineScore ?? 0;
   const lastScore = checkIns.length ? checkIns[checkIns.length - 1].area_score : auditScore;

@@ -2,11 +2,11 @@
 // so they can be edited without touching the page code.
 
 export const SITE = {
-  name: "Aligned",
+  name: "The Aligned",
   url: "https://www.the-aligned.com",
   contactEmail: "hello@the-aligned.com",
   owner: "Aligned",
-  title: "Aligned — see where you stand and choose what matters next",
+  title: "The Aligned — see where you stand and choose what matters next",
   description:
     "Ten honest questions about where your life stands today. See your snapshot, choose one area to focus on, and turn it into an action you can practise and review. Free.",
 };

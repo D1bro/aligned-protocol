@@ -208,7 +208,7 @@ async function LatestAudit({
             {isGuest ? (
               <Link href="/audit/results#step-up" className="btn btn-o">Build my plan</Link>
             ) : (
-              <Link href="/clear" className="btn btn-o">Go to my plan</Link>
+              <Link href="/plan" className="btn btn-o">Go to my plan</Link>
             )}
             <Link href="/audit/1" className="au-text-link">
               {days <= 0 ? "Retake the audit" : "Revisit early"}

@@ -14,7 +14,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 
 // The public homepage. Visitors without a profile (including guests part-way
 // through the audit) see it at "/" — middleware shows this page there — while
-// signed-in members keep landing on My profile.
+// signed-in members keep landing on My Space.
 export const metadata: Metadata = {
   title: { absolute: SITE.title },
   description: SITE.description,

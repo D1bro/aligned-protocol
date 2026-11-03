@@ -24,7 +24,7 @@ const NEXT_STEP_LABELS: Record<CheckIn["next_step"], string> = {
 const short = (d: Date | string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Europe/London" });
 const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
 
-// My plan: why this matters and how they'll follow through. Where the area
+// My Plan: why this matters and how they'll follow through. Where the area
 // is and where they are in the rhythm first, then the goal itself; monthly
 // review history, their answers to the five steps and other goals underneath.
 export function ClearDashboard({
@@ -114,7 +114,7 @@ export function ClearDashboard({
 
   return (
     <div className="page au-page">
-      <div className="eyebrow"><span className="eydot" /> My plan · {area.name}</div>
+      <div className="eyebrow"><span className="eydot" /> My Plan · {area.name}</div>
       <div className={closed ? "pl-hero" : "pl-hero has-count"}>
         <div>
           <h1 className="au-latest-h">
@@ -126,12 +126,12 @@ export function ClearDashboard({
           </h1>
           <p className="lead">
             {closed
-              ? "Set your next goal for this area, or choose a new area. What you did and learnt stays in My journey."
+              ? "Set your next goal for this area, or choose a new area. What you did and learnt stays in My Journey."
               : "One action, practised and reviewed, gives you something concrete to work with."}
           </p>
         </div>
         {!closed ? (
-          <Link href="/clear/review" className={checkInNow ? "pl-count is-due" : "pl-count"}>
+          <Link href="/plan/review" className={checkInNow ? "pl-count is-due" : "pl-count"}>
             <span className="pl-k">Next {reviewName.toLowerCase()}</span>
             <b>{checkInNow ? "Due now" : review.daysAway === 1 ? "Tomorrow" : `${review.daysAway} days`}</b>
             <span>{checkInNow ? "Do it now →" : `${longDay(review.date)} · or review early`}</span>
@@ -141,14 +141,14 @@ export function ClearDashboard({
 
       {!closed && isMain && otherActive.length ? (
         <p className="plan-note">
-          This is your <b>main goal</b> — the one My profile shows. You have {otherActive.length} other active goal
+          This is your <b>main goal</b> — the one My Space shows. You have {otherActive.length} other active goal
           {otherActive.length === 1 ? "" : "s"}; <a href="#other-goals">choose your main goal below</a>.
         </p>
       ) : null}
       {!closed && newerAudit ? (
         <p className="plan-note">
           You took an audit on {formatDate(newerAudit)}, after this plan was made. Keep working on this goal, or{" "}
-          <Link href="/clear?latest=1">make a plan from your latest audit</Link>. A new plan becomes your main goal;
+          <Link href="/plan?latest=1">make a plan from your latest audit</Link>. A new plan becomes your main goal;
           this one stays active, and you can switch back at any time.
         </p>
       ) : null}
@@ -224,7 +224,7 @@ export function ClearDashboard({
             {vague && !closed ? (
               <p className="plan-hint">
                 Could someone else tell this had happened? If not, add one thing you&rsquo;d see or count.{" "}
-                <Link href="/clear?edit=5">Clarify it</Link> — your words stay as they are until you change them.
+                <Link href="/plan?edit=5">Clarify it</Link> — your words stay as they are until you change them.
               </p>
             ) : null}
           </div>
@@ -238,12 +238,12 @@ export function ClearDashboard({
 
         {closed ? (
           <div className="pl-cta">
-            <Link href="/clear?new=1" className="btn btn-p">Set my next goal →</Link>
+            <Link href="/plan?new=1" className="btn btn-p">Set my next goal →</Link>
           </div>
         ) : (
           <div className="pl-cta">
-            <Link href="/clear/review" className="btn btn-p">{checkInNow ? `Do my ${reviewName.toLowerCase()} →` : "Review early"}</Link>
-            <Link href="/clear?edit=4" className="au-text-link">Adjust the action</Link>
+            <Link href="/plan/review" className="btn btn-p">{checkInNow ? `Do my ${reviewName.toLowerCase()} →` : "Review early"}</Link>
+            <Link href="/plan?edit=4" className="au-text-link">Adjust the action</Link>
             <GoalActions goalId={goal.id} />
           </div>
         )}
@@ -279,7 +279,7 @@ export function ClearDashboard({
           <span>As you wrote them · tap a step</span>
         </div>
         <ClearLetters items={STEP_NAMES.map((name, i) => ({ letter: String(i + 1), name, text: answers[i] }))} />
-        <p className="pl-edit"><Link href="/clear?edit=1" className="au-text-link">Review or edit my answers</Link></p>
+        <p className="pl-edit"><Link href="/plan?edit=1" className="au-text-link">Review or edit my answers</Link></p>
       </section>
 
       {otherGoals.length ? (

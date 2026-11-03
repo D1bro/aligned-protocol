@@ -39,11 +39,11 @@ function todayLabel(zone: string | null | undefined) {
 }
 
 
-// My profile, built around the current week. The top answers three things:
+// My Space, built around the current week. The top answers three things:
 // what matters to me now, what am I doing this week, and when will I review
 // it. Coaching comes next for coaching clients; the Alignment Map, learning
-// and support options sit further down. The full plan lives on My plan; the
-// history on My journey.
+// and support options sit further down. The full plan lives on My Plan; the
+// history on My Journey.
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ welcome?: string; reviewed?: string }> }) {
   const { welcome, reviewed } = await searchParams;
   const [profile, details] = await Promise.all([getCurrentProfile(), getMyDetails()]);
@@ -62,7 +62,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <section className="profile-top" aria-labelledby="profile-top-h">
           <div className="profile-top-text">
             <div className="profile-topline">
-              <div className="eyebrow"><span className="eydot" /> My profile</div>
+              <div className="eyebrow"><span className="eydot" /> My Space</div>
               {editDetails}
             </div>
             <h1 id="profile-top-h" className="au-latest-h">{firstName ? <>Welcome, <em>{firstName}.</em></> : "Welcome."}</h1>
@@ -140,14 +140,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   // Before the plan is set: the one next step.
   const action = goal
-    ? { href: "/clear", label: "Finish my plan →" }
+    ? { href: "/plan", label: "Finish my plan →" }
     : !area
-      ? { href: "/clear", label: "Choose my first area →" }
+      ? { href: "/plan", label: "Choose my first area →" }
       : planState.stage === "in_progress"
-        ? { href: "/clear", label: `Continue my plan: step ${planState.step} of 5 →` }
+        ? { href: "/plan", label: `Continue my plan: step ${planState.step} of 5 →` }
         : planState.stage === "done"
-          ? { href: "/clear?new=1", label: "Set my next goal →" }
-          : { href: "/clear", label: "Build my plan →" };
+          ? { href: "/plan?new=1", label: "Set my next goal →" }
+          : { href: "/plan", label: "Build my plan →" };
 
   const path = PATHS[0];
   const doneSlugs = new Set(lessons.filter((l) => l.completed_at).map((l) => l.lesson_slug));
@@ -207,11 +207,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           ) : null}
           <div className="next-action-cta">
             {next.due ? (
-              <Link href="/clear/review" className="btn btn-p">Do my {reviewName} →</Link>
+              <Link href="/plan/review" className="btn btn-p">Do my {reviewName} →</Link>
             ) : (
               <>
-                <Link href="/clear" className="btn btn-p">See my plan →</Link>
-                <Link href="/clear/review" className="au-text-link">Review early</Link>
+                <Link href="/plan" className="btn btn-p">See my plan →</Link>
+                <Link href="/plan/review" className="au-text-link">Review early</Link>
               </>
             )}
             {run ? (
@@ -264,7 +264,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       {main?.otherActive.length ? (
         <p className="next-action-note">
           This is your main goal. You have {main.otherActive.length} other active goal
-          {main.otherActive.length === 1 ? "" : "s"} — <Link href="/clear#other-goals">choose your main goal in My plan</Link>.
+          {main.otherActive.length === 1 ? "" : "s"} — <Link href="/plan#other-goals">choose your main goal in My Plan</Link>.
         </p>
       ) : null}
 
@@ -293,7 +293,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <div className="profile-links">
             <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
             <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
-            <Link href="/summary" className="au-text-link">My journey</Link>
+            <Link href="/journey" className="au-text-link">My Journey</Link>
           </div>
           {goalsDone ? (
             <p className="profile-won">

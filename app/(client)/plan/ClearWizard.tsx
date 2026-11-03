@@ -219,7 +219,7 @@ export function ClearWizard({
     const ok = await persist(step);
     if (!ok) return setNavigating(false);
     if (step === TOTAL_STEPS) {
-      router.push("/clear/set");
+      router.push("/plan/set");
       router.refresh();
       return;
     }
@@ -310,7 +310,7 @@ export function ClearWizard({
                   <p className="au-detail-k">From your snapshot</p>
                   <p className="au-latest-big">{area.name} <span>{score}/10</span></p>
                   {auditNote ? <p className="clear-note">&ldquo;{auditNote}&rdquo;</p> : null}
-                  {canChangeArea ? <Link href="/clear?choose=1" className="au-text-link">Start with a different area</Link> : null}
+                  {canChangeArea ? <Link href="/plan?choose=1" className="au-text-link">Start with a different area</Link> : null}
                 </div>
                 <label className="au-start-q" htmlFor="b-stepup">What would a {target} look like?</label>
                 <p className="au-start-help">Not a complete fix. One honest step up.</p>

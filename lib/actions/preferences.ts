@@ -30,7 +30,7 @@ export async function remindersConfigured(): Promise<boolean> {
   return Boolean(process.env.RESEND_API_KEY && process.env.REMINDER_FROM && process.env.CRON_SECRET);
 }
 
-// The optional identity statement on My profile, in the member's own words.
+// The optional identity statement on My Space, in the member's own words.
 // `available` is false until migration 0008 has added the column.
 export async function getIdentityStatement(): Promise<{ available: boolean; text: string | null }> {
   const supabase = await createClient();

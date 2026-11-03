@@ -6,7 +6,7 @@ import { getActiveGoals, type ClearPlan, type Goal } from "@/lib/actions/clear";
 import { getLifeAreas, type LifeArea } from "@/lib/actions/audit";
 import { getCheckIns, type CheckIn } from "@/lib/actions/checkins";
 
-// The member's main goal: the one My profile and My plan both show.
+// The member's main goal: the one My Space and My Plan both show.
 // Other active goals are kept as they are; the member chooses which is main.
 // goals.goal_type marks it — 'primary' for the main goal, 'supporting' for
 // the rest. Until someone chooses, the newest active 'primary' goal is main
@@ -77,6 +77,6 @@ export async function setMainGoal(goalId: string): Promise<{ ok: boolean; messag
   if (error || data !== true) return { ok: false, message: "Couldn’t change your main goal — try again." };
 
   revalidatePath("/");
-  revalidatePath("/clear");
+  revalidatePath("/plan");
   return { ok: true };
 }
