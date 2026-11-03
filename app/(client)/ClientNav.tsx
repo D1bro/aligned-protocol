@@ -3,11 +3,14 @@
 import { usePathname } from "next/navigation";
 import { MobileNav, NavFooter, NavLinks, type MobileNavLink } from "@/components/ui/MobileNav";
 
-// Brief v4.0 (Nov 2026): four destinations first, then the daily practice
-// and journal, then everything else under "More".
+// Brief v4.0 (Nov 2026): four destinations, then everything else under
+// "More". The daily practice and journal are part of My Space (its daily card
+// links to both, and My Journey links to the journal), so they light up My
+// Space rather than having menu items of their own.
+const inMySpace = (p: string) => p === "/" || p.startsWith("/alignment") || p.startsWith("/journal");
 const DESTINATIONS: MobileNavLink[] = [
-  { group: "You", href: "/", label: "My Space", icon: "home", match: (p) => p === "/" },
-  { group: "You", href: "/audit", label: "Protocol", icon: "target", match: (p) => p.startsWith("/audit") },
+  { group: "You", href: "/", label: "My Space", icon: "home", match: inMySpace },
+  { group: "You", href: "/audit", label: "The Aligned Protocol", icon: "target", match: (p) => p.startsWith("/audit") },
   { group: "You", href: "/plan", label: "My Plan", icon: "map", match: (p) => p.startsWith("/plan") },
   { group: "You", href: "/journey", label: "My Journey", icon: "journey", match: (p) => p.startsWith("/journey") },
 ];
@@ -20,31 +23,20 @@ const MORE_LINKS: MobileNavLink[] = [
   { group: "More", href: "/membership", label: "Membership", icon: "star", match: (p) => p.startsWith("/membership") },
 ];
 
-// The phone tab bar: the four destinations (More opens the drawer with the rest).
-const TABS: MobileNavLink[] = DESTINATIONS;
+// The phone tab bar: the four destinations, with a shorter label for the
+// Protocol so all five tabs fit (More opens the drawer with the rest).
+const TABS: MobileNavLink[] = DESTINATIONS.map((d) => (d.href === "/audit" ? { ...d, label: "Protocol" } : d));
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
-// The daily practice (intention, reflection, journal) is for Practice and
-// Momentum members and staff (lib/alignment.ts); everyone else sees it with a
-// lock, and the page offers the way to join.
-const practiceLinks = (locked: boolean): MobileNavLink[] => [
-  { group: "Practice", href: "/alignment", label: "Daily practice", icon: "sunrise", match: (p) => p.startsWith("/alignment"), locked },
-  { group: "Practice", href: "/journal", label: "Journal", icon: "pen", match: (p) => p.startsWith("/journal"), locked },
-];
-const linksFor = (staff: boolean, practice: boolean) => [
-  ...DESTINATIONS,
-  ...practiceLinks(!(practice || staff)),
-  ...MORE_LINKS,
-  ...(staff ? [STAFF_LINK] : []),
-];
+const linksFor = (staff: boolean) => [...DESTINATIONS, ...MORE_LINKS, ...(staff ? [STAFF_LINK] : [])];
 
-export function ClientNav({ fullName, staff = false, practice = false }: { fullName: string | null; staff?: boolean; practice?: boolean }) {
+export function ClientNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className="sb-nav">
-      <NavLinks links={linksFor(staff, practice)} pathname={pathname} />
+      <NavLinks links={linksFor(staff)} pathname={pathname} />
       <div className="sb-q">
         <div className="sb-qm">&ldquo;</div>
         <div className="sb-qt">Alignment is the foundation. Action is the transformation.</div>
@@ -54,6 +46,6 @@ export function ClientNav({ fullName, staff = false, practice = false }: { fullN
   );
 }
 
-export function ClientMobileNav({ fullName, staff = false, practice = false }: { fullName: string | null; staff?: boolean; practice?: boolean }) {
-  return <MobileNav links={linksFor(staff, practice)} fullName={fullName} sub="Your details" userHref="/details" tabs={TABS} />;
+export function ClientMobileNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
+  return <MobileNav links={linksFor(staff)} fullName={fullName} sub="Your details" userHref="/details" tabs={TABS} />;
 }
