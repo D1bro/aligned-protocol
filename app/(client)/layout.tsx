@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { getCurrentProfile } from "@/lib/session";
 import { Logo } from "@/components/ui/Logo";
 import { ClientNav, ClientMobileNav } from "./ClientNav";
-import { getMyAccess } from "@/lib/actions/membership";
-import { hasPractice } from "@/lib/membership";
 import { getLatestCompletedAudit } from "@/lib/actions/audit";
 import { GuestBar } from "./GuestBar";
 
@@ -33,14 +31,13 @@ export default async function ClientLayout({ children }: { children: React.React
     return <GuestShell hasResults={!!results}>{children}</GuestShell>;
   }
 
-  const practice = hasPractice((await getMyAccess()).tier);
   return (
     <div className="shell has-tabs">
       <aside className="sidebar">
         <Logo subtitle="Protocol" />
-        <ClientNav fullName={profile.full_name} staff={staff} practice={practice} />
+        <ClientNav fullName={profile.full_name} staff={staff} />
       </aside>
-      <ClientMobileNav fullName={profile.full_name} staff={staff} practice={practice} />
+      <ClientMobileNav fullName={profile.full_name} staff={staff} />
       <div className="main">{children}</div>
     </div>
   );

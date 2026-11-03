@@ -21,7 +21,10 @@ export async function AlignmentReviews() {
       ) : (
         <p className="alignment-small">Your saved weekly reviews will appear here. There is no need to catch up on missed days.</p>
       )}
-      <Link href="/alignment?view=week" className="au-text-link">Review this week →</Link>
+      <p className="profile-links">
+        <Link href="/alignment?view=week" className="au-text-link">Review this week →</Link>
+        <Link href="/journal" className="au-text-link">Open my journal →</Link>
+      </p>
     </section>
   );
 }

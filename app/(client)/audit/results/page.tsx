@@ -125,7 +125,7 @@ export default async function ResultsPage() {
         {isGuest ? (
           <>
             <SaveStart
-              skipHref={planCard ? "/clear" : "#step-up"}
+              skipHref={planCard ? "/plan" : "#step-up"}
               film={FILMS.S01 ? (
                 <GuideVideo
                   clip={FILMS.S01}
@@ -167,7 +167,7 @@ export default async function ResultsPage() {
               <span className="au-step-n">01</span>
               <h3>Your starting point is set</h3>
               <p>{planCard.areaName}, from {planCard.score} towards {planCard.target}. Your plan builds on it.</p>
-              <Link href="/clear" className="au-text-link">Open my plan</Link>
+              <Link href="/plan" className="au-text-link">Open my plan</Link>
             </li>
           ) : (
             <li>
@@ -182,28 +182,28 @@ export default async function ResultsPage() {
               <span className="au-step-n">02</span>
               <h3>Build your plan</h3>
               <p>Five guided steps turn your starting point into one clear action. Build it first; save it to a free account when it&rsquo;s set.</p>
-              <a href={plan ? "/clear" : "#step-up"} className="btn btn-p">Build my plan →</a>
+              <a href={plan ? "/plan" : "#step-up"} className="btn btn-p">Build my plan →</a>
             </li>
           ) : planCard?.stage === "done" ? (
             <li className="primary">
               <span className="au-step-n">02</span>
               <h3>Keep going with your action</h3>
               <p>Your plan is set. Small, steady repetitions are what move a score — check back on your plan as you go.</p>
-              <Link href="/clear" className="btn btn-p">Open my plan</Link>
+              <Link href="/plan" className="btn btn-p">Open my plan</Link>
             </li>
           ) : (
             <li className="primary">
               <span className="au-step-n">02</span>
               <h3>Build your plan</h3>
               <p>Five guided steps turn your starting point into one clear action you can take this week.</p>
-              <Link href="/clear" className="btn btn-p">Build my plan →</Link>
+              <Link href="/plan" className="btn btn-p">Build my plan →</Link>
             </li>
           )}
           <li>
             <span className="au-step-n">03</span>
             <h3>Come back and compare</h3>
             <p>A one-minute weekly review keeps your plan going, and each month you score the area again. Revisit all ten areas in about three months, or sooner after a meaningful change, to see what&rsquo;s moved.</p>
-            {isGuest ? null : <Link href="/" className="au-text-link">Go to my profile</Link>}
+            {isGuest ? null : <Link href="/" className="au-text-link">Go to My Space</Link>}
           </li>
         </ol>
       </section>

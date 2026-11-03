@@ -13,7 +13,7 @@ const filled = (v: string | null | undefined) => !!v?.trim();
 // early is fine; the next one is then counted from today.
 export default async function ReviewPage() {
   const main = await getMainGoal();
-  if (!main || !main.area || !filled(main.goal.frequency) || !filled(main.goal.success_criteria)) redirect("/clear");
+  if (!main || !main.area || !filled(main.goal.frequency) || !filled(main.goal.success_criteria)) redirect("/plan");
   const { goal, plan, area, checkIns, baselineScore } = main;
   const reviews = await getReviews(goal.id);
   const next = nextReview({ start: goal.created_at ?? new Date().toISOString(), actionWhen: goal.action_when, reviews: reviews.all });

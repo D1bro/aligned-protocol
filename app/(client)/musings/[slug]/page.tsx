@@ -33,7 +33,7 @@ export default async function MusingPage({ params }: { params: Promise<{ slug: s
           {tool ? (
             <>
               Put it into practice with the <Link href={`/tools/${tool.slug}`} className="au-text-link">{tool.title}</Link>, then
-              bring your chosen action into <Link href="/clear" className="au-text-link">My plan</Link>.
+              bring your chosen action into <Link href="/plan" className="au-text-link">My Plan</Link>.
             </>
           ) : (
             <>

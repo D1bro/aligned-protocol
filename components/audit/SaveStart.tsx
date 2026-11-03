@@ -79,7 +79,7 @@ export function SaveStart({ skipHref = "#step-up", film }: { skipHref?: string; 
           <p className="ss-k">Saved</p>
           <h2 id="ss-h" className="ss-h">Your starting point is <em>saved.</em></h2>
           <p className="ss-lead">Your Alignment Map is in your account, ready whenever you want it. Next: choose your first area to work on.</p>
-          <div><Link href="/?welcome=saved" className="btn btn-p ss-btn">Go to my profile →</Link></div>
+          <div><Link href="/?welcome=saved" className="btn btn-p ss-btn">Go to My Space →</Link></div>
         </div>
       ) : stage.kind === "check" ? (
         <div className="ss-main" aria-live="polite">

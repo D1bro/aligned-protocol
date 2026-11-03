@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { saveMomentumDetails, type MomentumDetails } from "@/lib/actions/membership";
 
-// The Momentum session: what members see on My profile and My membership.
+// The Momentum session: what members see on My Space and My membership.
 export function MomentumSettings({ initial }: { initial: MomentumDetails | null }) {
   const [when, setWhen] = useState(initial?.momentum_when ?? "");
   const [joinUrl, setJoinUrl] = useState(initial?.momentum_join_url ?? "");

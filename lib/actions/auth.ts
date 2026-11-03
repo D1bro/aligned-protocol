@@ -123,7 +123,7 @@ export async function requestPasswordReset(formData: FormData): Promise<ActionRe
 // Save my plan, on Your plan is set: turns the guest into a real account in
 // place (same as signUp above), so the plan built as a guest is already
 // theirs. They stay on their plan while they confirm their email; the
-// confirmation link (any device) lands on My profile with "your plan is saved".
+// confirmation link (any device) lands on My Space with "your plan is saved".
 export type SavePlanResult = { ok: true; confirmed: boolean; email: string } | { ok: false; message: string; exists?: boolean };
 
 export async function saveGuestPlan(formData: FormData): Promise<SavePlanResult> {

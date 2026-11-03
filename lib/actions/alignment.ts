@@ -36,7 +36,7 @@ async function requireMember(exporting = false) {
 function refreshAlignment() {
   revalidatePath("/alignment");
   revalidatePath("/");
-  revalidatePath("/summary");
+  revalidatePath("/journey");
 }
 
 export async function getAlignmentData(options: { date?: string; timezone?: string } = {}): Promise<AlignmentData> {
@@ -165,7 +165,7 @@ export async function exportAlignmentData(): Promise<
   return { ok: true, data: { schema: ALIGNMENT_EXPORT_SCHEMA, exported_at: new Date().toISOString(), daily, weekly } };
 }
 
-// For the My profile card: has today's entry actually been saved? Uses the
+// For the My Space card: has today's entry actually been saved? Uses the
 // time zone from Your details when set (else UTC, said plainly on the card).
 export async function getTodayAlignment(): Promise<{ available: boolean; saved: boolean; wins: AlignmentWins; date: string; timezone: string }> {
   const { supabase, userId } = await requireMember();

@@ -271,7 +271,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
 
   return (
     <>
-      <div className="topbar"><Link href="/" className="tb-back">← My profile</Link><span className="tb-label">Daily practice</span></div>
+      <div className="topbar"><Link href="/" className="tb-back">← My Space</Link><span className="tb-label">Daily practice</span></div>
       <div className="page alignment-page">
         <header className="alignment-head">
           <div className="eyebrow"><span className="eydot" /> Daily practice{today ? <> · {dateLabel(today, true).replace(/ \d{4}$/, "")}</> : null}</div>
@@ -309,7 +309,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
             </button>
           ))}
         </div>
-        <Link href="/alignment/journal" className="dp-tab-link">Journal</Link>
+        <Link href="/journal" className="dp-tab-link">Journal</Link>
         </div>
 
         <div className="alignment-date">
@@ -372,17 +372,17 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
                 <input className="alignment-field" id={`${id}-priority`} maxLength={500} placeholder="For example: spend twenty minutes on the project proposal before opening messages." value={daily.priority ?? ""} disabled={disabled} onChange={(e) => updateDay({ priority: orNull(e.target.value) })} />
                 {linkedGoal ? (
                   <p className="alignment-small alignment-goal">
-                    Linked to your goal in My plan: <b>{linkedGoal.goal_title?.replace(/\.$/, "")}</b>{" "}
+                    Linked to your goal in My Plan: <b>{linkedGoal.goal_title?.replace(/\.$/, "")}</b>{" "}
                     <button className="alignment-secondary" type="button" disabled={disabled} onClick={() => updateDay({ goal_id: null })}>Remove link</button>
                   </p>
                 ) : mainGoal?.goal_title ? (
                   <div className="alignment-goal">
-                    <p className="alignment-small">Your main goal in <Link href="/clear">My plan</Link>: <b>{mainGoal.goal_title}</b></p>
+                    <p className="alignment-small">Your main goal in <Link href="/plan">My Plan</Link>: <b>{mainGoal.goal_title}</b></p>
                     <button className="alignment-secondary" type="button" disabled={disabled} onClick={() => updateDay({ priority: daily.priority ?? mainGoal.goal_title, goal_id: mainGoal.id })}>Use this goal</button>
                     <span className="alignment-small">Your plan stays exactly as it is.</span>
                   </div>
                 ) : (
-                  <p className="alignment-small">It can be part of <Link href="/clear">My plan</Link>, or simply something that matters today.</p>
+                  <p className="alignment-small">It can be part of <Link href="/plan">My Plan</Link>, or simply something that matters today.</p>
                 )}
 
                 <h3 className="alignment-q dp-q"><label htmlFor={`${id}-value`}>What value do I want to practise today?</label></h3>
@@ -522,7 +522,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
                 <textarea className="alignment-field" id={`${id}-adjust`} rows={3} maxLength={1000} value={weekly.adjustment ?? ""} disabled={disabled} onChange={(e) => updateWeek({ adjustment: orNull(e.target.value) })} />
                 <label className="alignment-label" htmlFor={`${id}-next`}>What is one meaningful priority for next week?</label>
                 <input className="alignment-field" id={`${id}-next`} maxLength={1000} value={weekly.next_priority ?? ""} disabled={disabled} onChange={(e) => updateWeek({ next_priority: orNull(e.target.value) })} />
-                <p className="alignment-small">This doesn&rsquo;t create or change a goal. To change your goal, go to <Link href="/clear">My plan</Link>.</p>
+                <p className="alignment-small">This doesn&rsquo;t create or change a goal. To change your goal, go to <Link href="/plan">My Plan</Link>.</p>
               </section>
               <div className="alignment-form-footer">
                 <div>

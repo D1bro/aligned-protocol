@@ -28,7 +28,7 @@ const serif = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: { default: "Aligned", template: "%s · Aligned" },
+  title: { default: "The Aligned", template: "%s · The Aligned" },
   description: SITE.description,
   // Added to a phone's home screen, it opens full-screen like an app (app/manifest.ts).
   appleWebApp: { capable: true, title: "Aligned", statusBarStyle: "black" },

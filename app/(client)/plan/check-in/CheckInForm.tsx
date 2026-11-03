@@ -60,7 +60,7 @@ export function CheckInForm({
   return (
     <>
       <div className="topbar">
-        <Link href="/" className="tb-back">← My profile</Link>
+        <Link href="/" className="tb-back">← My Space</Link>
         <span className="tb-label">Monthly review</span>
       </div>
       <div className="page au-page clear-step">
@@ -112,7 +112,7 @@ export function CheckInForm({
           {error ?? (ready ? "Ready to save" : "Answer the three questions to save")}
         </span>
         {savedAlready ? (
-          <Link href="/" className="btn btn-p">Go to My profile</Link>
+          <Link href="/" className="btn btn-p">Go to My Space</Link>
         ) : (
           <button className="btn btn-p" disabled={!ready || pending} onClick={submit}>
             {pending ? "Saving…" : "Save my monthly review"}

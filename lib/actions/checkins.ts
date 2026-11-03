@@ -86,11 +86,11 @@ export async function saveWeeklyReview(input: {
   });
   if (error) return { ok: false, message: "Couldn’t save your review — check your connection and try again." };
   revalidatePath("/");
-  revalidatePath("/clear");
+  revalidatePath("/plan");
   redirect("/?reviewed=1");
 }
 
-// Every goal they’ve set, newest first — for My plan’s goal list and My journey.
+// Every goal they’ve set, newest first — for My Plan’s goal list and My Journey.
 export async function getAllGoals() {
   const supabase = await createClient();
   const {
@@ -106,7 +106,7 @@ export async function getAllGoals() {
 }
 
 // Save a monthly review (the goal check-in), then go where their "what next" choice leads:
-// keep going -> My plan; adjust -> CLEAR's action step; done -> goal closed.
+// keep going -> My Plan; adjust -> CLEAR's action step; done -> goal closed.
 export async function saveCheckIn(input: {
   goalId: string;
   didIt: CheckIn["did_it"];
@@ -143,20 +143,20 @@ export async function saveCheckIn(input: {
       .eq("id", input.goalId)
       .select("id");
     if (closeErr || !closed?.length) {
-      revalidatePath("/clear");
+      revalidatePath("/plan");
       return {
         ok: false,
         saved: true,
-        message: "Your monthly review is saved, but the goal couldn’t be marked done. Use “Mark as done” on My plan.",
+        message: "Your monthly review is saved, but the goal couldn’t be marked done. Use “Mark as done” on My Plan.",
       };
     }
   }
-  revalidatePath("/clear");
+  revalidatePath("/plan");
   revalidatePath("/");
-  redirect(input.nextStep === "adjust" ? "/clear?edit=4" : "/?reviewed=1");
+  redirect(input.nextStep === "adjust" ? "/plan?edit=4" : "/?reviewed=1");
 }
 
-// Every monthly review they've done, newest first — for My journey.
+// Every monthly review they've done, newest first — for My Journey.
 export async function getAllCheckIns(): Promise<CheckIn[]> {
   const supabase = await createClient();
   const {

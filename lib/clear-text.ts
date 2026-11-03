@@ -1,5 +1,5 @@
 // CLEAR's "current reality" sentence starters, shared by the steps (browser)
-// and My plan (server).
+// and My Plan (server).
 
 // Tapping a prompt adds one of these, so no one faces an empty box.
 export const REALITY_PROMPTS = ["What's working: ", "What isn't working: ", "It's been like this for: "];

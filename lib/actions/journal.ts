@@ -52,7 +52,7 @@ export async function saveJournalEntry(input: { id?: string | null; entryDate: s
     : m.supabase.from("journal_entries").insert({ ...row, client_id: m.userId });
   const { data, error } = await query.select("id, entry_date, prompt, body, created_at, updated_at").single();
   if (error || !data) return { ok: false, message: "Couldn’t save — your words are still here. Try again." };
-  revalidatePath("/alignment/journal");
+  revalidatePath("/journal");
   return { ok: true, entry: data as JournalEntry };
 }
 
@@ -61,7 +61,7 @@ export async function deleteJournalEntry(id: string): Promise<Result> {
   if (!m) return { ok: false, message: "Please sign in again." };
   const { data, error } = await m.supabase.from("journal_entries").delete().eq("id", id).select("id");
   if (error || !data?.length) return { ok: false, message: "Couldn’t delete that entry — try again." };
-  revalidatePath("/alignment/journal");
+  revalidatePath("/journal");
   return { ok: true };
 }
 

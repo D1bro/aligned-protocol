@@ -13,9 +13,9 @@ import { planStarted } from "@/lib/plan-action";
 
 const filled = (v: string | null | undefined) => !!v?.trim();
 
-// My plan answers: why does this matter, and how will I follow through?
+// My Plan answers: why does this matter, and how will I follow through?
 // With an active main goal (lib/actions/goals.ts) it shows that goal's plan —
-// the same goal My profile shows. Otherwise, Build your plan for the latest
+// the same goal My Space shows. Otherwise, Build your plan for the latest
 // audit, in three states:
 //  1. no area yet (or ?choose=1 before starting) -> choose where to start
 //  2. in progress (or ?edit=N)                   -> the five guided steps
@@ -42,7 +42,7 @@ export default async function ClearPage({
   if (main && main.plan && main.area) {
     const { goal, plan, area } = main;
     const finished = filled(goal.frequency) && filled(goal.success_criteria);
-    if (finished && !editStep && isGuest) redirect("/clear/set");
+    if (finished && !editStep && isGuest) redirect("/plan/set");
     if (finished && !editStep) {
       const [allGoals, latestPlan, configured, remindersOn, reviews] = await Promise.all([
         getAllGoals(),
@@ -137,7 +137,7 @@ export default async function ClearPage({
   const due = nextAuditDue(audit.completed_at);
   const finished = Boolean(goal && filled(goal.frequency) && filled(goal.success_criteria));
 
-  if (finished && goal && !editStep && isGuest) redirect("/clear/set");
+  if (finished && goal && !editStep && isGuest) redirect("/plan/set");
   if (finished && goal && !editStep) {
     const [checkIns, allGoals, configured, remindersOn, reviews] = await Promise.all([
       getCheckIns(goal.id),

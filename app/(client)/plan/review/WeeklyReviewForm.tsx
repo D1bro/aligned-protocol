@@ -66,7 +66,7 @@ export function WeeklyReviewForm({
   return (
     <>
       <div className="topbar">
-        <Link href="/" className="tb-back">← My profile</Link>
+        <Link href="/" className="tb-back">← My Space</Link>
         <span className="tb-label">Weekly review · week {week}</span>
       </div>
       <div className="page au-page clear-step">
@@ -101,7 +101,7 @@ export function WeeklyReviewForm({
         {next === "change" ? (
           <p className="au-start-help">
             Write next week&rsquo;s commitment here. To change your plan&rsquo;s action for good,{" "}
-            <Link href="/clear?edit=4">adjust it in My plan</Link>.
+            <Link href="/plan?edit=4">adjust it in My Plan</Link>.
           </p>
         ) : null}
         <textarea

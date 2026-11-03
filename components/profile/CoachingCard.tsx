@@ -12,7 +12,7 @@ const SHOWN = 5;
 
 type Suggestion = { area_id?: string; area_name?: string; goal?: string };
 
-// My profile, for coaching clients: the next session, the steps agreed at
+// My Space, for coaching clients: the next session, the steps agreed at
 // the last shared session (with "how's it going"), and the coach's suggested
 // place to start until they've set a goal. The full detail stays on the
 // Coaching page; this is the at-a-glance version. Shows nothing for members
@@ -83,7 +83,7 @@ export function CoachingCard({
             {suggestion.goal ? <>, with a first goal like &ldquo;{suggestion.goal}&rdquo;</> : null}.
           </p>
           <p>
-            <Link href={`/clear?choose=1&suggested=${encodeURIComponent(suggestion.area_id)}`} className="au-text-link">Choose where to start →</Link>
+            <Link href={`/plan?choose=1&suggested=${encodeURIComponent(suggestion.area_id)}`} className="au-text-link">Choose where to start →</Link>
           </p>
         </div>
       ) : null}

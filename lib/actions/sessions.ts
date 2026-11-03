@@ -128,7 +128,7 @@ export async function createSession(input: {
       .limit(1)
       .maybeSingle(),
   ]);
-  // Same main-goal rule as My profile / My plan: newest active 'primary'.
+  // Same main-goal rule as My Space / My Plan: newest active 'primary'.
   const main = (goals ?? []).find((g) => g.goal_type === "primary") ?? (goals ?? [])[0] ?? null;
 
   const { data, error } = await supabase

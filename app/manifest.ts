@@ -5,7 +5,7 @@ import { SITE } from "@/lib/site-copy";
 // full-screen like an app. No offline caching: every page is always live.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Aligned",
+    name: "The Aligned",
     short_name: "Aligned",
     description: SITE.description,
     start_url: "/",

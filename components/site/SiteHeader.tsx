@@ -17,7 +17,7 @@ export function SiteHeader({ cta }: { cta: { href: string; label: string } }) {
   return (
     <header className="site-head">
       <div className="site-head-in">
-        <Link href="/" className="site-brand" aria-label="Aligned, home">
+        <Link href="/" className="site-brand" aria-label="The Aligned, home">
           <BrandMark width={28} />
           <span>ALIGNED</span>
         </Link>

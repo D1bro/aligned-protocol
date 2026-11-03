@@ -87,7 +87,7 @@ export function MobileNav({
   return (
     <>
       <div className="mob-bar">
-        <Link href={tabs ? "/" : links[0].href} className="mob-brand" aria-label="Aligned, home">
+        <Link href={tabs ? "/" : links[0].href} className="mob-brand" aria-label="The Aligned, home">
           <BrandMark width={22} />
           <span className="mob-brand-text">ALIGNED</span>
         </Link>

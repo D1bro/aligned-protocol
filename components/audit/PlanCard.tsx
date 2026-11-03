@@ -23,10 +23,10 @@ export type PlanCardProps = {
 export function PlanCard({ areaName, score, target, stage, step, goalTitle, frequency, nextAuditDue, nextCheckIn, hideAction }: PlanCardProps) {
   const cta =
     stage === "done"
-      ? { href: "/clear", label: "Open my plan" }
+      ? { href: "/plan", label: "Open my plan" }
       : stage === "in_progress"
-        ? { href: "/clear", label: "Continue my plan →" }
-        : { href: "/clear", label: "Build my plan →" };
+        ? { href: "/plan", label: "Continue my plan →" }
+        : { href: "/plan", label: "Build my plan →" };
 
   return (
     <section className="plan-card" aria-label="Your plan">

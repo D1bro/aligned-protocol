@@ -23,7 +23,7 @@ export type SummaryContent = {
   resources: { title: string; url: string }[];
   next_meeting: { text: string };
   points: string[];
-  // A suggested place to start, shared with the client; they choose in My plan.
+  // A suggested place to start, shared with the client; they choose in My Plan.
   suggested_focus: { area_id: string; area_name: string; goal: string; why: string };
 };
 

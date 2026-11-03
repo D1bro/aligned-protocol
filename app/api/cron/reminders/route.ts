@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     const first = p.full_name?.split(" ")[0];
     const area = g.focus_area ?? "your goal";
-    const link = `${SITE_URL}/clear/review`;
+    const link = `${SITE_URL}/plan/review`;
     const off = `${SITE_URL}/api/reminders/unsubscribe?t=${p.email_token}`;
     const goal = g.goal_title?.trim() ?? "";
     const monthly = next.kind === "monthly";
