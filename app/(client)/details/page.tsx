@@ -3,13 +3,15 @@ import Link from "next/link";
 import { getMyDetails } from "@/lib/actions/details";
 import { SITE } from "@/lib/site-copy";
 import { DetailsForm } from "./DetailsForm";
+import { getBirthDate } from "@/lib/actions/life";
+import { BirthDateForm } from "@/components/journey/BirthDateForm";
 
 export const metadata: Metadata = { title: "Your details" };
 
 // Optional contact, location and billing details, editable any time.
 // Never required to take the audit, build a plan or use coaching.
 export default async function DetailsPage() {
-  const d = await getMyDetails();
+  const [d, life] = await Promise.all([getMyDetails(), getBirthDate()]);
   const zones = Intl.supportedValuesOf("timeZone");
 
   return (
@@ -41,6 +43,13 @@ export default async function DetailsPage() {
       ) : (
         <p className="clear-err">This page isn&rsquo;t switched on yet (it needs database update 0016).</p>
       )}
+
+      {life.available ? (
+        <section className="pf-tile lm-details" aria-labelledby="lm-details-h">
+          <h2 id="lm-details-h" className="pl-h">For 1,000 Months</h2>
+          <BirthDateForm initial={life.birthDate} />
+        </section>
+      ) : null}
     </div>
   );
 }

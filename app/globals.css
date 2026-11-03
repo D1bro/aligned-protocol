@@ -2201,3 +2201,79 @@ a.nav-user-who:hover b { color: var(--gold); }
 .pl-changed-foot { font-size: 13px; color: var(--text2); margin-top: .7rem; }
 .pl-changed-foot a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 .bp-ideas { margin: .2rem 0 .3rem; }
+
+/* 1,000 Months (brief, 3 Nov 2026). The six colours a member may choose for
+   a month; months they haven't reflected on stay neutral. */
+:root { --m-inspired: #D3A758; --m-aligned: #2BB3A3; --m-growing: #9B7EDE; --m-restoring: #5B9BD5; --m-navigating: #E07A5F; --m-drifting: #6B7280; }
+.lm-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; background: var(--bg5); }
+.lm-dot.is-future { background: transparent; border: 1.5px solid var(--bdr2); }
+.lm-dot.is-before { background: transparent; }
+.lm-dot.is-current { box-shadow: 0 0 0 2px var(--bg2), 0 0 0 4px var(--gold); }
+.c-inspired { background: var(--m-inspired) !important; } .c-aligned { background: var(--m-aligned) !important; } .c-growing { background: var(--m-growing) !important; }
+.c-restoring { background: var(--m-restoring) !important; } .c-navigating { background: var(--m-navigating) !important; } .c-drifting { background: var(--m-drifting) !important; }
+.lm-year { list-style: none; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; padding: 0; margin: 0; width: 100%; }
+.lm-year li > a, .lm-year li > span { display: grid; justify-items: center; gap: 4px; padding: 6px 0; border-radius: 8px; text-decoration: none; min-height: 44px; align-content: center; }
+.lm-year li > a:hover { background: rgba(255,255,255,.05); }
+.lm-initial { font-size: 11px; color: var(--text3); }
+.lm-year .is-current + .lm-initial { color: var(--gold2); font-weight: 600; }
+.lm-key { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem 1rem; padding: 0; margin: .6rem 0 0; font-size: 12.5px; color: var(--text2); }
+.lm-key li { display: inline-flex; align-items: center; gap: .4rem; }
+.lm-key .lm-dot { width: 10px; height: 10px; }
+.lm-page { max-width: 880px; display: grid; gap: 1rem; align-content: start; }
+.lm-page > .au-text-link { justify-self: start; }
+.lm-foot a, .lm-start a { color: var(--text); }
+.lm-start { gap: .9rem; }
+/* The full grid: one row per year, small cells; the year view on phones. */
+.lm-wrap { display: grid; gap: 1rem; }
+.lm-yearview { display: none; gap: .8rem; justify-items: start; }
+.lm-yearnav { display: flex; align-items: center; gap: 1rem; }
+.lm-yearnav b { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 20px; min-width: 3.5em; text-align: center; }
+.lm-yearnav .btn { min-width: 44px; min-height: 44px; padding: 0; }
+.lm-grid { display: grid; gap: 3px; }
+.lm-grid > .lm-toggle { display: none; }
+.lm-row { display: grid; grid-template-columns: 3.2em 1fr; align-items: center; gap: .5rem; }
+.lm-rowyear { font-size: 11px; color: var(--text3); text-align: right; font-variant-numeric: tabular-nums; }
+.lm-row.is-now .lm-rowyear { color: var(--gold2); font-weight: 600; }
+.lm-rowcells { display: grid; grid-template-columns: repeat(12, 12px); gap: 3px; }
+.lm-cell { width: 12px; height: 12px; border-radius: 3px; background: var(--bg5); display: block; }
+.lm-cell.is-future { background: transparent; border: 1px solid var(--bdr2); }
+.lm-cell.is-before { background: transparent; }
+.lm-cell.is-current { box-shadow: 0 0 0 1.5px var(--bg), 0 0 0 3px var(--gold); }
+a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
+@media (max-width: 768px) {
+  .lm-wrap:not(.show-all) .lm-grid { display: none; }
+  .lm-wrap:not(.show-all) .lm-yearview { display: grid; }
+  .lm-wrap.show-all .lm-grid > .lm-toggle { display: inline-block; justify-self: start; margin-top: .6rem; }
+  .lm-rowcells { grid-template-columns: repeat(12, minmax(0, 14px)); }
+  .lm-cell { width: auto; aspect-ratio: 1; }
+}
+/* The month page. */
+.lm-monthnav { display: flex; justify-content: space-between; gap: 1rem; }
+.lm-section { gap: .8rem; }
+.lm-reflect { display: grid; gap: .6rem; width: 100%; }
+.lm-reflect fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.lm-reflect textarea { width: 100%; }
+.lm-colours { display: flex; flex-wrap: wrap; gap: .45rem; }
+.lm-colour { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: .4rem .85rem .4rem .55rem; border-radius: 100px; border: 1px solid var(--bdr2); background: rgba(255,255,255,.03); color: var(--text2); font: inherit; font-size: 14px; cursor: pointer; }
+.lm-colour:hover { border-color: var(--bdr); color: var(--text); }
+.lm-colour.is-on { border-color: var(--gold); background: var(--gd); color: var(--text); font-weight: 600; }
+.lm-saved { color: var(--hi); font-size: 13px; }
+.lm-story { display: grid; gap: .55rem; width: 100%; }
+.lm-story > div { display: grid; grid-template-columns: 9.5em 1fr; gap: .8rem; padding-bottom: .5rem; border-bottom: 1px solid var(--bdr2); }
+.lm-story dt { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); padding-top: 3px; }
+.lm-story dd { color: var(--text); overflow-wrap: anywhere; }
+.lm-serif { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 1.2rem; color: var(--gold2); }
+@media (max-width: 520px) { .lm-story > div { grid-template-columns: 1fr; gap: .1rem; } }
+.lm-journal { list-style: none; display: grid; gap: .6rem; padding: 0; margin: 0; width: 100%; }
+.lm-journal span { font-size: 12px; color: var(--text3); }
+.lm-journal p { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--gold2); line-height: 1.35; }
+.lm-birth { display: grid; gap: .45rem; width: 100%; max-width: 520px; }
+.lm-birth-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.lm-birth-row input { max-width: 220px; }
+.lm-chapter { gap: .7rem; margin: 1rem 0 1.25rem; }
+.lm-details { margin-top: 1.5rem; gap: .7rem; }
+/* Wide screens: the years flow into columns so the grid fits on a page. */
+@media (min-width: 769px) {
+  .lm-grid { display: block; columns: 3 15rem; column-gap: 2rem; }
+  .lm-row { break-inside: avoid; margin-bottom: 3px; }
+}

@@ -11,6 +11,27 @@ import { AlignmentReviews } from "@/components/profile/AlignmentReviews";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { getMyAccess } from "@/lib/actions/membership";
 import { getCurrentProfile } from "@/lib/session";
+import { getMonthReflections } from "@/lib/actions/life";
+import { yearRow, ymOf } from "@/lib/life-months";
+import { localDate } from "@/lib/time";
+import { YearStrip } from "@/components/journey/YearStrip";
+
+// "Your current chapter": this year, month by month, and the way into the
+// optional 1,000 Months.
+async function CurrentChapter() {
+  const today = ymOf(localDate(new Date()));
+  const { months } = await getMonthReflections();
+  return (
+    <section className="pf-tile lm-chapter" aria-labelledby="lm-chapter-h">
+      <div className="ms-head">
+        <h2 id="lm-chapter-h">Your current chapter: {today.slice(0, 4)}</h2>
+        <Link href="/journey/months" className="ms-head-end au-text-link">Explore 1,000 Months →</Link>
+      </div>
+      <YearStrip months={yearRow(Number(today.slice(0, 4)), today)} reflections={months} />
+      <p className="au-small">Choose a month to look back on it, and give it a colour if one fits.</p>
+    </section>
+  );
+}
 
 type Event = { date: string; kind: "audit" | "goal" | "done" | "checkin" | "lesson"; title: string; detail?: string };
 
@@ -42,6 +63,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
             : "Once you’ve taken it, this page shows how your Alignment Map changes over time."}
         </p>
         <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
+        <CurrentChapter />
         {alignment ? <AlignmentReviews /> : null}
       </div>
     );
@@ -111,6 +133,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
           : `This is your first snapshot. After your next audit, around ${formatDate(nextAuditDue(latest.completed_at))}, you’ll see what’s moved.`}
       </p>
 
+      <CurrentChapter />
       {alignment ? <AlignmentReviews /> : null}
       <div className="journey-stats">
         <div><b>{audits.length}</b><span>{audits.length === 1 ? "audit" : "audits"}</span></div>
