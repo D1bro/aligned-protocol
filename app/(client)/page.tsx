@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLatestCompletedAudit, getAuditWithResponses, getLifeAreas } from "@/lib/actions/audit";
+import { getLatestCompletedAudit, getAuditWithResponses, getLifeAreas, getRecentCompletedAudits } from "@/lib/actions/audit";
 import { getPlanState } from "@/lib/actions/clear";
 import { getMainGoal } from "@/lib/actions/goals";
 import { getAllGoals, getReviews } from "@/lib/actions/checkins";
@@ -14,13 +14,16 @@ import { CoachingCard } from "@/components/profile/CoachingCard";
 import { getMyCoaching } from "@/lib/actions/member-coaching";
 import { getMyCredits } from "@/lib/actions/packages";
 import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
+import { TodayCard } from "@/components/profile/TodayCard";
+import { JournalCard } from "@/components/profile/JournalCard";
+import { GettingStarted } from "@/components/profile/GettingStarted";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { getMomentumDetails, getMyAccess, joiningOpen } from "@/lib/actions/membership";
 import { hasMomentum } from "@/lib/membership";
 import { MomentumCard } from "@/components/membership/MomentumCard";
 import { LifeMap } from "@/components/audit/LifeMap";
 import { ScoreRing } from "@/components/ui/ScoreRing";
-import { AreaBadge, IconBadge } from "@/components/ui/Icon";
+import { AreaBadge, Icon, IconBadge } from "@/components/ui/Icon";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
 import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
 import { daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
@@ -37,17 +40,30 @@ function todayLabel(zone: string | null | undefined) {
   try { return new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: zone || "Europe/London" }).format(new Date()); }
   catch { return new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: "Europe/London" }).format(new Date()); }
 }
+const monthLabel = (zone: string | null | undefined) => {
+  try { return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: zone || "Europe/London" }).format(new Date()); }
+  catch { return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "Europe/London" }).format(new Date()); }
+};
+const addDays = (ymd: string, n: number) => new Date(Date.parse(`${ymd}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+// The dashboard's grid: cells span 2, 3, 4 or all 6 columns on a wide screen
+// (two columns on a tablet, one on a phone, in the order they're written).
+const Cell = ({ span, children }: { span: 2 | 3 | 4 | 6; children: React.ReactNode }) => <div className={`ms-cell ms-s${span}`}>{children}</div>;
 
 
-// My Space, built around the current week. The top answers three things:
-// what matters to me now, what am I doing this week, and when will I review
-// it. Coaching comes next for coaching clients; the Alignment Map, learning
-// and support options sit further down. The full plan lives on My Plan; the
-// history on My Journey.
+
+
+// My Space (brief, 3 Nov 2026): a dashboard that grows with what the member
+// has made. New members get the way in (Protocol → Alignment Map → goal →
+// first action) instead of empty cards; once their plan is set, the cards run
+// in the phone order the brief gives: current focus, this month, today, this
+// week, their journey, the journal, the Alignment Map. Every figure is a real
+// count or their own self-reported score; nothing is estimated.
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ welcome?: string; reviewed?: string }> }) {
   const { welcome, reviewed } = await searchParams;
-  const [profile, details] = await Promise.all([getCurrentProfile(), getMyDetails()]);
+  const [profile, details, access] = await Promise.all([getCurrentProfile(), getMyDetails(), getMyAccess()]);
   const firstName = greetingName({ preferred_name: details.preferred_name, full_name: profile?.full_name }) ?? undefined;
+  // Practice and Momentum members (and staff): today's practice and the journal.
+  const practice = canUseDailyAlignment(profile?.role, access.tier);
   const audit = await getLatestCompletedAudit();
   // The optional invitation to add details: only once 0016 is in, only if
   // they've added nothing yet, and never after "Later".
@@ -59,37 +75,52 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     const mapAreas = await getLifeAreas();
     return (
       <div className="page au-page profile-v2">
-        <section className="profile-top" aria-labelledby="profile-top-h">
-          <div className="profile-top-text">
-            <div className="profile-topline">
-              <div className="eyebrow"><span className="eydot" /> My Space</div>
-              {editDetails}
-            </div>
-            <h1 id="profile-top-h" className="au-latest-h">{firstName ? <>Welcome, <em>{firstName}.</em></> : "Welcome."}</h1>
-            <p className="lead">
-              Start with the Aligned Audit: ten honest questions about where your life stands right now. It takes about
-              ten minutes, and gives you your Alignment Map and a clear place to start.
-            </p>
-            <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
-          </div>
-          <figure className="profile-top-map profile-top-map-empty">
-            <div className="au-chart">
-              <LifeMap
-                scores={mapAreas.map(() => 0)}
-                names={mapAreas.map((a) => a.name)}
-                labels={mapAreas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-                title="Your Alignment Map, waiting for your first audit"
-              />
-            </div>
-            <figcaption>Your Alignment Map appears here after your first audit.</figcaption>
-          </figure>
-        </section>
+        <div className="profile-topline">
+          <div className="eyebrow"><span className="eydot" /> My Space</div>
+          {editDetails}
+        </div>
+        <h1 className="au-latest-h pf-h">{firstName ? <>Welcome, <em>{firstName}.</em></> : "Welcome."}</h1>
+        <div className="ms-grid">
+          <Cell span={6}>
+            <section className="next-action ms-start" aria-labelledby="next-action-h">
+              <div className="ms-start-text">
+                <GettingStarted at={0} />
+                <h2 id="next-action-h">Start with The Aligned Protocol</h2>
+                <p className="next-action-sub">
+                  It begins with the Aligned Audit: ten honest questions about where your life stands right now. It takes
+                  about ten minutes and gives you your Alignment Map. From there you choose one goal and a first action,
+                  and this space fills in as you go.
+                </p>
+                <div className="next-action-cta">
+                  <Link href="/audit" className="btn btn-p">Begin my audit →</Link>
+                </div>
+              </div>
+              <figure className="profile-top-map profile-top-map-empty">
+                <div className="au-chart">
+                  <LifeMap
+                    scores={mapAreas.map(() => 0)}
+                    names={mapAreas.map((a) => a.name)}
+                    labels={mapAreas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+                    title="Your Alignment Map, waiting for your first audit"
+                  />
+                </div>
+                <figcaption>Your Alignment Map appears here after your audit.</figcaption>
+              </figure>
+            </section>
+          </Cell>
+          {practice ? (
+            <>
+              <Cell span={3}><TodayCard action="" actionWhen={null} fallback={null} coachSteps={[]} practice /></Cell>
+              <Cell span={3}><JournalCard /></Cell>
+            </>
+          ) : null}
+        </div>
         {offerDetails ? <DetailsPrompt /> : null}
       </div>
     );
   }
 
-  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching, access] = await Promise.all([
+  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching, audits] = await Promise.all([
     getAuditWithResponses(audit.id),
     getLifeAreas(),
     getPlanState(audit.id),
@@ -98,7 +129,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     getLessonProgress(),
     getIdentityStatement(),
     getMyCoaching(),
-    getMyAccess(),
+    getRecentCompletedAudits(50),
   ]);
   const credits = coaching.sessions.length ? await getMyCredits() : null;
 
@@ -117,6 +148,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const checkIns = main?.checkIns ?? [];
   const latestScore = checkIns.length ? checkIns[checkIns.length - 1].area_score : baseline;
   const goalsDone = allGoals.filter((g) => g.status === "completed").length;
+  // Still finding their way in: no plan set yet and no goal ever finished.
+  const starting = !planned && goalsDone === 0;
 
   // This week, once the plan is set: the commitment from their last weekly
   // review (or the plan's action), the fallback, and the next review.
@@ -124,9 +157,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const next = planned && reviews ? nextReview({ start: goal!.created_at ?? audit.completed_at, actionWhen: goal!.action_when, reviews: reviews.all }) : null;
   const run = reviews ? weekStreak(reviews.all) : null;
   const why = main?.plan?.why_it_matters?.trim() || goal?.motivation_text?.trim() || "";
-  const commitment = reviews?.weekly.at(-1)?.next_commitment?.trim() || goal?.goal_title?.trim() || goal?.action_text?.trim() || "";
+  const reviewCommitment = reviews?.weekly.at(-1)?.next_commitment?.trim() || "";
+  const commitment = reviewCommitment || goal?.goal_title?.trim() || goal?.action_text?.trim() || "";
   const fallback = fallbackOf(main?.plan);
   const reviewName = next?.kind === "monthly" ? "monthly review" : "weekly review";
+  // Every fourth review is the monthly one: how many weekly reviews until then.
+  const toMonthly = next && next.kind === "weekly" ? 4 - (next.number % 4) : 0;
 
   // Steps from the last shared coaching session that are linked to this goal.
   const lastShared = coaching.summaries[0] ?? null;
@@ -163,6 +199,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     .sort((x, y) => y.score - x.score)
     .slice(0, 3);
 
+  const firstAudit = audits.at(-1) ?? audit;
+  const showJourney = planned || audits.length > 1;
+  const lockedPractice = !practice && planned;
+  // The small cards after the first row share a row with the Alignment Map.
+  const beforeMap = (planned ? 0 : (practice ? 2 : 0) + (showJourney ? 1 : 0)) + (planned && practice ? 1 : 0);
+  const mapSpan = beforeMap === 1 ? 4 : 6;
+  const smallSpan = !planned && beforeMap === 2 ? 3 : 2;
+
   return (
     <div className="page au-page profile-v2">
       {welcome === "plan" && next ? (
@@ -181,150 +225,216 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       </div>
       <h1 id="profile-top-h" className="au-latest-h pf-h">{welcome === "saved" ? (firstName ? <>Welcome, <em>{firstName}.</em></> : <><em>Welcome.</em></>) : firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
 
-      {planned && area && next ? (
-        <section className="next-action" aria-labelledby="next-action-h">
-          <div className="eyebrow"><span className="eydot" /> This week · {area.name}</div>
-          <p className="next-action-meta">
-            {latestScore !== null && target !== null ? `${latestScore}/10 now · aiming for ${target} · ` : ""}
-            {next.due ? `Your ${reviewName} is due` : `Next ${reviewName} ${shortDay(next.date)}, ${next.daysAway === 1 ? "tomorrow" : `in ${next.daysAway} days`}`}
-          </p>
-          <div className="next-action-head">
-            <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span>
-            <h2 id="next-action-h">{commitment}</h2>
-          </div>
-          {why ? <p className="next-action-sub">Why it matters: <em className="pf-why">&ldquo;{why}&rdquo;</em></p> : null}
-          {goal?.action_when?.trim() || fallback ? (
-            <ul className="pf-tags">
-              {goal?.action_when?.trim() && goal.action_when.trim().length <= 48 ? <li className="is-gold">{goal.action_when.trim()}</li> : null}
-              {fallback ? <li>Hard week: {fallback.charAt(0).toLowerCase() + fallback.slice(1)}</li> : null}
-            </ul>
-          ) : null}
-          {goalSteps.length ? (
-            <div className="next-action-coaching">
-              <p className="au-detail-k">Agreed with your coach</p>
-              <ul>{goalSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>
+      <div className="ms-grid">
+        {planned && area && next ? (
+          <>
+            {/* 1. Current focus */}
+            <Cell span={4}>
+              <section className="next-action ms-focus" aria-labelledby="next-action-h">
+                <div className="eyebrow"><span className="eydot" /> Current focus · {area.name}</div>
+                {latestScore !== null && target !== null ? (
+                  <p className="next-action-meta">{latestScore}/10 now · aiming for {target}</p>
+                ) : null}
+                <div className="next-action-head">
+                  <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span>
+                  <h2 id="next-action-h">{goal?.goal_title?.trim() || commitment}</h2>
+                </div>
+                {why ? <p className="next-action-sub">Why it matters: <em className="pf-why">&ldquo;{why}&rdquo;</em></p> : null}
+                <div className="next-action-cta">
+                  <Link href="/plan" className="btn btn-g">See my plan →</Link>
+                </div>
+                {main?.otherActive.length ? (
+                  <p className="next-action-note">
+                    This is your main goal. You have {main.otherActive.length} other active goal
+                    {main.otherActive.length === 1 ? "" : "s"}: <Link href="/plan#other-goals">choose your main goal in My Plan</Link>.
+                  </p>
+                ) : null}
+              </section>
+            </Cell>
+
+            {/* 2. This month: the goal's measured progress and the monthly review. */}
+            <Cell span={2}>
+              <section className="pf-tile ms-card" aria-labelledby="ms-month-h">
+                <div className="ms-head">
+                  <Icon name="calendar" size={18} />
+                  <h2 id="ms-month-h">This Month</h2>
+                  <span className="ms-head-end">{monthLabel(details.timezone)}</span>
+                </div>
+                {baseline !== null && latestScore !== null && target !== null ? (
+                  <dl className="ms-facts">
+                    <div><dt>Started</dt><dd>{baseline}/10</dd></div>
+                    <div><dt>Now</dt><dd>{latestScore}/10</dd></div>
+                    <div><dt>Aiming for</dt><dd>{target}/10</dd></div>
+                  </dl>
+                ) : null}
+                <p className="pf-sub">
+                  {next.kind === "monthly"
+                    ? next.due ? "Your monthly review is due: score the area again." : `Your monthly review is ${shortDay(next.date)}.`
+                    : `Your monthly review comes after ${toMonthly} more weekly review${toMonthly === 1 ? "" : "s"}, around ${shortDay(addDays(next.date, 7 * toMonthly))}.`}
+                </p>
+                <p className="ms-note">{checkIns.length} monthly review{checkIns.length === 1 ? "" : "s"} done for this goal</p>
+                {next.kind === "monthly" && next.due ? <Link href="/plan/review" className="btn btn-p">Do my monthly review →</Link> : null}
+              </section>
+            </Cell>
+
+            {/* 3. Today: the plan's action (and the daily practice for members). */}
+            <Cell span={2}>
+              <TodayCard action={commitment} actionWhen={reviewCommitment ? null : goal?.action_when ?? null} fallback={fallback} coachSteps={goalSteps} practice={practice} />
+            </Cell>
+
+            {/* 4. This week: the weekly review and the run of reviews. */}
+            <Cell span={2}>
+              <section className="pf-tile ms-card" aria-labelledby="ms-week-h">
+                <div className="ms-head">
+                  <Icon name="target" size={18} />
+                  <h2 id="ms-week-h">This Week</h2>
+                </div>
+                <p className="pf-big">
+                  {next.due ? `Your ${reviewName} is due` : `Next ${reviewName}: ${shortDay(next.date)}`}
+                </p>
+                <p className="pf-sub">
+                  {next.due ? "Five minutes: what helped, what to adjust, and your commitment for next week." : next.daysAway === 1 ? "Tomorrow." : `In ${next.daysAway} days.`}
+                </p>
+                {run ? (
+                  <>
+                    <span className="pf-bars" role="img" aria-label={`A weekly review in ${run.weeks.filter(Boolean).length} of the last ${run.weeks.length} weeks`}>
+                      {run.weeks.map((on, i) => <span key={i} className={on ? "on" : undefined} />)}
+                    </span>
+                    <p className="ms-note">
+                      Reviews in {run.weeks.filter(Boolean).length} of the last {run.weeks.length} weeks
+                      {run.streak > 1 ? ` · ${run.streak} in a row` : ""}
+                    </p>
+                  </>
+                ) : null}
+                {next.due ? (
+                  <Link href="/plan/review" className="btn btn-p">Do my {reviewName} →</Link>
+                ) : (
+                  <Link href="/plan/review" className="au-text-link">Review early</Link>
+                )}
+              </section>
+            </Cell>
+          </>
+        ) : (
+          <Cell span={6}>
+            {/* Before the plan is set: the one next step, with where they are on the way in. */}
+            <section className="next-action" aria-labelledby="next-action-h">
+              {starting ? <GettingStarted at={goal ? 3 : 2} /> : (
+                <div className="eyebrow"><span className="eydot" /> Your next step{area ? ` · ${area.name}` : ""}</div>
+              )}
+              {area && baseline !== null && target !== null ? (
+                <p className="next-action-meta">{area.name} · started at {baseline}/10 · working towards {target}</p>
+              ) : null}
+              <div className="next-action-head">
+                {area ? <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span> : null}
+                <h2 id="next-action-h">
+                  {goal
+                    ? `Choose your first action for ${area?.name ?? "this goal"}`
+                    : !area
+                      ? "Choose your first area to work on"
+                      : planState.stage === "in_progress"
+                        ? `Finish your plan for ${area.name}`
+                        : planState.stage === "done"
+                          ? "Goal done. What’s next?"
+                          : `Turn ${area.name} into one clear goal`}
+                </h2>
+              </div>
+              <p className="next-action-sub">
+                {goal || planState.stage === "in_progress"
+                  ? "Your answers are saved. Pick up where you left off."
+                  : planState.stage === "done"
+                    ? "Set your next goal for this area, or choose a new area."
+                    : !area && roomToGrow
+                      ? `Many people start with the area that has the most room to grow; for you that’s ${roomToGrow.name}, ${roomToGrow.score}/10. It’s your choice. Five guided steps turn it into one clear action for this week.`
+                      : "Five guided steps. It ends with one action, when you’ll do it, and a short weekly review."}
+              </p>
+              <div className="next-action-cta">
+                <Link href={action.href} className="btn btn-p">{action.label}</Link>
+              </div>
+            </section>
+          </Cell>
+        )}
+
+        {/* Coaching clients: next session, agreed steps, and the coach's suggestion. */}
+        <CoachingCard
+          data={coaching}
+          goals={allGoals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" }))}
+          hasGoal={!!goal}
+          credits={credits}
+        />
+        {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
+
+        {/* Members before their plan is set still have today's practice. */}
+        {!planned && practice ? (
+          <Cell span={smallSpan}><TodayCard action="" actionWhen={null} fallback={null} coachSteps={[]} practice /></Cell>
+        ) : null}
+
+        {/* 5. My Journey, in brief. */}
+        {showJourney ? (
+          <Cell span={smallSpan}>
+            <section className="pf-tile ms-card" aria-labelledby="ms-journey-h">
+              <div className="ms-head">
+                <Icon name="journey" size={18} />
+                <h2 id="ms-journey-h">My Journey</h2>
+              </div>
+              <p className="pf-sub">Since {formatDate(firstAudit.completed_at)}</p>
+              <dl className="ms-facts">
+                <div><dt>{audits.length === 1 ? "Audit" : "Audits"}</dt><dd>{audits.length}</dd></div>
+                <div><dt>Goals done</dt><dd>{goalsDone}</dd></div>
+                {audits.length > 1 ? (
+                  <div><dt>Whole-life</dt><dd>{firstAudit.total_score ?? 0} → {audit.total_score ?? 0}</dd></div>
+                ) : null}
+              </dl>
+              <Link href="/journey" className="btn btn-g">Explore my journey →</Link>
+            </section>
+          </Cell>
+        ) : null}
+
+        {/* 6. The journal (members), or the daily practice offered once the plan is set. */}
+        {practice ? <Cell span={smallSpan}><JournalCard /></Cell> : lockedPractice ? <DailyAlignmentCard joinOpen={await joiningOpen()} /> : null}
+
+        {/* 7. The Alignment Map, in brief. */}
+        <Cell span={mapSpan}>
+          <section className="pf-tile ms-card ms-map" aria-labelledby="pf-map-h">
+            <div className="ms-map-text">
+              <div className="ms-head">
+                <Icon name="compass" size={18} />
+                <h2 id="pf-map-h">Your Alignment Map</h2>
+              </div>
+              <div className="profile-score">
+                <ScoreRing score={audit.total_score ?? 0} size={96} strokeWidth={8} labelSize={26} denomLabel="/100" />
+                <dl className="profile-score-facts">
+                  <dt className="eyebrow">Whole-life score</dt>
+                  <dd>Latest audit <b>{formatDate(audit.completed_at)}</b></dd>
+                  <dd>Strongest <b>{strongest.map((s) => s.name).join(" · ")}</b></dd>
+                  <dd>Next audit <b>{auditDays <= 0 ? "now" : `around ${formatDate(auditDue)}`}</b></dd>
+                </dl>
+              </div>
+              {identity.available ? <IdentityStatement initial={identity.text} /> : null}
+              <div className="profile-links">
+                <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
+                <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
+              </div>
             </div>
-          ) : null}
-          <div className="next-action-cta">
-            {next.due ? (
-              <Link href="/plan/review" className="btn btn-p">Do my {reviewName} →</Link>
-            ) : (
-              <>
-                <Link href="/plan" className="btn btn-p">See my plan →</Link>
-                <Link href="/plan/review" className="au-text-link">Review early</Link>
-              </>
-            )}
-            {run ? (
-              <span className="pf-run">
-                <span className="pf-bars" role="img" aria-label={`A weekly review in ${run.weeks.filter(Boolean).length} of the last ${run.weeks.length} weeks`}>
-                  {run.weeks.map((on, i) => <span key={i} className={on ? "on" : undefined} />)}
-                </span>
-                {run.streak ? `${run.streak} ${run.streak === 1 ? "week" : "weeks"} in a row` : "Your run starts with your first review"}
-              </span>
-            ) : null}
-          </div>
-        </section>
-      ) : (
-        <section className="next-action" aria-labelledby="next-action-h">
-          <div className="eyebrow">
-            <span className="eydot" /> Your next step{area ? ` · ${area.name}` : ""}
-          </div>
-          {area && baseline !== null && target !== null ? (
-            <p className="next-action-meta">Started at {baseline}/10 · working towards {target}</p>
-          ) : null}
-          <div className="next-action-head">
-            {area ? <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span> : null}
-            <h2 id="next-action-h">
-              {goal
-                ? `Finish your plan for ${area?.name ?? "this goal"}`
-                : !area
-                  ? "Choose your first area to work on"
-                  : planState.stage === "in_progress"
-                    ? `Finish your plan for ${area.name}`
-                    : planState.stage === "done"
-                      ? "Goal done. What’s next?"
-                      : `Turn ${area.name} into one clear plan`}
-            </h2>
-          </div>
-          <p className="next-action-sub">
-            {goal || planState.stage === "in_progress"
-              ? "Your answers are saved. Pick up where you left off."
-              : planState.stage === "done"
-                ? "Set your next goal for this area, or choose a new area."
-                : !area && roomToGrow
-                  ? `Many people start with the area that has the most room to grow; for you that’s ${roomToGrow.name}, ${roomToGrow.score}/10. It’s your choice. Five guided steps turn it into one clear action for this week.`
-                  : "Five guided steps. It ends with one action, when you’ll do it, and a short weekly review."}
-          </p>
-          <div className="next-action-cta">
-            <Link href={action.href} className="btn btn-p">{action.label}</Link>
-          </div>
-        </section>
-      )}
-
-      {main?.otherActive.length ? (
-        <p className="next-action-note">
-          This is your main goal. You have {main.otherActive.length} other active goal
-          {main.otherActive.length === 1 ? "" : "s"} — <Link href="/plan#other-goals">choose your main goal in My Plan</Link>.
-        </p>
-      ) : null}
-
-      {/* Coaching clients: next session, agreed steps, and the coach's suggestion. */}
-      <CoachingCard
-        data={coaching}
-        goals={allGoals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" }))}
-        hasGoal={!!goal}
-        credits={credits}
-      />
-
-      {/* The daily practice (today's wins for members), then Momentum's
-          weekly session. */}
-      {/* Free members see it locked only once their plan is set: just after
-          saving their results, the one next step is choosing an area. */}
-      {canUseDailyAlignment(profile?.role, access.tier) ? <DailyAlignmentCard /> : planned ? <DailyAlignmentCard locked joinOpen={await joiningOpen()} /> : null}
-      {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
+            <figure className="profile-top-map">
+              <div className="au-chart">
+                <LifeMap
+                  scores={scores}
+                  names={areas.map((a) => a.name)}
+                  labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+                  highlightIndex={areaIdx === -1 ? null : areaIdx}
+                />
+              </div>
+              <figcaption>
+                Self-reported.{area ? ` Highlighted: ${area.name}, the area you’re working on.` : ""}
+              </figcaption>
+            </figure>
+          </section>
+        </Cell>
+      </div>
 
       {offerDetails ? <DetailsPrompt /> : null}
 
-      {/* Further down: the whole picture, learning and history. */}
-      <section className="profile-top pf-lower" aria-labelledby="pf-map-h">
-        <div className="profile-top-text">
-          <h2 id="pf-map-h" className="pl-h">Your whole life</h2>
-          {identity.available ? <IdentityStatement initial={identity.text} /> : null}
-          <div className="profile-links">
-            <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
-            <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
-            <Link href="/journey" className="au-text-link">My Journey</Link>
-          </div>
-          {goalsDone ? (
-            <p className="profile-won">
-              <span aria-hidden="true">✓</span> {goalsDone} goal{goalsDone === 1 ? "" : "s"} completed
-            </p>
-          ) : null}
-        </div>
-        <figure className="profile-top-map">
-          <div className="au-chart profile-map-card">
-            <div className="profile-score">
-              <ScoreRing score={audit.total_score ?? 0} size={112} strokeWidth={9} labelSize={30} denomLabel="/100" />
-              <dl className="profile-score-facts">
-                <dt className="eyebrow">Whole-life score</dt>
-                <dd>Latest audit <b>{formatDate(audit.completed_at)}</b></dd>
-                <dd>Strongest <b>{strongest.map((s) => s.name).join(" · ")}</b></dd>
-                <dd>Next audit <b>{auditDays <= 0 ? "now" : `around ${formatDate(auditDue)}`}</b></dd>
-              </dl>
-            </div>
-            <LifeMap
-              scores={scores}
-              names={areas.map((a) => a.name)}
-              labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-              highlightIndex={areaIdx === -1 ? null : areaIdx}
-            />
-          </div>
-          <figcaption>
-            Your Alignment Map, self-reported.{area ? ` Highlighted: ${area.name}, the area you’re working on.` : ""}
-          </figcaption>
-        </figure>
-      </section>
-
+      {/* Further down: learning, and the support on offer. */}
       <div className="pf-more">
         <section className="profile-card" aria-labelledby="learning-h">
           <h2 id="learning-h"><IconBadge name="book" size={15} /> {nextLesson ? "Continue learning" : "Academy"}</h2>
