@@ -12,6 +12,8 @@ import { ClearLetters } from "./ClearLetters";
 import { STEP_NAMES } from "@/lib/plan-action";
 import { longDay, type NextReview } from "@/lib/review-schedule";
 import { cleanReality, looksHardToVerify } from "@/lib/clear-text";
+import type { AuditSuggestion } from "@/lib/planning";
+import { WhatsChanged } from "./WhatsChanged";
 
 type ListedGoal = { id: string; goal_title: string; goal_type?: string; focus_area: string | null; status: string; created_at: string };
 
@@ -40,6 +42,8 @@ export function ClearDashboard({
   newerAudit,
   remindersOn,
   review,
+  changed = null,
+  chain = null,
 }: {
   area: LifeArea;
   score: number;
@@ -56,6 +60,10 @@ export function ClearDashboard({
   remindersOn: boolean | null;
   // The next weekly (or monthly) review (lib/review-schedule.ts).
   review: NextReview;
+  // After a newer audit, what's changed (unless dismissed); replaces the note.
+  changed?: { auditId: string; suggestions: AuditSuggestion[] } | null;
+  // My Plan → Monthly Intention → Weekly Focus → Today, for the main goal.
+  chain?: { intention: string | null; focus: string; progress: { done: number; total: number } | null } | null;
 }) {
   const target = Math.min(10, plan.step_up_target ?? score + 1);
   const latestScore = checkIns.length ? checkIns[checkIns.length - 1].area_score : score;
@@ -145,7 +153,26 @@ export function ClearDashboard({
           {otherActive.length === 1 ? "" : "s"}; <a href="#other-goals">choose your main goal below</a>.
         </p>
       ) : null}
-      {!closed && newerAudit ? (
+      {!closed && chain ? (
+        <ol className="pl-chain" aria-label="From your plan to today">
+          <li>
+            <span className="pl-k">This month</span>
+            {chain.intention ? <b className="pl-chain-serif">{chain.intention}</b> : <Link href="/#ms-month-h">Set your intention →</Link>}
+          </li>
+          <li>
+            <span className="pl-k">This week&rsquo;s focus</span>
+            <b>{chain.focus}</b>
+          </li>
+          <li>
+            <span className="pl-k">Today</span>
+            <b>{chain.progress && chain.progress.total ? `${chain.progress.done} of ${chain.progress.total} actions done this week` : "Nothing ticked yet this week"}</b>
+            <Link href="/">Today&rsquo;s actions in My Space →</Link>
+          </li>
+        </ol>
+      ) : null}
+      {!closed && newerAudit && changed?.suggestions.length ? (
+        <WhatsChanged auditId={changed.auditId} auditDate={formatDate(newerAudit)} suggestions={changed.suggestions} />
+      ) : !closed && newerAudit ? (
         <p className="plan-note">
           You took an audit on {formatDate(newerAudit)}, after this plan was made. Keep working on this goal, or{" "}
           <Link href="/plan?latest=1">make a plan from your latest audit</Link>. A new plan becomes your main goal;

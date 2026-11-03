@@ -17,6 +17,9 @@ import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { TodayCard } from "@/components/profile/TodayCard";
 import { JournalCard } from "@/components/profile/JournalCard";
 import { GettingStarted } from "@/components/profile/GettingStarted";
+import { MonthIntention } from "@/components/profile/MonthIntention";
+import { getMonthIntention, getWeekActions } from "@/lib/actions/planning";
+import { intentionSuggestions, weekProgress } from "@/lib/planning";
 import { canUseDailyAlignment } from "@/lib/alignment";
 import { getMomentumDetails, getMyAccess, joiningOpen } from "@/lib/actions/membership";
 import { hasMomentum } from "@/lib/membership";
@@ -27,7 +30,7 @@ import { AreaBadge, Icon, IconBadge } from "@/components/ui/Icon";
 import { IdentityStatement } from "@/components/ui/IdentityStatement";
 import { AREA_SHORT_NAMES } from "@/lib/audit-guides";
 import { daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
-import { longDay, nextReview } from "@/lib/review-schedule";
+import { longDay, nextReview, plannedDays } from "@/lib/review-schedule";
 import { weekStreak } from "@/lib/momentum";
 import { fallbackOf } from "@/lib/plan-action";
 
@@ -72,7 +75,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const editDetails = <Link href="/details" className="au-text-link profile-edit">Edit my details</Link>;
 
   if (!audit) {
-    const mapAreas = await getLifeAreas();
+    const [mapAreas, week] = await Promise.all([getLifeAreas(), practice ? getWeekActions() : null]);
     return (
       <div className="page au-page profile-v2">
         <div className="profile-topline">
@@ -110,7 +113,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           </Cell>
           {practice ? (
             <>
-              <Cell span={3}><TodayCard action="" actionWhen={null} fallback={null} coachSteps={[]} practice /></Cell>
+              <Cell span={3}><TodayCard action="" actionWhen={null} fallback={null} coachSteps={[]} practice goalId={null} goals={[]} week={week!} /></Cell>
               <Cell span={3}><JournalCard /></Cell>
             </>
           ) : null}
@@ -120,7 +123,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching, audits] = await Promise.all([
+  const [{ responses }, areas, planState, main, allGoals, lessons, identity, coaching, audits, intention, week] = await Promise.all([
     getAuditWithResponses(audit.id),
     getLifeAreas(),
     getPlanState(audit.id),
@@ -130,6 +133,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     getIdentityStatement(),
     getMyCoaching(),
     getRecentCompletedAudits(50),
+    getMonthIntention(),
+    getWeekActions(),
   ]);
   const credits = coaching.sessions.length ? await getMyCredits() : null;
 
@@ -148,6 +153,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const checkIns = main?.checkIns ?? [];
   const latestScore = checkIns.length ? checkIns[checkIns.length - 1].area_score : baseline;
   const goalsDone = allGoals.filter((g) => g.status === "completed").length;
+  const activeGoals = allGoals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" }));
   // Still finding their way in: no plan set yet and no goal ever finished.
   const starting = !planned && goalsDone === 0;
 
@@ -163,6 +169,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const reviewName = next?.kind === "monthly" ? "monthly review" : "weekly review";
   // Every fourth review is the monthly one: how many weekly reviews until then.
   const toMonthly = next && next.kind === "weekly" ? 4 - (next.number % 4) : 0;
+  // The week's actions, counted: planned days of the plan's action plus their own.
+  const progress = week.available ? weekProgress(week.weekStart, reviewCommitment ? [] : plannedDays(goal?.action_when), week.actions) : null;
 
   // Steps from the last shared coaching session that are linked to this goal.
   const lastShared = coaching.summaries[0] ?? null;
@@ -254,12 +262,19 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
             {/* 2. This month: the goal's measured progress and the monthly review. */}
             <Cell span={2}>
-              <section className="pf-tile ms-card" aria-labelledby="ms-month-h">
+              <section className="pf-tile ms-tile" aria-labelledby="ms-month-h">
                 <div className="ms-head">
                   <Icon name="calendar" size={18} />
                   <h2 id="ms-month-h">This Month</h2>
                   <span className="ms-head-end">{monthLabel(details.timezone)}</span>
                 </div>
+                {intention.available ? (
+                  <MonthIntention
+                    initial={intention.intention?.intention ?? null}
+                    suggestions={intentionSuggestions([{ area: area.name, title: goal?.goal_title ?? null }])}
+                    goalId={goal?.id ?? null}
+                  />
+                ) : null}
                 {baseline !== null && latestScore !== null && target !== null ? (
                   <dl className="ms-facts">
                     <div><dt>Started</dt><dd>{baseline}/10</dd></div>
@@ -279,21 +294,26 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
             {/* 3. Today: the plan's action (and the daily practice for members). */}
             <Cell span={2}>
-              <TodayCard action={commitment} actionWhen={reviewCommitment ? null : goal?.action_when ?? null} fallback={fallback} coachSteps={goalSteps} practice={practice} />
+              <TodayCard action={commitment} actionWhen={reviewCommitment ? null : goal?.action_when ?? null} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} />
             </Cell>
 
             {/* 4. This week: the weekly review and the run of reviews. */}
             <Cell span={2}>
-              <section className="pf-tile ms-card" aria-labelledby="ms-week-h">
+              <section className="pf-tile ms-tile" aria-labelledby="ms-week-h">
                 <div className="ms-head">
                   <Icon name="target" size={18} />
                   <h2 id="ms-week-h">This Week</h2>
                 </div>
-                <p className="pf-big">
-                  {next.due ? `Your ${reviewName} is due` : `Next ${reviewName}: ${shortDay(next.date)}`}
-                </p>
+                <div className="ms-intention">
+                  <p className="profile-card-k">Weekly focus</p>
+                  <p className="pf-commit">{commitment}</p>
+                </div>
+                {progress && progress.total ? (
+                  <p className="ms-note"><b>{progress.done} of {progress.total}</b> action{progress.total === 1 ? "" : "s"} done this week</p>
+                ) : null}
                 <p className="pf-sub">
-                  {next.due ? "Five minutes: what helped, what to adjust, and your commitment for next week." : next.daysAway === 1 ? "Tomorrow." : `In ${next.daysAway} days.`}
+                  <b>{next.due ? `Your ${reviewName} is due.` : `Next ${reviewName}: ${shortDay(next.date)}.`}</b>{" "}
+                  {next.due ? "Five minutes: what helped, what to adjust, and your focus for next week." : next.daysAway === 1 ? "Tomorrow." : `In ${next.daysAway} days.`}
                 </p>
                 {run ? (
                   <>
@@ -365,13 +385,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
         {/* Members before their plan is set still have today's practice. */}
         {!planned && practice ? (
-          <Cell span={smallSpan}><TodayCard action="" actionWhen={null} fallback={null} coachSteps={[]} practice /></Cell>
+          <Cell span={smallSpan}><TodayCard action="" actionWhen={null} fallback={null} coachSteps={[]} practice goalId={null} goals={activeGoals} week={week} /></Cell>
         ) : null}
 
         {/* 5. My Journey, in brief. */}
         {showJourney ? (
           <Cell span={smallSpan}>
-            <section className="pf-tile ms-card" aria-labelledby="ms-journey-h">
+            <section className="pf-tile ms-tile" aria-labelledby="ms-journey-h">
               <div className="ms-head">
                 <Icon name="journey" size={18} />
                 <h2 id="ms-journey-h">My Journey</h2>
@@ -394,7 +414,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
         {/* 7. The Alignment Map, in brief. */}
         <Cell span={mapSpan}>
-          <section className="pf-tile ms-card ms-map" aria-labelledby="pf-map-h">
+          <section className="pf-tile ms-tile ms-map" aria-labelledby="pf-map-h">
             <div className="ms-map-text">
               <div className="ms-head">
                 <Icon name="compass" size={18} />

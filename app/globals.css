@@ -2132,8 +2132,8 @@ a.nav-user-who:hover b { color: var(--gold); }
   .ms-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .ms-s2 { grid-column: span 2; } .ms-s3 { grid-column: span 3; } .ms-s4, .ms-s4:has(.ms-map) { grid-column: span 4; } .ms-s6 { grid-column: span 6; }
 }
-.ms-card { gap: .7rem; }
-.ms-card .btn { margin-top: auto; }
+.ms-tile { gap: .7rem; }
+.ms-tile .btn { margin-top: auto; }
 .ms-head { display: flex; align-items: center; gap: .6rem; width: 100%; color: var(--gold); }
 .ms-head h2 { font-family: var(--font-sora), 'Sora', sans-serif; font-size: 16px; font-weight: 600; color: var(--text); margin: 0; }
 .ms-note { font-size: 12.5px; color: var(--text3); line-height: 1.5; }
@@ -2168,3 +2168,36 @@ a.nav-user-who:hover b { color: var(--gold); }
 .ms-steps-dot { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; border: 1.5px solid var(--bdr2); }
 .ms-steps li.done .ms-steps-dot { border-color: var(--hi); color: var(--hi); }
 .ms-steps li.current .ms-steps-dot { border-color: var(--gold); color: var(--gold); }
+/* Connected planning: the month intention, weekly focus and today's actions. */
+.ms-intention { display: grid; gap: .45rem; justify-items: start; width: 100%; }
+.ms-intention input { width: 100%; }
+.ms-intention-text { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 1.45rem; line-height: 1.25; color: var(--gold2); overflow-wrap: anywhere; }
+.ms-chips { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem; padding: 0; margin: 0; }
+.ms-chips button { background: rgba(255,255,255,.05); border: 1px solid var(--bdr2); color: var(--text2); border-radius: 100px; padding: .35rem .75rem; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
+.ms-chips button:hover { border-color: var(--bdr); color: var(--text); }
+.ms-actions { display: grid; gap: .5rem; width: 100%; justify-items: start; }
+.ms-action-list { list-style: none; display: grid; gap: .15rem; width: 100%; padding: 0; margin: 0; }
+.ms-action-list li { display: flex; align-items: flex-start; gap: .6rem; padding: .45rem 0; border-bottom: 1px solid var(--bdr2); }
+.ms-action-list label { display: flex; align-items: flex-start; gap: .65rem; flex: 1; min-width: 0; cursor: pointer; font-size: 14.5px; line-height: 1.45; color: var(--text); }
+.ms-action-list label span { overflow-wrap: anywhere; }
+.ms-action-list input[type=checkbox] { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--gold); cursor: pointer; }
+.ms-action-list input:checked + span { color: var(--text2); text-decoration: line-through; text-decoration-color: var(--text3); }
+.ms-action-tag { flex-shrink: 0; font-size: 11px; color: var(--gold2); background: var(--gd); border-radius: 100px; padding: .15rem .55rem; margin-top: 2px; }
+.ms-action-remove { flex-shrink: 0; background: none; border: 0; color: var(--text3); font-size: 18px; line-height: 1; width: 32px; height: 32px; margin: -6px -6px 0 0; cursor: pointer; border-radius: 8px; }
+.ms-action-remove:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.ms-action-add { display: grid; gap: .5rem; width: 100%; }
+.ms-action-add input, .ms-action-add select { width: 100%; }
+/* My Plan: from the plan to today, and what's changed after a new audit. */
+.pl-chain { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; padding: 0; margin: 0 0 1.25rem; border: 1px solid var(--bdr2); border-radius: 14px; overflow: hidden; background: var(--bdr2); }
+.pl-chain li { display: grid; gap: .35rem; align-content: start; padding: 1rem 1.1rem; background: var(--bg2); min-width: 0; }
+.pl-chain b { font-size: 14.5px; font-weight: 500; color: var(--text); line-height: 1.45; overflow-wrap: anywhere; }
+.pl-chain .pl-chain-serif { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 500; color: var(--gold2); line-height: 1.25; }
+.pl-chain a { font-size: 13px; color: var(--gold2); }
+@media (max-width: 760px) { .pl-chain { grid-template-columns: 1fr; } }
+.pl-changed { border-color: var(--bdr); }
+.pl-changed ul { list-style: none; display: grid; gap: .9rem; padding: 0; margin: .6rem 0 0; }
+.pl-changed li { display: grid; gap: .55rem; justify-items: start; padding-bottom: .9rem; border-bottom: 1px solid var(--bdr2); }
+.pl-changed li p { font-size: 15px; color: var(--text); line-height: 1.6; }
+.pl-changed-foot { font-size: 13px; color: var(--text2); margin-top: .7rem; }
+.pl-changed-foot a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.bp-ideas { margin: .2rem 0 .3rem; }
