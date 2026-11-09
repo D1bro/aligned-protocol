@@ -4,7 +4,8 @@ import { GuideVideo } from "@/components/audit/GuideVideo";
 import { FILMS, filmOrSoon } from "@/lib/audit-guides";
 import { offerFor } from "@/lib/offers";
 import { EnquiryForm } from "@/components/learn/EnquiryForm";
-import { getMyCoaching } from "@/lib/actions/member-coaching";
+import { getMyCoaching, getMyGoalCards } from "@/lib/actions/member-coaching";
+import { getMyCalibratedChart } from "@/lib/actions/calibration";
 import { MemberCoaching } from "@/components/coaching/MemberCoaching";
 import { getMyBilling } from "@/lib/actions/billing";
 import { MemberInvoices } from "@/components/coaching/MemberInvoices";
@@ -40,6 +41,7 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
     getMyExpiries(),
     getMyCoach().catch(() => null),
   ]);
+  const [goals, chart] = coaching.available ? await Promise.all([getMyGoalCards().catch(() => []), getMyCalibratedChart().catch(() => null)]) : [[], null];
   const coached = coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0);
   const open = enquiries.find((e) => e.status === "new" || e.status === "contacted") ?? null;
   // Sessions and payments gets its own tab once there's anything to show there.
@@ -59,7 +61,7 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
           <MemberInvoices data={billing} justPaid={sp.paid === "1"} />
         </>
       ) : (
-        <CoachingAbout coached={coached} coaching={coaching} sessionsLeft={sessionsLeft} enquiries={enquiries} open={open} />
+        <CoachingAbout coached={coached} coaching={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} enquiries={enquiries} open={open} />
       )}
     </div>
   );
@@ -70,18 +72,22 @@ function CoachingAbout({
   coached,
   coaching,
   sessionsLeft,
+  goals,
+  chart,
   enquiries,
   open,
 }: {
   coached: boolean;
   coaching: Awaited<ReturnType<typeof getMyCoaching>>;
   sessionsLeft: { available: number; href: string } | null;
+  goals: Awaited<ReturnType<typeof getMyGoalCards>>;
+  chart: Awaited<ReturnType<typeof getMyCalibratedChart>>;
   enquiries: Awaited<ReturnType<typeof getMyEnquiries>>;
   open: Awaited<ReturnType<typeof getMyEnquiries>>[number] | null;
 }) {
   return (
     <>
-      {coached ? <MemberCoaching data={coaching} sessionsLeft={sessionsLeft} /> : null}
+      {coached ? <MemberCoaching data={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} /> : null}
       <h1 className="au-latest-h">{coached ? <>About <em>coaching</em></> : <>Work on it <em>together.</em></>}</h1>
       <p className="draft-tag">Draft</p>
       <p className="lead">

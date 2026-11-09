@@ -63,6 +63,10 @@ export type MessageInput =
       link: string;
       note?: string | null;
       content?: SummaryForEmail | null;
+      // Steps from the session before that they've marked done, and this
+      // session's next steps (the client's own), for the short version.
+      done?: string[];
+      nextSteps?: string[];
     }
   | {
       kind: "session_reminder";
@@ -149,6 +153,8 @@ export function buildMessage(m: MessageInput): Message {
             { p: `Hi ${m.firstName},` },
             { p: `Here are the notes from our session on ${m.sessionLabel}, the same as in your member area.` },
             noteBlock(m.note),
+            m.done?.length ? { small: "Done since last time" } : null,
+            m.done?.length ? { box: m.done.map((x) => `✓ ${x}`) } : null,
             c.summary ? { p: c.summary } : null,
             c.insights.length ? { small: "What you noticed" } : null,
             c.insights.length ? { box: c.insights.map((x) => `• ${x}`) } : null,
@@ -162,8 +168,8 @@ export function buildMessage(m: MessageInput): Message {
             c.resources.length ? { box: c.resources.map((r) => (r.url ? `${r.title}: ${r.url}` : r.title)) } : null,
             c.nextMeeting ? { small: "Next session" } : null,
             c.nextMeeting ? { p: c.nextMeeting } : null,
-            { button: { href: m.link, label: "Open your session notes" } },
-            { p: "You can let me know how each step is going from the same page." },
+            { button: { href: m.link, label: "Open your coaching page" } },
+            { p: "You can let me know how each step is going from your coaching page." },
             { signOff: firstOf(m.coachName) },
           ],
           "This email contains your session notes. They're also kept in your member area, behind your sign-in.",
@@ -179,11 +185,15 @@ export function buildMessage(m: MessageInput): Message {
           "The notes and the next steps we agreed are in your member area.",
           [
             { p: `Hi ${m.firstName},` },
-            { p: `Thanks for ${recent ? ref : ref ? `our session on ${ref}` : "our session"}. I’ve put the notes from our session in your member area, with the next steps we agreed.` },
+            { p: `Thanks for ${recent ? ref : ref ? `our session on ${ref}` : "our session"}. I’ve updated your coaching page with the notes from our session and the next steps we agreed.` },
             noteBlock(m.note),
-            { button: { href: m.link, label: "Open your session notes" } },
+            m.done?.length ? { small: "Done since last time" } : null,
+            m.done?.length ? { box: m.done.map((x) => `✓ ${x}`) } : null,
+            m.nextSteps?.length ? { small: "Your next steps" } : null,
+            m.nextSteps?.length ? { box: m.nextSteps.map((x) => `• ${x}`) } : null,
+            { button: { href: m.link, label: "Open your coaching page" } },
             {
-              p: `When you’ve tried a step, you can tell me how it went from the same page. It helps me prepare for our next session${m.nextSession ? ` on ${m.nextSession}` : ""}.`,
+              p: `When you’ve tried a step, tell me how it went from your coaching page. It helps me prepare for our next session${m.nextSession ? ` on ${m.nextSession}` : ""}.`,
             },
             { signOff: m.nextSession ? `See you then,\n${firstOf(m.coachName)}` : firstOf(m.coachName) },
           ],
