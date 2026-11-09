@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -81,6 +81,19 @@ export function SummaryWorkspace({
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // When the saved draft changes underneath (an AI draft finishing, another
+  // tab saving), show the new version, unless there are unsaved edits here.
+  const latest = typed.find((s) => s.status === "draft" || s.status === "approved") ?? null;
+  useEffect(() => {
+    // A newer version of this draft, or (in step 3) the first draft appearing.
+    // Never after sharing, when this step's draft is deliberately cleared.
+    const newer = draft ? latest?.id === draft.id && latest.version > draft.version : mode === "import" && !!latest;
+    if (dirty || !latest || !newer) return;
+    setDraft(latest);
+    setContent(fill(latest.content));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when a new version arrives
+  }, [latest?.id, latest?.version]);
 
   const edit = (patch: Partial<SummaryContent>) => {
     setContent((c) => ({ ...c, ...patch }));
