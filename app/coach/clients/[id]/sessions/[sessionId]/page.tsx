@@ -247,7 +247,11 @@ export default async function SessionDeskPage({
       ) : null}
 
       {stage === "import" || stage === "review" ? (
+        // Keyed by stage, so moving to Review and share always starts from the
+        // saved draft (an AI draft made in step 3 included), never a copy
+        // held over from the previous step.
         <SummaryWorkspace
+          key={stage}
           mode={stage}
           clientId={client.id}
           sessionId={session.id}

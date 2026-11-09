@@ -360,10 +360,15 @@ export async function generateDraft(input: { transcriptId: string; replace: bool
     .eq("version", draft.summary.version)
     .in("status", ["draft", "approved"])
     .select("*");
+  // If the summary didn't save (the draft changed while the AI was writing),
+  // say so on the transcript rather than "AI draft created"; the private note
+  // and check-in list are still kept.
+  const draftSaved = !error && !!saved?.length;
   await supabase
     .from("session_transcripts")
     .update({
-      ai_status: "done",
+      ai_status: draftSaved ? "done" : "failed",
+      ai_error: draftSaved ? null : "The draft changed while this was being written, so the summary wasn’t filled in. Choose “Draft again”.",
       ai_output: {
         // A reflection made earlier is the coach's and survives a re-draft.
         reflection: (t.ai_output as Transcript["ai_output"])?.reflection,
