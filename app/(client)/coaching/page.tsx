@@ -6,6 +6,7 @@ import { offerFor } from "@/lib/offers";
 import { EnquiryForm } from "@/components/learn/EnquiryForm";
 import { getMyCoaching, getMyGoalCards } from "@/lib/actions/member-coaching";
 import { getMyCalibratedChart } from "@/lib/actions/calibration";
+import { getLatestCompletedAudit } from "@/lib/actions/audit";
 import { MemberCoaching } from "@/components/coaching/MemberCoaching";
 import { getMyBilling } from "@/lib/actions/billing";
 import { MemberInvoices } from "@/components/coaching/MemberInvoices";
@@ -41,7 +42,9 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
     getMyExpiries(),
     getMyCoach().catch(() => null),
   ]);
-  const [goals, chart] = coaching.available ? await Promise.all([getMyGoalCards().catch(() => []), getMyCalibratedChart().catch(() => null)]) : [[], null];
+  const [goals, chart, audit] = coaching.available
+    ? await Promise.all([getMyGoalCards().catch(() => []), getMyCalibratedChart().catch(() => null), getLatestCompletedAudit().catch(() => null)])
+    : [[], null, null];
   // Coached: they have a coach, or sessions or summaries already. They see
   // their coaching, not the introduction and enquiry form for newcomers.
   const coached = !!myCoach || (coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0));
@@ -63,7 +66,7 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
           <MemberInvoices data={billing} justPaid={sp.paid === "1"} />
         </>
       ) : (
-        <CoachingAbout coached={coached} coaching={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} enquiries={enquiries} open={open} />
+        <CoachingAbout coached={coached} coaching={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} auditDone={!!audit} enquiries={enquiries} open={open} />
       )}
     </div>
   );
@@ -76,6 +79,7 @@ function CoachingAbout({
   sessionsLeft,
   goals,
   chart,
+  auditDone,
   enquiries,
   open,
 }: {
@@ -84,10 +88,11 @@ function CoachingAbout({
   sessionsLeft: { available: number; href: string } | null;
   goals: Awaited<ReturnType<typeof getMyGoalCards>>;
   chart: Awaited<ReturnType<typeof getMyCalibratedChart>>;
+  auditDone: boolean;
   enquiries: Awaited<ReturnType<typeof getMyEnquiries>>;
   open: Awaited<ReturnType<typeof getMyEnquiries>>[number] | null;
 }) {
-  if (coached) return <MemberCoaching data={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} />;
+  if (coached) return <MemberCoaching data={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} auditDone={auditDone} />;
   return (
     <>
       <h1 className="au-latest-h">Work on it <em>together.</em></h1>

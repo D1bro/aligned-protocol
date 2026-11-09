@@ -33,12 +33,15 @@ export function MemberCoaching({
   sessionsLeft = null,
   goals = [],
   chart = null,
+  auditDone = false,
 }: {
   data: Data;
   // Paid sessions left to book, with where to top up (null before billing is set up).
   sessionsLeft?: { available: number; href: string } | null;
   goals?: GoalCard[];
   chart?: Chart | null;
+  // Whether they've completed The Aligned Protocol (for Getting started).
+  auditDone?: boolean;
 }) {
   const now = Date.now();
   const next =
@@ -64,6 +67,88 @@ export function MemberCoaching({
     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
   const lastDay = lastSession ? sessionDayTime(lastSession.scheduled_at, lastSession.timezone).replace(/ at .*/, "") : last ? formatDate(last.published_at) : "";
   const agreedChanged = chart ? chart.areas.filter((a) => a.agreed !== null && (a.focus || a.alone !== a.agreed)) : [];
+
+  // Before the first session is held: one "Getting started" card and the
+  // preparation, instead of a dashboard of empty cards (Duane, 9 Nov 2026).
+  const started = data.sessions.some((s) => s.state === "held") || data.summaries.length > 0;
+  if (!started) {
+    const joinUrl = next?.location && /^https?:\/\//.test(next.location) ? next.location : null;
+    const items: { done: boolean; title: string; body: React.ReactNode }[] = [
+      {
+        done: !!next && next.state === "confirmed",
+        title: "Your first session",
+        body: next ? (
+          <>
+            {sessionDayTime(next.scheduled_at, next.timezone)} · {next.duration_minutes} minutes
+            {next.state === "confirmed" ? "" : " · to be confirmed"}
+            {joinUrl ? <> · <a href={joinUrl} className="au-text-link" target="_blank" rel="noopener noreferrer">Join link</a></> : null}
+          </>
+        ) : (
+          "Your coach will be in touch to arrange it."
+        ),
+      },
+      {
+        done: auditDone,
+        title: "Take The Aligned Protocol",
+        body: auditDone ? (
+          <>Done. Your coach starts from the same chart you see. <Link href="/audit/results" className="au-text-link">My snapshot</Link></>
+        ) : (
+          <>Score the ten areas of your life on your own, so you both start from where you are. <Link href="/audit" className="au-text-link">Start →</Link></>
+        ),
+      },
+      {
+        done: goals.length > 0,
+        title: "Choose where to start in My Plan",
+        body: goals.length ? (
+          <>Your goal: {goals[0].title} <Link href="/plan" className="au-text-link">My Plan</Link></>
+        ) : (
+          <>Pick one area and a first goal. You can change it together in the session. <Link href="/plan" className="au-text-link">Open My Plan →</Link></>
+        ),
+      },
+      {
+        done: !!lastShare,
+        title: "Tell your coach what’s on your mind",
+        body: lastShare ? (
+          `Shared ${formatDate(lastShare.shared_at)}. You can add more below.`
+        ) : (
+          <>A few lines on what you&rsquo;d like from coaching. <a href="#before-we-meet" className="au-text-link">Write it below</a></>
+        ),
+      },
+    ];
+    const doneCount = items.filter((i) => i.done).length;
+    return (
+      <section className="mc mcd" aria-labelledby="mc-h">
+        <h2 id="mc-h" className="mc-title">Your coaching</h2>
+        <div className="admin-card mcd-start">
+          <div className="mc-steps-head">
+            <h3>Getting started</h3>
+            <span className="admin-card-sub">{doneCount} of {items.length} ready</span>
+          </div>
+          <ol>
+            {items.map((i) => (
+              <li key={i.title} className={i.done ? "is-done" : undefined}>
+                <span className="mc-tick" aria-hidden="true">✓</span>
+                <div>
+                  <b>{i.title}</b>
+                  <p>{i.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          {sessionsLeft && !sessionsLeft.available ? (
+            <p className="admin-card-sub">
+              No paid sessions yet · <Link href={sessionsLeft.href} className="au-text-link">See sessions and payments</Link>
+            </p>
+          ) : null}
+        </div>
+        <div className="admin-card" id="before-we-meet">
+          <h3>Before we meet{next ? ` on ${sessionDayTime(next.scheduled_at, next.timezone).replace(/ at .*/, "")}` : ""}</h3>
+          <p className="admin-card-sub">What&rsquo;s on your mind, and what would make the session useful? It stays private until you share it.</p>
+          <PrepEditor sessionId={next?.id ?? null} initial={draft?.content ?? ""} lastShared={lastShare ? formatDate(lastShare.shared_at) : null} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mc mcd" aria-labelledby="mc-h">

@@ -29,7 +29,10 @@ const MORE_COACHING: MobileNavLink = { ...COACHING, group: "More" };
 
 // The phone tab bar: the four destinations, with a shorter label for the
 // Protocol so all five tabs fit (More opens the drawer with the rest).
+// Members with a coach get Coaching in place of My Journey, which stays in
+// the drawer (Duane, 9 Nov 2026).
 const TABS: MobileNavLink[] = DESTINATIONS.map((d) => (d.href === "/audit" ? { ...d, label: "Protocol" } : d));
+const COACHED_TABS: MobileNavLink[] = TABS.map((t) => (t.href === "/journey" ? COACHING : t));
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
@@ -58,5 +61,5 @@ export function ClientNav({ fullName, staff = false, coached = false }: { fullNa
 }
 
 export function ClientMobileNav({ fullName, staff = false, coached = false }: { fullName: string | null; staff?: boolean; coached?: boolean }) {
-  return <MobileNav links={linksFor(staff, coached)} fullName={fullName} sub="Your details" userHref="/details" tabs={TABS} />;
+  return <MobileNav links={linksFor(staff, coached)} fullName={fullName} sub="Your details" userHref="/details" tabs={coached ? COACHED_TABS : TABS} />;
 }
