@@ -48,11 +48,19 @@ export function tidyDraft(parsed: AiDraft, goalIds: string[], areas: string[]): 
 export const COACH_MOVES = ["story", "question", "silence", "reframe", "challenge", "validation", "summary", "other"] as const;
 export type CoachMove = (typeof COACH_MOVES)[number];
 
+// How a point stands: what the transcript shows, what the AI reads into it,
+// or a choice a coach might reasonably make differently.
+export const BASES = ["evidence", "interpretation", "style_choice"] as const;
+export type Basis = (typeof BASES)[number];
+
 export type Reflection = {
   movements: { time: string; client_words: string; what_moved: string; coach_move: CoachMove; coach_move_time: string; coach_move_note: string }[];
   unfinished: { time: string; client_words: string; note: string }[];
-  patterns: { pattern: string; evidence_times: string[]; note: string }[];
-  challenge: { text: string; evidence_times: string[] };
+  // `assumption`: anything taken for granted about this client, to check with them.
+  patterns: { pattern: string; evidence_times: string[]; note: string; basis?: Basis; assumption?: string }[];
+  challenge: { text: string; evidence_times: string[]; basis?: Basis; assumption?: string };
+  // The coach's own learning areas (coach profile), checked in this session.
+  practice?: { focus: string; moments: { time: string; what_you_did: string; what_followed: string }[]; summary: string }[];
 };
 
 // Loose comparison for "do these words appear in the transcript": case,
@@ -70,6 +78,7 @@ export function tidyReflection(r: Reflection, transcript: string): Reflection {
   const time = (t: unknown) => (typeof t === "string" ? t.trim() : "");
   const text = (t: unknown, max = 600) => (typeof t === "string" ? t.trim().slice(0, max) : "");
   const times = (v: unknown) => (Array.isArray(v) ? v.map(time).filter(Boolean).slice(0, 6) : []);
+  const basis = (v: unknown): Basis => ((BASES as readonly string[]).includes(v as string) ? (v as Basis) : "interpretation");
   return {
     movements: (Array.isArray(r?.movements) ? r.movements : [])
       .filter((m) => time(m.time) && quoteIsReal(text(m.client_words), transcript))
@@ -88,11 +97,23 @@ export function tidyReflection(r: Reflection, transcript: string): Reflection {
       .slice(0, 5),
     patterns: (Array.isArray(r?.patterns) ? r.patterns : [])
       .filter((p) => text(p.pattern) && times(p.evidence_times).length)
-      .map((p) => ({ pattern: text(p.pattern, 300), evidence_times: times(p.evidence_times), note: text(p.note) }))
+      .map((p) => ({ pattern: text(p.pattern, 300), evidence_times: times(p.evidence_times), note: text(p.note), basis: basis(p.basis), assumption: text(p.assumption, 300) }))
       .slice(0, 3),
     challenge:
       text(r?.challenge?.text) && times(r?.challenge?.evidence_times).length
-        ? { text: text(r.challenge.text), evidence_times: times(r.challenge.evidence_times) }
+        ? { text: text(r.challenge.text), evidence_times: times(r.challenge.evidence_times), basis: basis(r.challenge.basis), assumption: text(r.challenge.assumption, 300) }
         : { text: "", evidence_times: [] },
+    // Each learning area keeps only moments with a timestamp.
+    practice: (Array.isArray(r?.practice) ? r.practice : [])
+      .filter((p) => text(p.focus))
+      .map((p) => ({
+        focus: text(p.focus, 300),
+        moments: (Array.isArray(p.moments) ? p.moments : [])
+          .filter((m) => time(m.time))
+          .map((m) => ({ time: time(m.time), what_you_did: text(m.what_you_did, 300), what_followed: text(m.what_followed, 300) }))
+          .slice(0, 8),
+        summary: text(p.summary),
+      }))
+      .slice(0, 4),
   };
 }

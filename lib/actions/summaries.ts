@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/actions/admin";
+import { discussPoint, type DiscussTurn } from "@/lib/ai-discuss";
+import { addToProfile, getClientContext, getCoachProfile } from "@/lib/actions/coach-profile";
 import { draftFromTranscript } from "@/lib/ai-summary";
 import { reflectOnTranscript } from "@/lib/ai-reflection";
 import type { Reflection } from "@/lib/ai-draft";
@@ -63,6 +65,10 @@ export type Transcript = {
     // The coach's private reflection, and their verdict on each point.
     reflection?: Reflection & { model?: string; created_at?: string };
     reflection_review?: Record<string, { verdict: "agree" | "disagree" | null; note: string }>;
+    // "Discuss" threads under reflection points (keys like "patterns.0"), and
+    // earlier ones kept when the coach reflects again.
+    discussions?: Record<string, DiscussTurn[]>;
+    past_discussions?: { reflected_at: string | null; discussions: Record<string, DiscussTurn[]>; review?: Record<string, { verdict: "agree" | "disagree" | null; note: string }> }[];
   } | null;
   created_at: string;
   length: number;
@@ -398,12 +404,35 @@ export async function generateReflection(transcriptId: string): Promise<{ ok: tr
   const supabase = await createClient();
   const { data: t } = await supabase.from("session_transcripts").select("*").eq("id", transcriptId).maybeSingle();
   if (!t) return { ok: false, message: "Transcript not found." };
-  const { data: client } = await supabase.from("profiles").select("full_name").eq("id", t.client_id).maybeSingle();
+  // Context before critique: the coach's profile, what they know about the
+  // client, and the client's last few shared summaries.
+  const [{ data: client }, profile, context, { data: earlier }] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", t.client_id).maybeSingle(),
+    getCoachProfile(),
+    getClientContext(t.client_id as string),
+    supabase
+      .from("session_summaries")
+      .select("content, published_at")
+      .eq("client_id", t.client_id)
+      .eq("status", "published")
+      .neq("session_id", t.session_id)
+      .order("published_at", { ascending: false })
+      .limit(3),
+  ]);
   const r = await reflectOnTranscript({
     transcript: t.content,
     speakerMap: (t.speaker_map as { text?: string } | null)?.text ?? null,
     coachFirstName: (me.full_name ?? "").trim().split(/\s+/)[0] || "the coach",
     clientFirstName: ((client?.full_name as string | null) ?? "").split(" ")[0] || "the client",
+    approach: profile.approach,
+    workingOn: profile.workingOn.map((a) => a.text),
+    clientContext: context.notes,
+    earlier: (earlier ?? [])
+      .map((e) => {
+        const c = (e.content ?? {}) as { focus?: string; summary?: string };
+        return `${(e.published_at as string | null)?.slice(0, 10) ?? ""}: ${c.focus ?? ""}. ${(c.summary ?? "").slice(0, 800)}`;
+      })
+      .join("\n"),
   });
   if (!r.ok) return r;
   // Re-read just before writing so a draft generated meanwhile isn't lost.
@@ -411,30 +440,106 @@ export async function generateReflection(transcriptId: string): Promise<{ ok: tr
   const out = (latest?.ai_output ?? {}) as NonNullable<Transcript["ai_output"]>;
   const { error } = await supabase
     .from("session_transcripts")
-    .update({ ai_output: { ...out, reflection: { ...r.reflection, model: r.model, created_at: new Date().toISOString() }, reflection_review: {} } })
+    .update({
+      ai_output: {
+        ...out,
+        reflection: { ...r.reflection, model: r.model, created_at: new Date().toISOString() },
+        reflection_review: {},
+        discussions: {},
+        // Earlier discussions and views are kept (what they settled is already in the profile).
+        past_discussions:
+          out.discussions && Object.keys(out.discussions).length
+            ? [...(out.past_discussions ?? []), { reflected_at: out.reflection?.created_at ?? null, discussions: out.discussions, review: out.reflection_review }].slice(-5)
+            : out.past_discussions,
+      },
+    })
     .eq("id", t.id);
   if (error) return { ok: false, message: "Couldn’t save the reflection — try again." };
   refresh(t.client_id, t.session_id);
   return { ok: true };
 }
 
-// Agree / disagree and a note on each reflection point (keys like "movements.0").
-export async function saveReflectionReview(
-  transcriptId: string,
-  review: Record<string, { verdict: "agree" | "disagree" | null; note: string }>
-): Promise<{ ok: true } | { ok: false; message: string }> {
+// One reflection point as text, for the discussion (keys like "patterns.0").
+function pointText(r: NonNullable<NonNullable<Transcript["ai_output"]>["reflection"]>, key: string): string | null {
+  if (key === "challenge") return r.challenge.text ? `Challenge: ${r.challenge.text} (${r.challenge.evidence_times.join(", ")})` : null;
+  const [part, i] = key.split(".");
+  const n = Number(i);
+  if (part === "movements" && r.movements[n]) {
+    const m = r.movements[n];
+    return `Where the client moved, ${m.time}: "${m.client_words}" ${m.what_moved}. Just before: ${m.coach_move} (${m.coach_move_time}) ${m.coach_move_note}`;
+  }
+  if (part === "unfinished" && r.unfinished[n]) return `Unfinished thread, ${r.unfinished[n].time}: "${r.unfinished[n].client_words}" ${r.unfinished[n].note}`;
+  if (part === "patterns" && r.patterns[n]) return `Pattern: ${r.patterns[n].pattern} ${r.patterns[n].note} (${r.patterns[n].evidence_times.join(", ")})`;
+  if (part === "practice" && r.practice?.[n]) {
+    const p = r.practice[n];
+    return `Learning area "${p.focus}": ${p.summary} ${p.moments.map((m) => `${m.time} ${m.what_you_did} -> ${m.what_followed}`).join("; ")}`;
+  }
+  return null;
+}
+
+// "Discuss" under one reflection point: the coach writes, the AI answers from
+// the transcript, and may propose one line for the profile or client context.
+export async function discussReflection(transcriptId: string, key: string, message: string): Promise<{ ok: true; thread: DiscussTurn[] } | { ok: false; message: string }> {
+  const me = await requireStaff();
+  const text = message.trim().slice(0, 2000);
+  if (!text) return { ok: false, message: "Write something first." };
+  const supabase = await createClient();
+  const { data: t } = await supabase.from("session_transcripts").select("id, client_id, session_id, content, ai_output").eq("id", transcriptId).maybeSingle();
+  if (!t) return { ok: false, message: "Transcript not found." };
+  const out = (t.ai_output ?? {}) as NonNullable<Transcript["ai_output"]>;
+  const point = out.reflection ? pointText(out.reflection, key) : null;
+  if (!point) return { ok: false, message: "That point isn’t in this reflection any more. Reload the page." };
+  const thread = out.discussions?.[key] ?? [];
+  const [{ data: client }, profile, context] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", t.client_id).maybeSingle(),
+    getCoachProfile(),
+    getClientContext(t.client_id as string),
+  ]);
+  const r = await discussPoint({
+    transcript: t.content as string,
+    point,
+    thread,
+    message: text,
+    coachFirstName: (me.full_name ?? "").trim().split(/\s+/)[0] || "the coach",
+    clientFirstName: ((client?.full_name as string | null) ?? "").split(" ")[0] || "the client",
+    approach: profile.approach,
+    workingOn: profile.workingOn.map((a) => a.text),
+    clientContext: context.notes,
+  });
+  if (!r.ok) return r;
+  const now = new Date().toISOString();
+  const next: DiscussTurn[] = [
+    ...thread,
+    { role: "coach" as const, text, at: now },
+    { role: "ai" as const, text: r.reply, at: now, ...(r.proposal.target !== "none" ? { proposal: r.proposal } : {}) },
+  ].slice(-40);
+  // Re-read just before writing so nothing saved meanwhile is lost.
+  const { data: latest } = await supabase.from("session_transcripts").select("ai_output").eq("id", t.id).maybeSingle();
+  const now2 = (latest?.ai_output ?? {}) as NonNullable<Transcript["ai_output"]>;
+  const { error } = await supabase.from("session_transcripts").update({ ai_output: { ...now2, discussions: { ...(now2.discussions ?? {}), [key]: next } } }).eq("id", t.id);
+  if (error) return { ok: false, message: "Couldn’t save the discussion — try again." };
+  refresh(t.client_id as string, t.session_id as string);
+  return { ok: true, thread: next };
+}
+
+// Accept (optionally edited) or reject a proposed line from a discussion.
+export async function answerProposal(input: { transcriptId: string; key: string; index: number; accept: boolean; text?: string }): Promise<{ ok: true; thread: DiscussTurn[] } | { ok: false; message: string }> {
   await requireStaff();
   const supabase = await createClient();
-  const { data: t } = await supabase.from("session_transcripts").select("id, client_id, session_id, ai_output").eq("id", transcriptId).maybeSingle();
+  const { data: t } = await supabase.from("session_transcripts").select("id, client_id, session_id, ai_output").eq("id", input.transcriptId).maybeSingle();
   if (!t) return { ok: false, message: "Transcript not found." };
-  const clean: Record<string, { verdict: "agree" | "disagree" | null; note: string }> = {};
-  for (const [k, v] of Object.entries(review).slice(0, 40)) {
-    if (!/^(movements|unfinished|patterns)\.\d{1,2}$|^challenge$/.test(k)) continue;
-    clean[k] = { verdict: v.verdict === "agree" || v.verdict === "disagree" ? v.verdict : null, note: (v.note ?? "").slice(0, 1000) };
-  }
   const out = (t.ai_output ?? {}) as NonNullable<Transcript["ai_output"]>;
-  const { error } = await supabase.from("session_transcripts").update({ ai_output: { ...out, reflection_review: clean } }).eq("id", t.id);
+  const thread = [...(out.discussions?.[input.key] ?? [])];
+  const turn = thread[input.index];
+  if (!turn?.proposal || turn.proposal.target === "none" || turn.proposal.status) return { ok: false, message: "That suggestion has already been answered." };
+  const line = (input.text ?? turn.proposal.text).trim();
+  if (input.accept) {
+    const added = await addToProfile({ target: turn.proposal.target, text: line, clientId: t.client_id as string });
+    if (!added.ok) return added;
+  }
+  thread[input.index] = { ...turn, proposal: { ...turn.proposal, text: line, status: input.accept ? "accepted" : "rejected" } };
+  const { error } = await supabase.from("session_transcripts").update({ ai_output: { ...out, discussions: { ...(out.discussions ?? {}), [input.key]: thread } } }).eq("id", t.id);
   if (error) return { ok: false, message: "Couldn’t save — try again." };
   refresh(t.client_id as string, t.session_id as string);
-  return { ok: true };
+  return { ok: true, thread };
 }

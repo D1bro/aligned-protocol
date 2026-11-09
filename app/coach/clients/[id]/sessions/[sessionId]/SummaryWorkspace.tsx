@@ -12,13 +12,14 @@ import {
   importTranscript,
   publishSummary,
   saveDraft,
-  saveReflectionReview,
   type Summary,
   type SummaryContent,
   type Transcript,
 } from "@/lib/actions/summaries";
 import { createSession, saveCoachNote } from "@/lib/actions/sessions";
 import { EMPTY_CONTENT } from "@/lib/summary-content";
+import { ReflectionDiscussion } from "@/components/coach/ReflectionDiscussion";
+import type { Basis } from "@/lib/ai-draft";
 
 type Mode = "points" | "import" | "review";
 
@@ -864,7 +865,6 @@ const MOVE_LABEL: Record<string, string> = {
   summary: "A summary",
   other: "Other",
 };
-type Verdict = { verdict: "agree" | "disagree" | null; note: string };
 
 // The coaching reflection (coach only, never shared or emailed): where the
 // client moved and what came just before, unfinished threads, patterns to
@@ -886,51 +886,33 @@ export function ReflectionPanel({
   // Reflect on the fullest transcript unless one already has a reflection.
   const target = transcripts.find((t) => t.ai_output?.reflection) ?? [...transcripts].sort((a, b) => b.length - a.length)[0];
   const r = target.ai_output?.reflection ?? null;
-  const [review, setReview] = useState<Record<string, Verdict>>(target.ai_output?.reflection_review ?? {});
-  const [dirty, setDirty] = useState(false);
+  // Views saved with the old Agree/Disagree buttons stay visible, read-only.
+  const oldViews = target.ai_output?.reflection_review ?? {};
+  const discussions = target.ai_output?.discussions ?? {};
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function reflect() {
-    if (r && !window.confirm("Make a new reflection? This replaces the current one and your agree/disagree notes on it.")) return;
+    if (r && !window.confirm("Make a new reflection? It replaces this one. Your discussions are kept, and anything you added to your profile stays.")) return;
     setBusy("reflect");
     setNote(null);
     const res = await generateReflection(target.id);
     setBusy(null);
     if (!res.ok) return setNote({ ok: false, text: res.message });
-    setReview({});
-    setDirty(false);
     router.refresh();
   }
-  async function save() {
-    setBusy("save");
-    const res = await saveReflectionReview(target.id, review);
-    setBusy(null);
-    setNote(res.ok ? { ok: true, text: "Saved." } : { ok: false, text: res.message });
-    if (res.ok) setDirty(false);
-  }
-  const set = (key: string, patch: Partial<Verdict>) => {
-    setReview((v) => ({ ...v, [key]: { verdict: v[key]?.verdict ?? null, note: v[key]?.note ?? "", ...patch } }));
-    setDirty(true);
-    setNote(null);
-  };
-  const point = (key: string, body: React.ReactNode) => (
+  const BASIS_LABEL: Record<Basis, string> = { evidence: "Evidence", interpretation: "Interpretation", style_choice: "Style choice" };
+  const point = (key: string, body: React.ReactNode, how?: { basis?: Basis; assumption?: string }) => (
     <li key={key} className="rf-point">
-      <div>{body}</div>
-      <div className="rf-verdict" role="group" aria-label="Your view">
-        {(["agree", "disagree"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={review[key]?.verdict === v}
-            className={review[key]?.verdict === v ? "on" : undefined}
-            onClick={() => set(key, { verdict: review[key]?.verdict === v ? null : v })}
-          >
-            {v === "agree" ? "Agree" : "Disagree"}
-          </button>
-        ))}
-        <input type="text" value={review[key]?.note ?? ""} placeholder="Your note (optional)" aria-label="Your note" onChange={(e) => set(key, { note: e.target.value })} />
+      <div>
+        {how?.basis ? <span className={`rf-basis is-${how.basis}`}>{BASIS_LABEL[how.basis]}</span> : null}
+        {body}
+        {how?.assumption ? <span className="rf-sub rf-assume">Assumes: {how.assumption.replace(/[.\s]*$/, ".")} Worth checking with {firstName}.</span> : null}
+        {oldViews[key]?.verdict || oldViews[key]?.note ? (
+          <span className="rf-sub">Your earlier view: {oldViews[key].verdict ?? ""}{oldViews[key].note ? ` — “${oldViews[key].note}”` : ""}</span>
+        ) : null}
       </div>
+      <ReflectionDiscussion transcriptId={target.id} pointKey={key} initial={discussions[key] ?? []} aiAvailable={aiAvailable} />
     </li>
   );
   const unfinishedText = r?.unfinished.length
@@ -956,6 +938,24 @@ export function ReflectionPanel({
         </>
       ) : (
         <>
+          {r.practice?.length ? (
+            <>
+              <h4>Your learning areas</h4>
+              <ul className="rf-list">
+                {r.practice.map((p, i) =>
+                  point(
+                    `practice.${i}`,
+                    <>
+                      <b>{p.focus}</b> <span className="rf-sub">{p.summary}</span>
+                      {p.moments.map((m) => (
+                        <span key={m.time} className="rf-sub">{m.time} — {m.what_you_did} → {m.what_followed}</span>
+                      ))}
+                    </>
+                  )
+                )}
+              </ul>
+            </>
+          ) : null}
           {r.movements.length ? (
             <>
               <h4>Where {firstName} moved</h4>
@@ -1008,7 +1008,7 @@ export function ReflectionPanel({
               <h4>Patterns to watch</h4>
               <ul className="rf-list">
                 {r.patterns.map((p, i) =>
-                  point(`patterns.${i}`, <>{p.pattern} <span className="rf-sub">{p.evidence_times.join(", ")}{p.note ? ` — ${p.note}` : ""}</span></>)
+                  point(`patterns.${i}`, <>{p.pattern} <span className="rf-sub">{p.evidence_times.join(", ")}{p.note ? ` — ${p.note}` : ""}</span></>, p)
                 )}
               </ul>
             </>
@@ -1016,13 +1016,11 @@ export function ReflectionPanel({
           {r.challenge.text ? (
             <>
               <h4>Your challenge for next session</h4>
-              <ul className="rf-list">{point("challenge", <>{r.challenge.text} <span className="rf-sub">{r.challenge.evidence_times.join(", ")}</span></>)}</ul>
+              <ul className="rf-list">{point("challenge", <>{r.challenge.text} <span className="rf-sub">{r.challenge.evidence_times.join(", ")}</span></>, r.challenge)}</ul>
             </>
           ) : null}
           <div className="cs-actions">
-            <button type="button" className="btn btn-g" disabled={!dirty || busy !== null} onClick={save}>
-              {busy === "save" ? "Saving…" : "Save my views"}
-            </button>
+            <a href="/coach/profile" className="au-text-link">My coaching profile</a>
             {aiAvailable ? (
               <button type="button" className="au-text-link as-btn" disabled={busy !== null} onClick={reflect}>
                 {busy === "reflect" ? "Reflecting…" : "Reflect again"}
