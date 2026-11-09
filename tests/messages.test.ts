@@ -2,10 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildMessage, clientFacingSummary } from "../lib/messages.ts";
 
-test("summary email links to the notes without including them", () => {
+test("summary email links to the coaching page without including the notes", () => {
   const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "Tue, 27 Oct 2026", sessionRef: "Tuesday", nextSession: "Monday 9 November at 10:00", coachName: "Test Coach", link: "https://x.test/coaching/sessions/1" });
   assert.equal(m.subject, "Notes from our session on Tuesday");
-  assert.match(m.text, /Thanks for Tuesday\. I’ve put the notes/);
+  assert.match(m.text, /Thanks for Tuesday\. I’ve updated your coaching page/);
   assert.match(m.text, /prepare for our next session on Monday 9 November at 10:00\./);
   assert.match(m.text, /See you then,\nTest\n/);
   assert.match(m.text, /https:\/\/x\.test\/coaching\/sessions\/1/);
@@ -144,4 +144,14 @@ test("without the tick, the summary email stays a link only", () => {
 test("with no booking, the next meeting falls back to what was said", () => {
   const c = clientFacingSummary({ next_meeting: { text: "two weeks" } }, null);
   assert.equal(c.nextMeeting, "Proposed: two weeks");
+});
+
+test("the update email says what's done and what's next, and opens the coaching page", () => {
+  const m = buildMessage({
+    kind: "summary_shared", firstName: "Sam", sessionLabel: "Mon, 9 Nov 2026", sessionRef: "Monday", coachName: "Test Coach", link: "https://x.test/coaching",
+    done: ["Checked the account on Sunday"], nextSteps: ["Plan tomorrow each evening"],
+  });
+  assert.match(m.text, /Done since last time[\s\S]*✓ Checked the account on Sunday/);
+  assert.match(m.text, /Your next steps[\s\S]*• Plan tomorrow each evening/);
+  assert.match(m.html, /href="https:\/\/x\.test\/coaching"[^>]*>[\s\S]*Open your coaching page/);
 });

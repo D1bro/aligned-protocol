@@ -104,3 +104,45 @@ export async function sharePrep(input: { sessionId: string | null; content: stri
   revalidatePath("/coaching");
   return { ok: true };
 }
+
+export type GoalCard = { id: string; title: string; area: string | null; now: number | null; target: number | null; main: boolean };
+
+// The member's active goals for the coaching dashboard: each with its area,
+// where it is now (last monthly review, else the audit it was planned from)
+// and the score they're aiming for. Their own records only.
+export async function getMyGoalCards(): Promise<GoalCard[]> {
+  const { supabase, userId } = await me();
+  if (!userId) return [];
+  const { data: goals } = await supabase
+    .from("goals")
+    .select("id, goal_title, goal_type, clear_plan_id, created_at")
+    .eq("client_id", userId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+  if (!goals?.length) return [];
+  const planIds = goals.map((g) => g.clear_plan_id).filter(Boolean) as string[];
+  const [{ data: plans }, { data: checks }, { data: areas }] = await Promise.all([
+    planIds.length ? supabase.from("clear_plans").select("id, audit_id, life_area_id, step_up_target").in("id", planIds) : Promise.resolve({ data: [] }),
+    supabase.from("goal_checkins").select("goal_id, kind, area_score, created_at").eq("client_id", userId).neq("kind", "weekly").order("created_at", { ascending: false }),
+    supabase.from("life_areas").select("id, name"),
+  ]);
+  const auditIds = [...new Set((plans ?? []).map((p) => p.audit_id).filter(Boolean))] as string[];
+  const { data: responses } = auditIds.length
+    ? await supabase.from("audit_responses").select("audit_id, life_area_id, satisfaction_score").in("audit_id", auditIds)
+    : { data: [] };
+  const mainId = (goals.find((g) => g.goal_type === "primary") ?? goals[0]).id;
+  return goals.map((g) => {
+    const plan = (plans ?? []).find((p) => p.id === g.clear_plan_id) ?? null;
+    const last = (checks ?? []).find((c) => c.goal_id === g.id && typeof c.area_score === "number");
+    const base = plan ? (responses ?? []).find((r) => r.audit_id === plan.audit_id && r.life_area_id === plan.life_area_id) : null;
+    const now = (last?.area_score as number | undefined) ?? (base?.satisfaction_score as number | undefined) ?? null;
+    return {
+      id: g.id as string,
+      title: (g.goal_title as string | null)?.trim() || "Your goal",
+      area: (areas ?? []).find((a) => a.id === plan?.life_area_id)?.name ?? null,
+      now,
+      target: (plan?.step_up_target as number | null | undefined) ?? (now !== null ? Math.min(10, now + 1) : null),
+      main: g.id === mainId,
+    };
+  });
+}

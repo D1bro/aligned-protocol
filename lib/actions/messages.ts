@@ -91,6 +91,25 @@ async function build(kind: MessageKind, refId: string, note: string | null, opts
       ? `${formatSessionTime(nextUp.scheduled_at, nextUp.timezone)} · ${nextUp.duration_minutes} minutes${nextUp.state === "proposed" ? " (proposed)" : ""}${nextUp.location ? `\n${nextUp.location}` : ""}`
       : null;
     const content = opts.includeSummary ? clientFacingSummary((s.content ?? {}) as Record<string, unknown>, nextLine) : null;
+    // What's been done since the session before, and this session's next
+    // steps (the client's own, as agreed), for the email and the coaching page.
+    const { data: steps } = await supabase
+      .from("session_commitments")
+      .select("id, summary_id, owner, body, status, created_at")
+      .eq("client_id", s.client_id)
+      .eq("owner", "client")
+      .order("created_at");
+    const ids = (steps ?? []).map((x) => x.id as string);
+    const { data: ups } = ids.length
+      ? await supabase.from("commitment_updates").select("commitment_id, progress, created_at").in("commitment_id", ids).order("created_at", { ascending: false })
+      : { data: [] };
+    const latest = new Map<string, string>();
+    for (const u of ups ?? []) if (!latest.has(u.commitment_id as string)) latest.set(u.commitment_id as string, u.progress as string);
+    const nextSteps = (steps ?? []).filter((x) => x.summary_id === s.id && x.status !== "dropped").map((x) => x.body as string);
+    const done = (steps ?? [])
+      .filter((x) => x.summary_id !== s.id && (x.status === "done" || latest.get(x.id as string) === "done"))
+      .slice(-5)
+      .map((x) => x.body as string);
     const coachName = await coachOf(c);
     return {
       clientId: c.id,
@@ -106,9 +125,11 @@ async function build(kind: MessageKind, refId: string, note: string | null, opts
         sessionRef: sess ? sessionRef(sess.scheduled_at, sess.timezone) : undefined,
         nextSession: nextUp && nextUp.state === "confirmed" ? sessionDayTime(nextUp.scheduled_at, nextUp.timezone) : null,
         coachName,
-        link: `${origin}/coaching/sessions/${s.session_id}`,
+        link: `${origin}/coaching`,
         note,
         content,
+        done,
+        nextSteps,
       },
     };
   }
