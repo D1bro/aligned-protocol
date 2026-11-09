@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getLatestCompletedAudit, getLifeAreas, getAuditWithResponses } from "@/lib/actions/audit";
+import { getLatestCompletedAudit, getLifeAreas, getAuditWithResponses, getInProgressAudit } from "@/lib/actions/audit";
 import { getOrCreateClearPlan, getGoalForPlan, getClearPlanForAudit, chooseClearArea } from "@/lib/actions/clear";
 import { nextAuditDue } from "@/lib/audit-schedule";
 import { ClearWizard } from "./ClearWizard";
@@ -38,7 +39,7 @@ export default async function ClearPage({
   const { choose, start, edit, new: newGoal, latest, suggested } = await searchParams;
   const editStep = edit ? Math.min(5, Math.max(1, Number(edit) || 1)) : null;
   const [audit, profile] = await Promise.all([getLatestCompletedAudit(), getCurrentProfile()]);
-  if (!audit) redirect("/audit");
+  if (!audit) return <PlanBeforeProtocol started={!!(await getInProgressAudit().catch(() => null))} />;
   const isGuest = profile?.isAnonymous ?? false;
 
   const main = choose || start || newGoal || latest ? null : await getMainGoal();
@@ -206,5 +207,24 @@ export default async function ClearPage({
       canChangeArea={!started && !goal}
       startAtStep={editStep}
     />
+  );
+}
+
+// My Plan before The Aligned Protocol is completed: the plan is built from
+// their chart, so say so and point them to it, rather than quietly sending
+// them to the Protocol page (which looked like a broken menu link).
+function PlanBeforeProtocol({ started }: { started: boolean }) {
+  return (
+    <div className="page au-page">
+      <div className="eyebrow"><span className="eydot" /> My Plan</div>
+      <h1 className="au-latest-h">Your plan starts from <em>your chart.</em></h1>
+      <p className="lead">
+        My Plan is built from The Aligned Protocol. You score the ten areas of your life, then come back here to choose
+        one to start with and set a first goal. It takes about 10 minutes.
+      </p>
+      <p>
+        <Link href="/audit" className="btn btn-p">{started ? "Continue The Aligned Protocol →" : "Take The Aligned Protocol →"}</Link>
+      </p>
+    </div>
   );
 }
