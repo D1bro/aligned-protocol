@@ -71,7 +71,7 @@ export default async function ClientPreviewPage({
                   <MemberInvoices data={p.billing} justPaid={false} />
                 </>
               ) : coached ? (
-                <MemberCoaching data={p.coaching} sessionsLeft={sessionsLeft} goals={p.goalCards} chart={p.chart} />
+                <MemberCoaching data={p.coaching} sessionsLeft={sessionsLeft} goals={p.goalCards} chart={p.chart} auditDone={p.auditDone} />
               ) : (
                 <p className="admin-card-sub">No coach, sessions or shared summaries yet, so this tab shows the general introduction to coaching.</p>
               )}

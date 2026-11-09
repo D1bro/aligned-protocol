@@ -20,7 +20,7 @@ export async function getClientPreview(clientId: string) {
   const { data: client } = await supabase.from("profiles").select("id, full_name, email, coach_id, role").eq("id", clientId).maybeSingle();
   if (!client || (me.role !== "admin" && client.coach_id !== me.id)) redirect("/coach/clients");
 
-  const [coaching, billing, packages, expiries, goals, viewerBills, goalCards, chart] = await Promise.all([
+  const [coaching, billing, packages, expiries, goals, viewerBills, goalCards, chart, audits] = await Promise.all([
     loadCoaching(supabase, clientId, { drafts: false }),
     loadBilling(supabase, clientId),
     loadOfferedPackages(supabase, clientId, PACKAGE_COLUMNS),
@@ -29,6 +29,7 @@ export async function getClientPreview(clientId: string) {
     canBill(),
     loadGoalCards(supabase, clientId),
     loadCalibratedChart(supabase, clientId),
+    supabase.from("audits").select("id").eq("client_id", clientId).eq("status", "completed").limit(1),
   ]);
   // "Your coach", as the client sees it at the top of their Coaching page.
   const [{ data: coachProfile }, { data: coachPublic }] = client.coach_id
@@ -59,6 +60,7 @@ export async function getClientPreview(clientId: string) {
     goalCards,
     chart,
     coach,
+    auditDone: (audits.data ?? []).length > 0,
     // Invoices, and packages offered only to selected clients, are visible to billing admins.
     viewerBills,
   };
