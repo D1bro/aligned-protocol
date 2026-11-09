@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/actions/admin";
 import { cleanAreas, type CalibratedArea } from "@/lib/calibration";
+import { loadCalibratedChart } from "@/lib/member-view";
 
 // "Take your chart further" (migration 0028): the calibrated chart for one
 // coaching session. The coach saves it as they go and shares it when ready;
@@ -76,14 +77,8 @@ export async function shareCalibration(sessionId: string, clientId: string): Pro
 // For the member: their most recent shared calibrated chart, with area names.
 export async function getMyCalibratedChart(): Promise<{ sharedAt: string; areas: (CalibratedArea & { name: string })[] } | null> {
   const supabase = await createClient();
-  const [{ data, error }, { data: areas }] = await Promise.all([
-    supabase.from("chart_calibrations").select("areas, shared_at").eq("status", "shared").order("shared_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("life_areas").select("id, name").order("sort_order"),
-  ]);
-  if (error || !data) return null;
-  const names = new Map((areas ?? []).map((a) => [a.id as string, a.name as string]));
-  return {
-    sharedAt: data.shared_at as string,
-    areas: cleanAreas(data.areas, [...names.keys()]).map((a) => ({ ...a, name: names.get(a.life_area_id) ?? "" })),
-  };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user ? loadCalibratedChart(supabase, user.id) : null;
 }
