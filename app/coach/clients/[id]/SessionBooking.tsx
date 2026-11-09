@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { createSession } from "@/lib/actions/sessions";
 
 // Book a session (UK time). "Proposed" until both sides have agreed it.
-export function SessionBooking({ clientId }: { clientId: string }) {
+// Length and meeting link start from the coach's own defaults (coach profile).
+export function SessionBooking({ clientId, defaults }: { clientId: string; defaults?: { minutes: number; link: string } }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("18:00");
-  const [duration, setDuration] = useState(60);
-  const [location, setLocation] = useState("");
+  const [duration, setDuration] = useState(defaults?.minutes ?? 60);
+  const [location, setLocation] = useState(defaults?.link ?? "");
   const [confirmed, setConfirmed] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);

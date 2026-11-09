@@ -80,6 +80,7 @@ export function TeamEditor({ meId, canBill, members }: { meId: string; canBill: 
                 <b>{m.full_name || "No name yet"}{self ? <span className="team-you">You</span> : null}</b>
                 <span>{m.email ?? "No email"}</span>
                 <span>{m.clients ? `Coach to ${m.clients} client${m.clients === 1 ? "" : "s"}` : "No clients assigned"}</span>
+                <a href={self ? "/coach/profile" : `/coach/team/${m.id}`} className="au-text-link">{self ? "My profile" : "View profile"}</a>
               </div>
               <div className="team-controls">
                 <label>
