@@ -42,7 +42,9 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
     getMyCoach().catch(() => null),
   ]);
   const [goals, chart] = coaching.available ? await Promise.all([getMyGoalCards().catch(() => []), getMyCalibratedChart().catch(() => null)]) : [[], null];
-  const coached = coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0);
+  // Coached: they have a coach, or sessions or summaries already. They see
+  // their coaching, not the introduction and enquiry form for newcomers.
+  const coached = !!myCoach || (coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0));
   const open = enquiries.find((e) => e.status === "new" || e.status === "contacted") ?? null;
   // Sessions and payments gets its own tab once there's anything to show there.
   const held = credits ? credits.available + credits.reserved : 0;
@@ -85,10 +87,10 @@ function CoachingAbout({
   enquiries: Awaited<ReturnType<typeof getMyEnquiries>>;
   open: Awaited<ReturnType<typeof getMyEnquiries>>[number] | null;
 }) {
+  if (coached) return <MemberCoaching data={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} />;
   return (
     <>
-      {coached ? <MemberCoaching data={coaching} sessionsLeft={sessionsLeft} goals={goals} chart={chart} /> : null}
-      <h1 className="au-latest-h">{coached ? <>About <em>coaching</em></> : <>Work on it <em>together.</em></>}</h1>
+      <h1 className="au-latest-h">Work on it <em>together.</em></h1>
       <p className="draft-tag">Draft</p>
       <p className="lead">
         Coaching here is led by you. You bring what matters; we work out the next step together. It builds on your

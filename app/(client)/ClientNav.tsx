@@ -19,9 +19,13 @@ const MORE_LINKS: MobileNavLink[] = [
   { group: "More", href: "/musings", label: "Musings", icon: "quote", match: (p) => p.startsWith("/musings") },
   { group: "More", href: "/podcast", label: "Podcast", icon: "mic", match: (p) => p.startsWith("/podcast") },
   { group: "More", href: "/tools", label: "Tools", icon: "bulb", match: (p) => p.startsWith("/tools") },
-  { group: "More", href: "/coaching", label: "Coaching", icon: "chat", match: (p) => p.startsWith("/coaching") },
   { group: "More", href: "/membership", label: "Membership", icon: "star", match: (p) => p.startsWith("/membership") },
 ];
+
+// Members with a coach see Coaching at the top of the menu; everyone else
+// finds it under More.
+const COACHING: MobileNavLink = { group: "You", href: "/coaching", label: "Coaching", icon: "chat", match: (p) => p.startsWith("/coaching") };
+const MORE_COACHING: MobileNavLink = { ...COACHING, group: "More" };
 
 // The phone tab bar: the four destinations, with a shorter label for the
 // Protocol so all five tabs fit (More opens the drawer with the rest).
@@ -29,14 +33,21 @@ const TABS: MobileNavLink[] = DESTINATIONS.map((d) => (d.href === "/audit" ? { .
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
-const linksFor = (staff: boolean) => [...DESTINATIONS, ...MORE_LINKS, ...(staff ? [STAFF_LINK] : [])];
+const linksFor = (staff: boolean, coached: boolean) => [
+  ...(coached ? [COACHING] : []),
+  ...DESTINATIONS,
+  ...MORE_LINKS.slice(0, 4),
+  ...(coached ? [] : [MORE_COACHING]),
+  ...MORE_LINKS.slice(4),
+  ...(staff ? [STAFF_LINK] : []),
+];
 
-export function ClientNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
+export function ClientNav({ fullName, staff = false, coached = false }: { fullName: string | null; staff?: boolean; coached?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className="sb-nav">
-      <NavLinks links={linksFor(staff)} pathname={pathname} />
+      <NavLinks links={linksFor(staff, coached)} pathname={pathname} />
       <div className="sb-q">
         <div className="sb-qm">&ldquo;</div>
         <div className="sb-qt">Alignment is the foundation. Action is the transformation.</div>
@@ -46,6 +57,6 @@ export function ClientNav({ fullName, staff = false }: { fullName: string | null
   );
 }
 
-export function ClientMobileNav({ fullName, staff = false }: { fullName: string | null; staff?: boolean }) {
-  return <MobileNav links={linksFor(staff)} fullName={fullName} sub="Your details" userHref="/details" tabs={TABS} />;
+export function ClientMobileNav({ fullName, staff = false, coached = false }: { fullName: string | null; staff?: boolean; coached?: boolean }) {
+  return <MobileNav links={linksFor(staff, coached)} fullName={fullName} sub="Your details" userHref="/details" tabs={TABS} />;
 }

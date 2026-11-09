@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/actions/admin";
 import { canBill } from "@/lib/actions/billing";
+import { env } from "@/lib/env";
 import { loadBilling, loadCalibratedChart, loadCoaching, loadGoalCards, loadOfferedPackages } from "@/lib/member-view";
 
 // "See as client": what one client sees on their Coaching page and the
@@ -29,6 +30,23 @@ export async function getClientPreview(clientId: string) {
     loadGoalCards(supabase, clientId),
     loadCalibratedChart(supabase, clientId),
   ]);
+  // "Your coach", as the client sees it at the top of their Coaching page.
+  const [{ data: coachProfile }, { data: coachPublic }] = client.coach_id
+    ? await Promise.all([
+        supabase.from("profiles").select("full_name").eq("id", client.coach_id).maybeSingle(),
+        supabase.from("coach_public").select("photo_path, bio, credentials").eq("coach_id", client.coach_id).maybeSingle(),
+      ])
+    : [{ data: null }, { data: null }];
+  const coachName = (coachProfile?.full_name as string | null | undefined)?.trim();
+  const photoPath = coachPublic?.photo_path as string | null | undefined;
+  const coach = coachName
+    ? {
+        name: coachName,
+        photoUrl: photoPath ? `${env.supabaseUrl}/storage/v1/object/public/coach-photos/${photoPath}` : null,
+        bio: (coachPublic?.bio as string | undefined) ?? "",
+        credentials: (coachPublic?.credentials as string | undefined) ?? "",
+      }
+    : null;
   const active = (goals.data ?? []) as { id: string; goal_title: string | null }[];
 
   return {
@@ -40,6 +58,7 @@ export async function getClientPreview(clientId: string) {
     goals: active.map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" })),
     goalCards,
     chart,
+    coach,
     // Invoices, and packages offered only to selected clients, are visible to billing admins.
     viewerBills,
   };

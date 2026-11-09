@@ -17,6 +17,8 @@ export default async function ClientLayout({ children }: { children: React.React
   // Coaches and admins can use the member pages too (they land in /coach
   // after signing in). Redirecting them to "/" here looped forever.
   const staff = profile.role === "coach" || profile.role === "admin";
+  // A member with a coach sees Coaching first in the menu.
+  const coached = !!profile.coach_id;
 
   if (profile.isAnonymous) {
     // Guests (no account yet) can only land on the audit and on building
@@ -35,9 +37,9 @@ export default async function ClientLayout({ children }: { children: React.React
     <div className="shell has-tabs">
       <aside className="sidebar">
         <Logo subtitle="Protocol" />
-        <ClientNav fullName={profile.full_name} staff={staff} />
+        <ClientNav fullName={profile.full_name} staff={staff} coached={coached} />
       </aside>
-      <ClientMobileNav fullName={profile.full_name} staff={staff} />
+      <ClientMobileNav fullName={profile.full_name} staff={staff} coached={coached} />
       <div className="main">{children}</div>
     </div>
   );

@@ -5,6 +5,7 @@ import { MemberCoaching } from "@/components/coaching/MemberCoaching";
 import { BuySessions } from "@/components/coaching/BuySessions";
 import { MemberInvoices } from "@/components/coaching/MemberInvoices";
 import { CoachingTabs, coachingTab } from "@/components/coaching/CoachingTabs";
+import { YourCoach } from "@/components/coaching/YourCoach";
 
 // "See as client": the client's own coaching pages, with their data, made
 // read-only (inert) so nothing can be done on their behalf.
@@ -19,7 +20,10 @@ export default async function ClientPreviewPage({
   const p = await getClientPreview(id);
   const name = p.client.full_name || p.client.email || "This client";
   const first = p.client.full_name?.trim().split(/\s+/)[0] || "they";
-  const coached = p.coaching.available && (p.coaching.sessions.length > 0 || p.coaching.summaries.length > 0);
+  // My Space shows the coaching card once there's a session or summary; the
+  // Coaching page shows their coaching as soon as they have a coach.
+  const hasSessions = p.coaching.available && (p.coaching.sessions.length > 0 || p.coaching.summaries.length > 0);
+  const coached = !!p.coach || hasSessions;
   const credits = p.coaching.sessions.length ? p.billing.credits : null;
   const held = p.billing.credits.available + p.billing.credits.reserved;
   const hasPayments = p.packages.length > 0 || held > 0 || p.billing.invoices.length > 0;
@@ -47,7 +51,7 @@ export default async function ClientPreviewPage({
 
       {shown ? (
         <>
-          {coached ? (
+          {hasSessions ? (
             <>
               <p className="cpv-where">My Space</p>
               <div className="cpv-screen" inert>
@@ -57,6 +61,7 @@ export default async function ClientPreviewPage({
           ) : null}
           <p className="cpv-where">Coaching page</p>
           <div className="cpv-screen">
+            {p.coach ? <div inert><YourCoach coach={p.coach} /></div> : null}
             {/* The tabs work here, so you can see both; everything inside is switched off. */}
             {hasPayments ? <CoachingTabs base={base} active={tab} coached={coached} /> : null}
             <div className="cpv-frame" inert>
@@ -68,7 +73,7 @@ export default async function ClientPreviewPage({
               ) : coached ? (
                 <MemberCoaching data={p.coaching} sessionsLeft={sessionsLeft} goals={p.goalCards} chart={p.chart} />
               ) : (
-                <p className="admin-card-sub">No sessions or shared summaries yet, so this tab shows the general introduction to coaching.</p>
+                <p className="admin-card-sub">No coach, sessions or shared summaries yet, so this tab shows the general introduction to coaching.</p>
               )}
             </div>
           </div>
