@@ -2365,3 +2365,50 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .your-coach h2 { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 1.5rem; margin: .1rem 0 .3rem; }
 .your-coach-bio { color: var(--text2); line-height: 1.6; white-space: pre-wrap; }
 .your-coach-cred { font-size: 13px; color: var(--text3); margin-top: .4rem; white-space: pre-wrap; }
+
+/* Take your chart further (coach) and the calibrated chart (member). */
+.cal-wrap > summary { cursor: pointer; }
+.cal { display: grid; gap: .8rem; margin-top: .6rem; }
+.cal-list { list-style: none; display: grid; gap: .7rem; padding: 0; margin: 0; }
+.cal-list li { display: grid; gap: .45rem; padding: .8rem .9rem; border: 1px solid var(--bdr2); border-radius: 12px; background: var(--bg2); }
+.cal-list li.is-focus { border-color: var(--bdr); background: linear-gradient(180deg, rgba(211,167,88,.08), rgba(211,167,88,.02)); }
+.cal-head { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; }
+.cal-alone { font-size: 13px; color: var(--text2); }
+.cal-shift { font-size: 12px; font-weight: 600; color: var(--gold2); }
+.cal-note { font-size: 13px; color: var(--text3); font-style: italic; }
+.cal-def { display: grid; gap: .25rem; }
+.cal-def span, .cal-row label > span { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); }
+.cal-def textarea { width: 100%; }
+.cal-row { display: flex; align-items: end; gap: 1.2rem; flex-wrap: wrap; }
+.cal-row label { display: grid; gap: .25rem; }
+.cal-focus { display: flex !important; align-items: center; gap: .45rem; font-size: 14px; min-height: 40px; }
+.snap { display: grid; gap: .6rem; margin-bottom: 1rem; }
+.snap-top { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
+.snap-top h2 { margin: 0; }
+.snap-facts { display: grid; gap: .25rem; font-size: 13.5px; }
+.snap-facts > div { display: grid; grid-template-columns: 7.5rem 1fr; gap: .5rem; }
+.snap-facts dt { color: var(--text3); }
+.snap-part { border-top: 1px solid var(--bdr2); padding-top: .55rem; }
+.snap-part > summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.snap-areas { list-style: none; display: grid; gap: .2rem; padding: 0; margin: .5rem 0 .3rem; }
+.snap-areas li { display: flex; justify-content: space-between; gap: .6rem; font-size: 13.5px; padding: .15rem 0; }
+.snap-areas li.is-focus .snap-name { color: var(--gold2); }
+.snap-focus { font-size: 11px; color: var(--gold2); }
+.snap-score { display: inline-flex; gap: .6rem; align-items: baseline; white-space: nowrap; }
+.snap-move { color: var(--text2); font-variant-numeric: tabular-nums; }
+.snap-move.is-up { color: var(--hi); }
+.snap-move.is-down { color: var(--m-navigating); }
+.snap-agreed { font-size: 12px; color: var(--gold2); }
+.snap-sub { font-size: 12.5px; color: var(--text2); line-height: 1.5; margin-top: .25rem; }
+.snap-goal { font-size: 14.5px; color: var(--text); margin-top: .4rem; }
+.snap .cc-card { border: 0; padding: 0; margin: .5rem 0 0; background: none; }
+.snap .cc-card h2 { display: none; }
+.calc { gap: .7rem; margin: 1rem 0 1.25rem; }
+.calc-focus { font-size: 13.5px; color: var(--gold2); }
+.calc-list { list-style: none; display: grid; gap: .55rem; padding: 0; margin: 0; width: 100%; }
+.calc-list li { display: grid; gap: .2rem; padding-bottom: .55rem; border-bottom: 1px solid var(--bdr2); }
+.calc-list li.is-focus b:first-child { color: var(--gold2); }
+.calc-row { display: flex; justify-content: space-between; gap: 1rem; }
+.calc-alone { font-size: 12.5px; color: var(--text3); }
+.calc-agreed { font-family: var(--font-sora), 'Sora', sans-serif; }
+.calc-def { font-size: 13.5px; color: var(--text2); line-height: 1.5; }

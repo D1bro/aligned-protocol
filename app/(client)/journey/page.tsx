@@ -15,6 +15,9 @@ import { getMonthReflections } from "@/lib/actions/life";
 import { yearRow, ymOf } from "@/lib/life-months";
 import { localDate } from "@/lib/time";
 import { YearStrip } from "@/components/journey/YearStrip";
+import { CalibratedChart } from "@/components/journey/CalibratedChart";
+import { getMyCalibratedChart } from "@/lib/actions/calibration";
+import { getMyCoach } from "@/lib/actions/staff-profiles";
 
 // "Your current chapter": this year, month by month, and the way into the
 // optional 1,000 Months.
@@ -69,6 +72,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
     );
   }
 
+  const [calibrated, coach] = await Promise.all([getMyCalibratedChart().catch(() => null), getMyCoach().catch(() => null)]);
   const latest = audits[0];
   // Compare with the previous audit, or one they choose as history grows.
   const previous = audits.slice(1).find((a) => a.id === compare) ?? audits[1] ?? null;
@@ -134,6 +138,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
       </p>
 
       <CurrentChapter />
+      {calibrated ? <CalibratedChart chart={calibrated} coachName={coach?.name ?? null} /> : null}
       {alignment ? <AlignmentReviews /> : null}
       <div className="journey-stats">
         <div><b>{audits.length}</b><span>{audits.length === 1 ? "audit" : "audits"}</span></div>
