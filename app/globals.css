@@ -2342,3 +2342,26 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .rf-proposal-actions { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; }
 .rf-discuss-write { display: grid; gap: .4rem; justify-items: start; }
 .rf-discuss-write textarea { width: 100%; }
+/* Coach basics (About me). */
+.cpf-basics { display: grid; gap: .8rem; }
+.cpf-photo { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.cpf-photo img, .cpf-photo-empty { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--bdr); }
+.cpf-photo-empty { display: grid; place-items: center; background: var(--bg3); color: var(--gold2); font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 2rem; }
+.cpf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .7rem 1rem; }
+.cpf-grid label, .cpf-wide { display: grid; gap: .3rem; }
+.cpf-grid label span, .cpf-wide span { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); }
+.cpf-grid input, .cpf-grid select, .cpf-wide textarea { width: 100%; }
+.cpf-facts { display: grid; gap: .5rem; }
+.cpf-facts > div { display: grid; grid-template-columns: 12rem 1fr; gap: 1rem; }
+.cpf-facts dt { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); padding-top: 2px; }
+.cpf-facts dd { overflow-wrap: anywhere; }
+@media (max-width: 560px) { .cpf-facts > div { grid-template-columns: 1fr; gap: .1rem; } }
+.cpf-pre { white-space: pre-wrap; line-height: 1.6; color: var(--text2); margin-bottom: .8rem; }
+.team-who a { font-size: 13px; }
+.cd { display: grid; gap: 1rem; } .cd textarea { width: 100%; } .cd .cpf-grid label { display: grid; gap: .3rem; }
+.cd-status { display: inline-block; margin-left: .6rem; padding: .1rem .55rem; border-radius: 100px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; background: rgba(255,255,255,.07); color: var(--text2); }
+.your-coach { display: flex; gap: 1.1rem; align-items: flex-start; padding: 1.1rem 1.2rem; margin: .4rem 0 1.4rem; border: 1px solid var(--bdr); border-radius: 16px; background: var(--bg2); }
+.your-coach img, .your-coach .cpf-photo-empty { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--bdr); }
+.your-coach h2 { font-family: var(--font-serif), 'Cormorant Garamond', serif; font-size: 1.5rem; margin: .1rem 0 .3rem; }
+.your-coach-bio { color: var(--text2); line-height: 1.6; white-space: pre-wrap; }
+.your-coach-cred { font-size: 13px; color: var(--text3); margin-top: .4rem; white-space: pre-wrap; }

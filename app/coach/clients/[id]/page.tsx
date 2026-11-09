@@ -24,9 +24,13 @@ import { getAllPackages } from "@/lib/actions/packages";
 import { formatPence } from "@/lib/money";
 import { getClientBilling } from "@/lib/actions/billing";
 import { getMessageJobs } from "@/lib/actions/messages";
+import { getAdminNotes, getClientRecord, getMyCoachBasics } from "@/lib/actions/staff-profiles";
+import { canBill } from "@/lib/actions/billing";
+import { DetailsTab } from "./DetailsTab";
 
 const TABS = [
   ["overview", "Overview"],
+  ["details", "Details"],
   ["sessions", "Sessions"],
   ["goals", "Goals and audit"],
   ["notes", "Coach notes"],
@@ -59,6 +63,9 @@ export default async function ClientProfilePage({
   const removal = isAdmin && tab === "settings" && client.email ? await getRemovalCheck(client.id) : null;
   const billing = tab === "billing" || tab === "sessions" ? await getClientBilling(id) : null;
   const jobs = tab === "billing" || tab === "sessions" ? await getMessageJobs(id) : [];
+  const record = await getClientRecord(id);
+  const mine = tab === "sessions" ? await getMyCoachBasics() : null;
+  const [adminNotes, billingAccess] = tab === "details" ? await Promise.all([isAdmin ? getAdminNotes(id) : Promise.resolve(null), canBill()]) : [null, false];
 
   const scoresFor = (auditId: string) => {
     const rs = p.responses.filter((r) => r.audit_id === auditId);
@@ -102,6 +109,7 @@ export default async function ClientProfilePage({
           <p>
             {client.email ?? "Guest — no account yet"} · Joined {formatDate(client.created_at)} ·{" "}
             {p.coachName ? `Coach: ${p.coachName}` : "No coach"}
+            {record.available && record.status !== "active" ? <span className="cd-status">{record.status === "paused" ? "Paused" : "Former client"}</span> : null}
             {client.role !== "client" ? ` · ${client.role}` : ""}
             {p.coaching.relationship ? ` · Coaching: ${p.coaching.relationship.status}` : ""}
           </p>
@@ -153,7 +161,29 @@ export default async function ClientProfilePage({
         <OverviewTab p={p} firstName={firstName} mainGoal={mainGoal} focusNote={focusNote} nextSession={nextAny} />
       ) : null}
 
-      {tab === "sessions" ? <SessionsTab p={p} billing={billing} jobs={jobs} /> : null}
+      {tab === "details" ? (
+        record.available ? (
+          <DetailsTab
+            clientId={client.id}
+            firstName={client.full_name?.trim().split(" ")[0] || "the client"}
+            contact={{
+              fullName: client.full_name ?? "",
+              preferredName: contact?.preferred_name ?? "",
+              phone: contact?.phone ?? "",
+              town: contact?.town ?? "",
+              country: contact?.country ?? "",
+              timezone: contact?.timezone ?? "",
+            }}
+            record={record}
+            adminNotes={adminNotes?.available ? adminNotes.notes : null}
+            zones={Intl.supportedValuesOf("timeZone")}
+            canBill={billingAccess}
+          />
+        ) : (
+          <p className="clear-err">This needs database update 0027.</p>
+        )
+      ) : null}
+      {tab === "sessions" ? <SessionsTab p={p} billing={billing} jobs={jobs} bookingDefaults={mine?.available ? { minutes: mine.defaultMinutes, link: mine.meetingLink } : undefined} /> : null}
 
       {tab === "goals" ? (
         latest ? (

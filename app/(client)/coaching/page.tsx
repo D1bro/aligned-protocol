@@ -11,6 +11,8 @@ import { MemberInvoices } from "@/components/coaching/MemberInvoices";
 import { BuySessions } from "@/components/coaching/BuySessions";
 import { getMyCredits, getMyExpiries, getOfferedPackages } from "@/lib/actions/packages";
 import { CoachingTabs, coachingTab } from "@/components/coaching/CoachingTabs";
+import { getMyCoach } from "@/lib/actions/staff-profiles";
+import { YourCoach } from "@/components/coaching/YourCoach";
 
 const SESSIONS = [
   { title: "Check and sharpen your plan", text: "We start from the plan you’ve built: what matters most right now, and the one action that will move it." },
@@ -28,7 +30,7 @@ const STATUS: Record<string, string> = {
 
 // Coaching Studio: what coaching is here, Aligned Focus and an enquiry form.
 export default async function CoachingPage({ searchParams }: { searchParams: Promise<{ paid?: string; tab?: string }> }) {
-  const [enquiries, coaching, billing, sp, packages, credits, expiries] = await Promise.all([
+  const [enquiries, coaching, billing, sp, packages, credits, expiries, myCoach] = await Promise.all([
     getMyEnquiries(),
     getMyCoaching(),
     getMyBilling(),
@@ -36,6 +38,7 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
     getOfferedPackages(),
     getMyCredits(),
     getMyExpiries(),
+    getMyCoach().catch(() => null),
   ]);
   const coached = coaching.available && (coaching.sessions.length > 0 || coaching.summaries.length > 0);
   const open = enquiries.find((e) => e.status === "new" || e.status === "contacted") ?? null;
@@ -48,6 +51,7 @@ export default async function CoachingPage({ searchParams }: { searchParams: Pro
   return (
     <div className="page au-page">
       <div className="eyebrow"><span className="eydot" /> Coaching</div>
+      {myCoach ? <YourCoach coach={myCoach} /> : null}
       {hasPayments ? <CoachingTabs base="/coaching" active={tab} coached={coached} /> : null}
       {tab === "payments" ? (
         <>

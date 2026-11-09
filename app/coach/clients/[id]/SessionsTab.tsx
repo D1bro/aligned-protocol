@@ -20,7 +20,7 @@ export const STATE_LABEL: Record<string, string> = {
 
 // Sessions: upcoming and past conversations, each with its own actions and
 // history. Counts never include cancelled or rescheduled-away times.
-export function SessionsTab({ p, billing, jobs }: { p: Profile; billing: ClientBilling | null; jobs: MessageJob[] }) {
+export function SessionsTab({ p, billing, jobs, bookingDefaults }: { p: Profile; billing: ClientBilling | null; jobs: MessageJob[]; bookingDefaults?: { minutes: number; link: string } }) {
   const { sessions, events, summaries } = p.coaching;
   const now = Date.now();
   const upcoming = sessions
@@ -121,7 +121,7 @@ export function SessionsTab({ p, billing, jobs }: { p: Profile; billing: ClientB
   return (
     <section aria-label="Sessions">
       <div className="cs-top">
-        <SessionBooking clientId={p.client.id} />
+        <SessionBooking clientId={p.client.id} defaults={bookingDefaults} />
         {billing?.available ? (
           <span className="cs-meta">
             Paid sessions available: <b>{billing.credits.available}</b>

@@ -73,6 +73,11 @@ export function ClientSettings({
       <p className={note ? (note.ok ? "admin-ok" : "clear-err") : "admin-hint"} role="status">
         {note?.text ?? (isSelf ? "This is your account." : "Changes save straight away.")}
       </p>
+      <p className="admin-hint">
+        <b>Coach</b> is who coaches them: whose console they appear in. <b>Account type</b> is what they can open, not what they
+        pay: a <b>client</b> has their member area only; a <b>coach</b> also has the console with their assigned clients; an{" "}
+        <b>admin</b> sees every client, the numbers and site settings. Memberships and packages are separate (Payments and invoices).
+      </p>
     </div>
   );
 }
