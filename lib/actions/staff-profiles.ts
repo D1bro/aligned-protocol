@@ -182,3 +182,12 @@ export async function staffSaveClientDetails(
   revalidatePath(`/coach/clients/${clientId}`);
   return { ok: true };
 }
+
+// The client's intention for this month (coaches can read it, like goals).
+export async function getClientIntention(clientId: string): Promise<string | null> {
+  await requireStaff();
+  const supabase = await createClient();
+  const month = `${new Date().toISOString().slice(0, 7)}-01`;
+  const { data } = await supabase.from("monthly_intentions").select("intention").eq("client_id", clientId).eq("month", month).maybeSingle();
+  return (data?.intention as string | undefined) ?? null;
+}

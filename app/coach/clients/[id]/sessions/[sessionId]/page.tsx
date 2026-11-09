@@ -13,6 +13,12 @@ import { getTranscripts } from "@/lib/actions/summaries";
 import { getLifeAreas } from "@/lib/actions/audit";
 import { getClientContext } from "@/lib/actions/coach-profile";
 import { ClientContextEditor } from "@/components/coach/ClientContextEditor";
+import { ClientSnapshot, type SnapshotProps } from "@/components/coach/ClientSnapshot";
+import { ChartCalibration } from "@/components/coach/ChartCalibration";
+import { getLatestCalibration, getSessionCalibration } from "@/lib/actions/calibration";
+import { getClientIntention, getClientRecord } from "@/lib/actions/staff-profiles";
+import { getClientContact } from "@/lib/actions/details";
+import { localTimeLabel } from "@/lib/details";
 
 // AI drafting can take a while; allow up to 5 minutes (Vercel caps this per plan).
 export const maxDuration = 300;
@@ -81,6 +87,7 @@ export default async function SessionDeskPage({
   const transcripts = stage === "import" || stage === "review" || stage === "reflect" ? await getTranscripts(session.id) : [];
   const areas = stage === "review" ? (await getLifeAreas()).map((a) => ({ id: a.id, name: a.name })) : [];
   const clientContext = stage === "reflect" ? await getClientContext(client.id) : null;
+
   const publishedHere = summaries.find((x) => x.status === "published") ?? null;
   const jobs = stage === "review" && publishedHere ? await getMessageJobs(client.id) : [];
   const nextBookingSession =
@@ -91,6 +98,74 @@ export default async function SessionDeskPage({
     ? `${formatSessionTime(nextBookingSession.scheduled_at, nextBookingSession.timezone)}${nextBookingSession.state === "proposed" ? " (proposed)" : ""}`
     : null;
   const sessionLabel = formatSessionTime(session.scheduled_at, session.timezone);
+
+  // The client snapshot beside the conversation (Prepare and In the conversation).
+  let snapshot: SnapshotProps | null = null;
+  const calibrationHere = stage === "conversation" ? await getSessionCalibration(session.id) : null;
+  const lifeAreas = stage === "prepare" || stage === "conversation" ? await getLifeAreas() : [];
+  if (stage === "prepare" || stage === "conversation") {
+    const [contact, record, context, latestCal, intention] = await Promise.all([
+      getClientContact(client.id),
+      getClientRecord(client.id),
+      getClientContext(client.id),
+      getLatestCalibration(client.id),
+      getClientIntention(client.id),
+    ]);
+    const [latestAudit, previousAudit] = p.audits;
+    const scoreOf = (auditId: string | undefined, areaId: string) =>
+      auditId ? (p.responses.find((r) => r.audit_id === auditId && r.life_area_id === areaId) ?? null) : null;
+    const plan = mainGoal ? p.plans.find((x) => x.id === mainGoal.clear_plan_id) ?? null : null;
+    const goalChecks = mainGoal ? p.checkIns.filter((c) => c.goal_id === mainGoal.id) : [];
+    const lastMonthly = goalChecks.find((c) => c.kind !== "weekly" && typeof c.area_score === "number");
+    const lastWeekly = goalChecks.find((c) => c.kind === "weekly" && str(c.next_commitment));
+    const planArea = plan ? lifeAreas.find((a) => a.id === plan.life_area_id) ?? null : null;
+    const baseline = plan && planArea ? scoreOf(plan.audit_id as string, planArea.id)?.satisfaction_score ?? null : null;
+    snapshot = {
+      clientId: client.id,
+      firstName,
+      glance: {
+        preferredName: contact?.preferred_name ?? null,
+        localTime: contact?.timezone ? localTimeLabel(contact.timezone) : null,
+        status: record.available ? record.status : null,
+        since: formatDate(record.startedOn || client.created_at),
+        held: coaching.sessions.filter((x) => x.state === "held").length,
+        nextBooking,
+      },
+      context: { available: context.available, notes: context.notes },
+      map: latestAudit
+        ? {
+            auditDate: formatDate(latestAudit.completed_at),
+            wholeLife: latestAudit.total_score,
+            calibratedOn: latestCal ? formatDate(latestCal.sharedAt ?? latestCal.createdAt) : null,
+            areas: lifeAreas.map((a) => {
+              const now = scoreOf(latestAudit.id, a.id);
+              const cal = latestCal?.areas.find((x) => x.life_area_id === a.id);
+              return {
+                name: a.name,
+                now: now?.satisfaction_score ?? null,
+                before: scoreOf(previousAudit?.id, a.id)?.satisfaction_score ?? null,
+                agreed: cal?.agreed ?? null,
+                note: now?.note ?? null,
+                focus: cal?.focus ?? false,
+              };
+            }),
+          }
+        : null,
+      plan: mainGoal
+        ? {
+            goal: str(mainGoal.goal_title) ?? "Their goal",
+            why: str(plan?.why_it_matters) ?? str(mainGoal.motivation_text),
+            area: planArea?.name ?? null,
+            now: (lastMonthly?.area_score as number | undefined) ?? baseline,
+            target: (plan?.step_up_target as number | null | undefined) ?? null,
+            focusThisWeek: str(lastWeekly?.next_commitment),
+            intention,
+          }
+        : null,
+      otherGoals: active.slice(1).map((g) => str(g.goal_title) ?? "A goal"),
+    };
+  }
+  const latestAuditForCal = p.audits[0] ?? null;
 
   const previousBlock = (
     <section className="admin-card" aria-labelledby="desk-last-h">
@@ -208,6 +283,7 @@ export default async function SessionDeskPage({
             </section>
           </div>
           <aside className="desk-side">
+            {snapshot ? <ClientSnapshot {...snapshot} /> : null}
             <NoteEditor clientId={client.id} sessionId={session.id} initial={myNote} label="Your private note for this session" />
           </aside>
         </div>
@@ -242,8 +318,26 @@ export default async function SessionDeskPage({
                 {PROMPTS.map((q) => <li key={q}>{q}</li>)}
               </ul>
             </details>
+            {latestAuditForCal && calibrationHere?.available ? (
+              <details className="plan-more cal-wrap" open={!!calibrationHere.calibration}>
+                <summary>Take your chart further <span>Go through all ten areas together</span></summary>
+                <ChartCalibration
+                  sessionId={session.id}
+                  clientId={client.id}
+                  firstName={firstName}
+                  auditId={latestAuditForCal.id}
+                  auditDate={formatDate(latestAuditForCal.completed_at)}
+                  rows={lifeAreas.map((a) => {
+                    const r = p.responses.find((x) => x.audit_id === latestAuditForCal.id && x.life_area_id === a.id);
+                    return { id: a.id, name: a.name, alone: r?.satisfaction_score ?? null, note: r?.note ?? null };
+                  })}
+                  initial={calibrationHere.calibration}
+                />
+              </details>
+            ) : null}
           </div>
           <aside className="desk-side">
+            {snapshot ? <ClientSnapshot {...snapshot} /> : null}
             <NoteEditor clientId={client.id} sessionId={session.id} initial={myNote} label="Your private note for this session" />
           </aside>
         </div>
