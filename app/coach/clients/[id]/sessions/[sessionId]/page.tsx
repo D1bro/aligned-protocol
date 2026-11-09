@@ -11,6 +11,8 @@ import { EmailButton } from "../../EmailButton";
 import { getMessageJobs } from "@/lib/actions/messages";
 import { getTranscripts } from "@/lib/actions/summaries";
 import { getLifeAreas } from "@/lib/actions/audit";
+import { getClientContext } from "@/lib/actions/coach-profile";
+import { ClientContextEditor } from "@/components/coach/ClientContextEditor";
 
 // AI drafting can take a while; allow up to 5 minutes (Vercel caps this per plan).
 export const maxDuration = 300;
@@ -78,6 +80,7 @@ export default async function SessionDeskPage({
   const summaries = coaching.summaries.filter((x) => x.session_id === session.id);
   const transcripts = stage === "import" || stage === "review" || stage === "reflect" ? await getTranscripts(session.id) : [];
   const areas = stage === "review" ? (await getLifeAreas()).map((a) => ({ id: a.id, name: a.name })) : [];
+  const clientContext = stage === "reflect" ? await getClientContext(client.id) : null;
   const publishedHere = summaries.find((x) => x.status === "published") ?? null;
   const jobs = stage === "review" && publishedHere ? await getMessageJobs(client.id) : [];
   const nextBookingSession =
@@ -290,6 +293,7 @@ export default async function SessionDeskPage({
             )}
           </div>
           <aside className="desk-side">
+            {clientContext?.available ? <ClientContextEditor key={clientContext.notes} clientId={client.id} firstName={firstName} initial={clientContext.notes} /> : null}
             <NoteEditor clientId={client.id} sessionId={session.id} initial={myNote} label="Your private note for this session" />
           </aside>
         </div>

@@ -14,6 +14,7 @@ const LINKS: (MobileNavLink & { adminOnly?: boolean })[] = [
   { group: "Console", href: "/coach/billing", label: "Billing", icon: "receipt", match: (p) => p.startsWith("/coach/billing"), adminOnly: true },
   { group: "Console", href: "/coach/health", label: "Site health", icon: "console", match: (p) => p.startsWith("/coach/health"), adminOnly: true },
   { group: "Console", href: "/coach/settings", label: "Settings", icon: "settings", match: (p) => p.startsWith("/coach/settings"), adminOnly: true },
+  { group: "You", href: "/coach/profile", label: "My coaching profile", icon: "user", match: (p) => p.startsWith("/coach/profile") },
   { group: "You", href: "/", label: "My member area", icon: "home", match: () => false },
 ];
 

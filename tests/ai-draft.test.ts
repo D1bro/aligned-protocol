@@ -96,3 +96,15 @@ test("quote matching ignores case and punctuation but not invented words", () =>
   assert.ok(!quoteIsReal("I think I do the same thing", TRANSCRIPT));
   assert.ok(!quoteIsReal("", TRANSCRIPT));
 });
+
+test("each pattern and the challenge say how they stand; practice moments need a time", () => {
+  const raw = reflection();
+  raw.patterns = [{ pattern: "Fills the silence for him", evidence_times: ["52:29"], note: "", basis: "made_up" as never, assumption: "He wants space" }];
+  raw.challenge = { text: "Let him go first next time.", evidence_times: ["52:29"], basis: "style_choice" };
+  raw.practice = [{ focus: "Let them finish", moments: [{ time: "12:00", what_you_did: "Finished his sentence", what_followed: "A shorter answer" }, { time: "", what_you_did: "x", what_followed: "y" }], summary: "One of two" }];
+  const r = tidyReflection(raw, TRANSCRIPT);
+  assert.equal(r.patterns[0].basis, "interpretation", "unknown becomes interpretation");
+  assert.equal(r.patterns[0].assumption, "He wants space");
+  assert.equal(r.challenge.basis, "style_choice");
+  assert.equal(r.practice?.[0].moments.length, 1);
+});
