@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import type { LifeArea } from "@/lib/actions/audit";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { SITE_URL, sendEmail } from "@/lib/email";
+import { renderEmail, renderText, type Block } from "@/lib/email-layout";
+import { stepName } from "@/lib/next-step";
 
 // The Next Step: reads and writes. A Next Step is a goals row on a plan
 // (clear_plans) for one audit and one area. The plan holds the area-level
@@ -149,7 +153,7 @@ export async function getBuildContext(planId: string): Promise<BuildContext | nu
 export type ScreenInput =
   | { screen: 1; now: string }
   | { screen: 2; ten: string }
-  | { screen: 3; title: string; aim: number; why: string; feel: string; checks: Record<string, boolean> }
+  | { screen: 3; title: string; name?: string; aim: number; why: string; feel: string; checks: Record<string, boolean> }
   | { screen: 4; inTheWay: string; spill: string }
   | { screen: 5; moves: { id?: string; body: string; when: string }[]; done: string };
 
@@ -183,6 +187,7 @@ export async function saveScreen(planId: string, input: ScreenInput): Promise<Re
     );
     const fields = {
       goal_title: title,
+      step_name: clean(input.name, 80),
       aim_score: aim,
       motivation_text: why,
       feel_text: clean(input.feel),
@@ -373,4 +378,46 @@ export async function getMovesForGoal(goalId: string): Promise<Move[]> {
   const { supabase } = await me();
   const { data } = await supabase.from("goal_moves").select("*").eq("goal_id", goalId).order("position").order("created_at");
   return (data ?? []) as Move[];
+}
+
+// "Share with your coach" on the set page: emails their coach that the Next
+// Step is set, with a link to their record, and notes when it was shared.
+// The coach could already see it; this puts it in front of them before the
+// next session. Only the area and the step's name go in the email.
+export async function shareWithCoach(goalId: string): Promise<Result> {
+  const { supabase, userId } = await me();
+  const [{ data: goal }, { data: profile }] = await Promise.all([
+    supabase.from("goals").select("id, goal_title, step_name, focus_area").eq("id", goalId).eq("client_id", userId).maybeSingle(),
+    supabase.from("profiles").select("full_name, coach_id").eq("id", userId).maybeSingle(),
+  ]);
+  if (!goal) return { ok: false, message: FAILED };
+  if (!profile?.coach_id) return { ok: false, message: "You don’t have a coach yet." };
+  type Coach = { email: string | null; full_name: string | null };
+  let coach: Coach | null = null;
+  try {
+    const { data } = await createAdminClient().from("profiles").select("email, full_name").eq("id", profile.coach_id).maybeSingle();
+    coach = (data as Coach | null) ?? null;
+  } catch {
+    // No service key here: can't look the coach up.
+  }
+  if (!coach?.email) return { ok: false, message: "Couldn’t reach your coach just now. Try again later." };
+  const member = (profile.full_name as string | null)?.trim() || "Your client";
+  const first = member.split(/\s+/)[0];
+  const area = (goal.focus_area as string | null)?.trim() || "one area";
+  const heading = `${first} has set a Next Step`;
+  const blocks: Block[] = [
+    { p: `${member} has set a Next Step in ${area}, and wanted you to see it before your next session.` },
+    { quote: stepName(goal as { step_name: string | null; goal_title: string }) },
+    { button: { href: `${SITE_URL}/coach/clients/${userId}`, label: "Open their record" } },
+  ];
+  const sent = await sendEmail({
+    to: coach.email,
+    subject: heading,
+    html: renderEmail({ preheader: `${member}: a new Next Step in ${area}`, heading, blocks }),
+    text: renderText({ heading, blocks }),
+  });
+  if (!sent.ok) return { ok: false, message: "Couldn’t send just now. Try again in a moment." };
+  await supabase.from("goals").update({ shared_with_coach_at: new Date().toISOString() }).eq("id", goalId).eq("client_id", userId);
+  revalidatePath("/next-step/set");
+  return { ok: true };
 }

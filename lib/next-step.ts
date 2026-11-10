@@ -4,12 +4,15 @@
 // Pure helpers and wording; the reads and writes are in
 // lib/actions/next-step.ts. Each Next Step is a goals row (migration 0029).
 
+// The five screens, as points on one map (Duane, 10 Nov 2026): you are
+// here (the pin), your destination (the X), your Next Step (the camp),
+// what's in the way (rough ground), your route (the moves).
 export const SCREENS = [
-  "Where you are",
-  "Where you’d love it to be",
+  "You are here",
+  "Your destination",
   "Your Next Step",
   "What’s in the way",
-  "What it’ll take",
+  "Your route",
 ] as const;
 
 const filled = (v: string | null | undefined) => !!v?.trim();
@@ -61,6 +64,41 @@ export function stepsBetween(from: number, to: number): string {
 // Sunday", "daily"); "By Friday" is a deadline, not a weekly repeat.
 export function movesRepeat(whenText: string | null | undefined): boolean {
   return /\b(every|each|daily)\b/i.test(whenText ?? "");
+}
+
+// The name a Next Step goes by: its short name when it has one, else the
+// step as they wrote it.
+export function stepName(goal: { step_name?: string | null; goal_title: string }): string {
+  return goal.step_name?.trim() || goal.goal_title.trim();
+}
+
+// "If it has 'and' in it, it's probably two steps": a gentle nudge on
+// screen 3 when the step reads like several (never a block).
+export function looksLikeSeveral(step: string): boolean {
+  const s = step.trim();
+  if (!s) return false;
+  if (s.split(/\s+/).length > 22) return true;
+  return /\b(and|each|every one of|all of|as well as)\b/i.test(s) || /;/.test(s);
+}
+
+// Their "why", as one line to keep in view: the first sentence, kept short.
+export function whyLine(why: string | null | undefined, max = 160): string | null {
+  const s = (why ?? "").trim().replace(/\s+/g, " ");
+  if (!s) return null;
+  const first = s.match(/^.+?[.!?](?=\s|$)/)?.[0] ?? s;
+  return first.length <= max ? first : `${first.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+}
+
+// A week of days (Monday first) for a Next Step: the days they ticked off
+// their Next Step's action, and today.
+export type WeekDay = { date: string; letter: string; done: boolean; today: boolean; future: boolean };
+export function weekDays(weekStart: string, doneDates: Iterable<string>, today: string): WeekDay[] {
+  const done = new Set(doneDates);
+  const start = new Date(`${weekStart}T12:00:00Z`);
+  return ["M", "T", "W", "T", "F", "S", "S"].map((letter, i) => {
+    const d = new Date(start.getTime() + i * 86_400_000).toISOString().slice(0, 10);
+    return { date: d, letter, done: done.has(d), today: d === today, future: d > today };
+  });
 }
 
 // A move as one line: "Send three messages · Every Monday".

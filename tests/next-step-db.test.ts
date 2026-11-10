@@ -90,3 +90,13 @@ test("running it turns an existing plan into a Next Step, once", async () => {
   assert.deepEqual(moves, [{ body: "call family", when_text: "Every Tuesday" }]);
   assert.equal(await val(db, `select count(*)::int from public.goal_moves where goal_id = $1`, [goal]), 1, "a Next Step's own moves are left alone");
 });
+
+test("a Next Step's short name stays short, and only the member writes it (migration 0031)", async () => {
+  await asUser(db, sam);
+  assert.equal(await errorOf(db, `update public.goals set step_name = 'One client signed', shared_with_coach_at = now() where id = $1`, [goal]), null);
+  assert.match((await errorOf(db, `update public.goals set step_name = $2 where id = $1`, [goal, "x".repeat(81)])) ?? "", /goals_step_name_check/);
+  await asUser(db, robin);
+  await db.query(`update public.goals set step_name = 'Not mine' where id = $1`, [goal]);
+  await asOwner(db);
+  assert.equal(await val(db, `select step_name from public.goals where id = $1`, [goal]), "One client signed");
+});
