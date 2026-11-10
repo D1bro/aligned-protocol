@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isSet } from "@/lib/next-step";
 import { notFound } from "next/navigation";
 import { findLesson, clipFor, TOOLS } from "@/lib/learn-content";
 import { getLessonProgress } from "@/lib/actions/learn";
@@ -15,7 +16,7 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
   const [progress, main, profile] = await Promise.all([getLessonProgress(), getMainGoal(), getCurrentProfile()]);
   const mine = progress.find((p) => p.lesson_slug === lesson.slug) ?? null;
   const tool = lesson.tool ? TOOLS.find((t) => t.slug === lesson.tool) : null;
-  const planSet = !!main && !!main.goal.frequency?.trim() && !!main.goal.success_criteria?.trim();
+  const planSet = !!main && isSet(main.goal);
 
   return (
     <>
@@ -52,22 +53,22 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
         />
 
         <aside className="learn-plan" aria-label="Your plan">
-          <p className="au-detail-k">Bring it into your plan</p>
+          <p className="au-detail-k">Bring it into your Next Step</p>
           {planSet && main ? (
             <p>
-              You already have a plan{main.area ? ` for ${main.area.name}` : ""}. Check it against this lesson and
-              refine it if something has changed. Your lesson answers stay here; they don&rsquo;t change your goal.{" "}
-              <Link href="/plan" className="au-text-link">Open my plan</Link>
+              You have a Next Step{main.area ? ` in ${main.area.name}` : ""}. Check it against this lesson and
+              change your moves if something has shifted. Your lesson answers stay here; they don&rsquo;t change your Next Step.{" "}
+              <Link href="/next-step" className="au-text-link">Open The Next Step</Link>
             </p>
           ) : main ? (
             <p>
-              Your plan is started. Take what you&rsquo;ve noticed into it.{" "}
-              <Link href="/plan" className="au-text-link">Continue my plan</Link>
+              You&rsquo;ve started setting your Next Step. Take what you&rsquo;ve noticed into it.{" "}
+              <Link href="/next-step" className="au-text-link">Carry on</Link>
             </p>
           ) : (
             <p>
-              When you&rsquo;re ready, Build your plan turns this into one clear action.{" "}
-              <Link href="/plan" className="au-text-link">Go to My Plan</Link>
+              When you&rsquo;re ready, find the one step that gets you unstuck.{" "}
+              <Link href="/next-step" className="au-text-link">Go to The Next Step</Link>
             </p>
           )}
           {tool || lesson.guide ? (

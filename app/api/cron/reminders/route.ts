@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { longDay, nextReview } from "@/lib/review-schedule";
+import { isSet } from "@/lib/next-step";
 import { sendEmail, SITE_URL } from "@/lib/email";
 import { renderEmail, renderText, type Block } from "@/lib/email-layout";
 import { sendSessionReminders } from "@/lib/session-reminders";
@@ -20,16 +21,17 @@ export async function GET(request: NextRequest) {
   const sessions = await sendSessionReminders(admin);
   const { data: goals, error } = await admin
     .from("goals")
-    .select("id, client_id, goal_title, focus_area, created_at, frequency, success_criteria, action_when")
+    .select("id, client_id, goal_title, focus_area, created_at, frequency, success_criteria, action_when, set_at")
     .eq("status", "active");
   if (error) return NextResponse.json({ error: "goals query failed", sessions }, { status: 500 });
 
-  const planned = (goals ?? []).filter((g) => g.frequency?.trim() && g.success_criteria?.trim());
+  // Every set Next Step gets a weekly check-in.
+  const planned = (goals ?? []).filter((g) => isSet(g));
   if (!planned.length) return NextResponse.json({ checked: 0, sent: 0, sessions });
 
   const ids = planned.map((g) => g.id);
   const [{ data: checkIns }, { data: profiles }, { data: sentLog }] = await Promise.all([
-    admin.from("goal_checkins").select("goal_id, created_at").in("goal_id", ids),
+    admin.from("goal_checkins").select("goal_id, created_at").in("goal_id", ids).eq("kind", "weekly"),
     admin.from("profiles").select("id, email, full_name, reminders_email, email_token").in("id", planned.map((g) => g.client_id)),
     admin.from("reminder_log").select("goal_id, due_date").in("goal_id", ids),
   ]);
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
   const skip = (why: string) => (skipped[why] = (skipped[why] ?? 0) + 1);
 
   for (const g of planned) {
-    const next = nextReview({ start: g.created_at, actionWhen: g.action_when, reviews: reviewsByGoal.get(g.id) ?? [] });
+    const next = nextReview({ start: g.set_at ?? g.created_at, actionWhen: g.action_when, reviews: reviewsByGoal.get(g.id) ?? [], monthly: false });
     // Due today or in the last few days; one email per review.
     if (!next.due || next.daysAway < -6) continue;
     const dueDate = next.date;
@@ -53,33 +55,24 @@ export async function GET(request: NextRequest) {
     if (!p.reminders_email) { skip("opted out"); continue; }
 
     const first = p.full_name?.split(" ")[0];
-    const area = g.focus_area ?? "your goal";
-    const link = `${SITE_URL}/plan/review`;
+    const area = g.focus_area ?? "your Next Step";
+    const link = `${SITE_URL}/next-step/check-in?goal=${g.id}`;
     const off = `${SITE_URL}/api/reminders/unsubscribe?t=${p.email_token}`;
     const goal = g.goal_title?.trim() ?? "";
-    const monthly = next.kind === "monthly";
     const blocks: Block[] = [
       { p: first ? `Hi ${first},` : "Hi," },
-      {
-        p: monthly
-          ? `It’s time for your monthly review on ${area}: a month of practice, and a moment to score the area again.`
-          : `It’s time for your weekly review on ${area}.`,
-      },
+      { p: `It’s time for your weekly check-in on your Next Step in ${area}.` },
       ...(goal ? [{ quote: goal } as Block] : []),
-      {
-        p: monthly
-          ? "Two minutes: how the month went, where the area is now, and what next."
-          : "About a minute: what happened, what helped or got in the way, and what you’re committing to next. A missed week is fine; it’s a chance to make it smaller.",
-      },
-      { button: { href: link, label: monthly ? "Do my monthly review" : "Do my weekly review" } },
-      { smallLink: { lead: "You’re getting this because you set a plan with Aligned.", label: "Stop these reminders", href: off } },
+      { p: "About a minute. One question: is it closer? Then tick off your moves and say what moved it, or what got in the way." },
+      { button: { href: link, label: "Do my check-in" } },
+      { smallLink: { lead: "You’re getting this because you set a Next Step with Aligned.", label: "Stop these reminders", href: off } },
     ];
-    const heading = monthly ? `Your monthly review: ${area}` : `Your weekly review: ${area}`;
+    const heading = `Your weekly check-in: ${area}`;
     const result = await sendEmail({
       to: p.email,
       subject: heading,
       text: renderText({ heading, blocks }),
-      html: renderEmail({ preheader: monthly ? "A month of practice: two minutes to review it." : `${longDay(next.date)}: a minute on how your week went.`, heading, blocks }),
+      html: renderEmail({ preheader: `${longDay(next.date)}: is your Next Step closer?`, heading, blocks }),
     });
     if (!result.ok) { skip(result.reason); continue; }
     await admin.from("reminder_log").insert({ client_id: g.client_id, goal_id: g.id, kind: "checkin", due_date: dueDate });

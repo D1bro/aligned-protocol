@@ -1,0 +1,408 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import type { ClearPlan, Goal } from "@/lib/actions/clear";
+import type { LifeArea } from "@/lib/actions/audit";
+import { isSet } from "@/lib/next-step";
+
+// The Next Step: reads and writes. A Next Step is a goals row on a plan
+// (clear_plans) for one audit and one area. The plan holds the area-level
+// answers (what's going on, the 10); the goal holds the Next Step itself;
+// goal_moves hold the moves. Migration 0029.
+
+type Db = Awaited<ReturnType<typeof createClient>>;
+export type Move = { id: string; goal_id: string; position: number; body: string; when_text: string | null; due_date: string | null; done_at: string | null };
+export type Result = { ok: true } | { ok: false; message: string };
+const FAILED = "Couldn’t save — check your connection and try again.";
+
+async function me() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  return { supabase, userId: user.id };
+}
+
+const clean = (v: unknown, max = 2000) => {
+  const s = typeof v === "string" ? v.trim().slice(0, max) : "";
+  return s || null;
+};
+const score = (v: unknown) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) && n >= 1 && n <= 10 ? n : null;
+};
+
+function revalidate() {
+  revalidatePath("/");
+  revalidatePath("/next-step");
+}
+
+// The area's score to start from: the agreed score where the chart has been
+// taken further with a coach (the agreed score is the new baseline),
+// otherwise the score they gave in the Protocol.
+async function startingScore(supabase: Db, userId: string, plan: Pick<ClearPlan, "audit_id" | "life_area_id">) {
+  if (!plan.audit_id || !plan.life_area_id) return { score: null as number | null, note: null as string | null };
+  const [{ data: response }, { data: calibration }] = await Promise.all([
+    supabase.from("audit_responses").select("satisfaction_score, note").eq("audit_id", plan.audit_id).eq("life_area_id", plan.life_area_id).maybeSingle(),
+    supabase
+      .from("chart_calibrations")
+      .select("areas")
+      .eq("client_id", userId)
+      .eq("audit_id", plan.audit_id)
+      .eq("status", "shared")
+      .order("shared_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const agreed = Array.isArray(calibration?.areas)
+    ? (calibration.areas as { life_area_id?: string; agreed?: unknown }[]).find((a) => a.life_area_id === plan.life_area_id)?.agreed
+    : null;
+  return {
+    score: score(agreed) ?? score(response?.satisfaction_score),
+    note: clean(response?.note),
+  };
+}
+
+// Start (or carry on with) a Next Step in an area, from their latest
+// Protocol. One plan per audit and area; reopening an area finds the same one.
+export async function openNextStep(areaId: string) {
+  const { supabase, userId } = await me();
+  const { data: audit } = await supabase
+    .from("audits")
+    .select("id")
+    .eq("client_id", userId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!audit) redirect("/next-step");
+  const { data: existing } = await supabase
+    .from("clear_plans")
+    .select("id")
+    .eq("client_id", userId)
+    .eq("audit_id", audit.id)
+    .eq("life_area_id", areaId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let planId = existing?.id as string | undefined;
+  if (!planId) {
+    const { data: created, error } = await supabase
+      .from("clear_plans")
+      .insert({ client_id: userId, audit_id: audit.id, life_area_id: areaId })
+      .select("id")
+      .single();
+    if (error) throw error;
+    planId = created.id as string;
+  }
+  redirect(`/next-step/build?plan=${planId}`);
+}
+
+export type BuildContext = {
+  plan: ClearPlan;
+  area: LifeArea;
+  score: number | null;
+  auditNote: string | null;
+  // The Next Step being set on this plan (null before screen 3).
+  goal: Goal | null;
+  moves: Move[];
+};
+
+// Everything the five screens need. The goal is the plan's latest one while
+// it's still active and not taken; once a Next Step is taken, the next one
+// on the same plan starts fresh.
+export async function getBuildContext(planId: string): Promise<BuildContext | null> {
+  const { supabase, userId } = await me();
+  const { data: plan } = await supabase.from("clear_plans").select("*").eq("id", planId).eq("client_id", userId).maybeSingle();
+  if (!plan?.life_area_id) return null;
+  const [{ data: area }, { data: goal }, start] = await Promise.all([
+    supabase.from("life_areas").select("*").eq("id", plan.life_area_id).maybeSingle(),
+    supabase.from("goals").select("*").eq("clear_plan_id", planId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    startingScore(supabase, userId, plan as ClearPlan),
+  ]);
+  if (!area) return null;
+  const current = goal && goal.status === "active" && !goal.taken_at ? (goal as Goal) : null;
+  // After a Next Step is taken, the next one here starts from the new score.
+  const takenScore = !current && goal?.taken_at ? score(goal.taken_score) : null;
+  const { data: moves } = current
+    ? await supabase.from("goal_moves").select("*").eq("goal_id", current.id).order("position").order("created_at")
+    : { data: [] };
+  return {
+    plan: plan as ClearPlan,
+    area: area as LifeArea,
+    score: current?.start_score ?? takenScore ?? start.score,
+    auditNote: start.note,
+    goal: current,
+    moves: (moves ?? []) as Move[],
+  };
+}
+
+export type ScreenInput =
+  | { screen: 1; now: string }
+  | { screen: 2; ten: string }
+  | { screen: 3; title: string; aim: number; why: string; feel: string; checks: Record<string, boolean> }
+  | { screen: 4; inTheWay: string; spill: string }
+  | { screen: 5; moves: { id?: string; body: string; when: string }[]; done: string };
+
+// Save one screen. Screens 1–2 write to the plan; screen 3 creates the Next
+// Step (the goal) the first time; 4–5 write to it and its moves.
+export async function saveScreen(planId: string, input: ScreenInput): Promise<Result> {
+  const { supabase, userId } = await me();
+  const { data: plan } = await supabase.from("clear_plans").select("*").eq("id", planId).eq("client_id", userId).maybeSingle();
+  if (!plan?.life_area_id) return { ok: false, message: FAILED };
+
+  if (input.screen === 1 || input.screen === 2) {
+    const fields = input.screen === 1 ? { current_reality: clean(input.now) } : { life_vision: clean(input.ten) };
+    const { data, error } = await supabase.from("clear_plans").update(fields).eq("id", planId).select("id");
+    if (error || !data?.length) return { ok: false, message: FAILED };
+    revalidate();
+    return { ok: true };
+  }
+
+  const ctx = await getBuildContext(planId);
+  if (!ctx) return { ok: false, message: FAILED };
+
+  if (input.screen === 3) {
+    const title = clean(input.title, 200);
+    const why = clean(input.why);
+    const aim = score(input.aim);
+    if (!title) return { ok: false, message: "Say what your Next Step is." };
+    if (!aim) return { ok: false, message: "Mark how far you think it could take you." };
+    if (!why) return { ok: false, message: "Say why this one." };
+    const checks = Object.fromEntries(
+      ["different", "reach", "visible"].filter((k) => k in (input.checks ?? {})).map((k) => [k, !!input.checks[k]])
+    );
+    const fields = {
+      goal_title: title,
+      aim_score: aim,
+      motivation_text: why,
+      feel_text: clean(input.feel),
+      step_checks: checks,
+    };
+    if (ctx.goal) {
+      const { data, error } = await supabase.from("goals").update(fields).eq("id", ctx.goal.id).select("id");
+      if (error || !data?.length) return { ok: false, message: FAILED };
+    } else {
+      const { data: main } = await supabase
+        .from("goals")
+        .select("id")
+        .eq("client_id", userId)
+        .eq("status", "active")
+        .eq("goal_type", "primary")
+        .limit(1)
+        .maybeSingle();
+      const { error } = await supabase.from("goals").insert({
+        client_id: userId,
+        clear_plan_id: planId,
+        focus_area: ctx.area.name,
+        goal_type: main ? "supporting" : "primary",
+        start_score: ctx.score,
+        ...fields,
+      });
+      if (error) return { ok: false, message: FAILED };
+    }
+    await supabase.from("clear_plans").update({ why_it_matters: why }).eq("id", planId);
+    revalidate();
+    return { ok: true };
+  }
+
+  if (!ctx.goal) return { ok: false, message: "Set your Next Step first." };
+  const goalId = ctx.goal.id;
+
+  if (input.screen === 4) {
+    const inTheWay = clean(input.inTheWay);
+    if (!inTheWay) return { ok: false, message: "Say what’s in the way of it." };
+    const { data, error } = await supabase
+      .from("goals")
+      .update({ in_the_way: inTheWay, spill_over: clean(input.spill) })
+      .eq("id", goalId)
+      .select("id");
+    if (error || !data?.length) return { ok: false, message: FAILED };
+    revalidate();
+    return { ok: true };
+  }
+
+  // Screen 5: the moves (kept in the order given) and how they'll know.
+  const moves = (input.moves ?? [])
+    .map((m) => ({ id: m.id, body: clean(m.body, 200), when: clean(m.when, 120) }))
+    .filter((m): m is { id: string | undefined; body: string; when: string | null } => !!m.body)
+    .slice(0, 20);
+  const done = clean(input.done);
+  if (!moves.length) return { ok: false, message: "Add at least one move." };
+  if (!done) return { ok: false, message: "Say how you’ll know it’s taken." };
+  const keep = new Set(moves.map((m) => m.id).filter(Boolean));
+  const gone = ctx.moves.filter((m) => !keep.has(m.id)).map((m) => m.id);
+  if (gone.length) {
+    const { error } = await supabase.from("goal_moves").delete().in("id", gone);
+    if (error) return { ok: false, message: FAILED };
+  }
+  for (const [position, m] of moves.entries()) {
+    const row = { body: m.body, when_text: m.when, position };
+    const { error } = m.id && ctx.moves.some((x) => x.id === m.id)
+      ? await supabase.from("goal_moves").update(row).eq("id", m.id)
+      : await supabase.from("goal_moves").insert({ ...row, client_id: userId, goal_id: goalId });
+    if (error) return { ok: false, message: FAILED };
+  }
+  const { data, error } = await supabase.from("goals").update({ success_criteria: done }).eq("id", goalId).select("id");
+  if (error || !data?.length) return { ok: false, message: FAILED };
+  revalidate();
+  return { ok: true };
+}
+
+// "Take this step": the Next Step is set.
+export async function takeOnNextStep(planId: string): Promise<Result> {
+  const ctx = await getBuildContext(planId);
+  if (!ctx?.goal || !ctx.moves.length || !ctx.goal.success_criteria?.trim()) return { ok: false, message: "Finish the five screens first." };
+  if (!ctx.goal.set_at) {
+    const { supabase } = await me();
+    const { data, error } = await supabase.from("goals").update({ set_at: new Date().toISOString() }).eq("id", ctx.goal.id).select("id");
+    if (error || !data?.length) return { ok: false, message: FAILED };
+  }
+  revalidate();
+  return { ok: true };
+}
+
+export type NextStepCard = {
+  goal: Goal;
+  area: string;
+  planId: string | null;
+  moves: Move[];
+  set: boolean;
+  // Their 10 for the area, parked.
+  ten: string | null;
+  lastCloser: string | null;
+  // Dates of their weekly check-ins, for the next one's date.
+  checkIns: { created_at: string }[];
+};
+
+// The member's Next Steps: under way (set or still being set) and taken.
+export async function getMyNextSteps(): Promise<{ active: NextStepCard[]; taken: NextStepCard[] }> {
+  const { supabase, userId } = await me();
+  const { data: goals } = await supabase
+    .from("goals")
+    .select("*")
+    .eq("client_id", userId)
+    .or("status.eq.active,taken_at.not.is.null")
+    .order("created_at", { ascending: false });
+  const list = (goals ?? []) as Goal[];
+  const ids = list.map((g) => g.id);
+  const planIds = [...new Set(list.map((g) => g.clear_plan_id).filter((x): x is string => !!x))];
+  const [{ data: moves }, { data: plans }, { data: areas }, { data: checkIns }] = await Promise.all([
+    ids.length ? supabase.from("goal_moves").select("*").in("goal_id", ids).order("position").order("created_at") : Promise.resolve({ data: [] }),
+    planIds.length ? supabase.from("clear_plans").select("id, life_area_id, life_vision").in("id", planIds) : Promise.resolve({ data: [] }),
+    supabase.from("life_areas").select("id, name"),
+    ids.length
+      ? supabase.from("goal_checkins").select("goal_id, closer, created_at").in("goal_id", ids).eq("kind", "weekly").order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
+  const ten = new Map((plans ?? []).map((p) => [p.id as string, ((p.life_vision as string | null) ?? "").trim() || null]));
+  const weekly = (checkIns ?? []) as { goal_id: string; closer: string | null; created_at: string }[];
+  const areaName = new Map((areas ?? []).map((a) => [a.id as string, a.name as string]));
+  const planArea = new Map((plans ?? []).map((p) => [p.id as string, areaName.get(p.life_area_id as string) ?? null]));
+  const cards = list.map((g) => ({
+    goal: g,
+    area: (g.clear_plan_id && planArea.get(g.clear_plan_id)) || g.focus_area?.trim() || "Your Next Step",
+    planId: g.clear_plan_id,
+    moves: ((moves ?? []) as Move[]).filter((m) => m.goal_id === g.id),
+    set: isSet(g),
+    ten: (g.clear_plan_id && ten.get(g.clear_plan_id)) || null,
+    lastCloser: weekly.find((c) => c.goal_id === g.id)?.closer ?? null,
+    checkIns: weekly.filter((c) => c.goal_id === g.id),
+  }));
+  return {
+    // The main one first, then newest.
+    active: cards.filter((c) => c.goal.status === "active" && !c.goal.taken_at).sort((a, b) => Number(b.goal.goal_type === "primary") - Number(a.goal.goal_type === "primary")),
+    taken: cards.filter((c) => !!c.goal.taken_at),
+  };
+}
+
+export async function setMoveDone(moveId: string, done: boolean): Promise<Result> {
+  const { supabase } = await me();
+  const { data, error } = await supabase
+    .from("goal_moves")
+    .update({ done_at: done ? new Date().toISOString() : null })
+    .eq("id", moveId)
+    .select("id");
+  if (error || !data?.length) return { ok: false, message: FAILED };
+  revalidate();
+  return { ok: true };
+}
+
+// The weekly check-in: is it closer? Ticking moves happens in place
+// (setMoveDone); this records the answer and what moved it.
+export async function saveCheckIn(input: { goalId: string; closer: "closer" | "same" | "further"; note: string }): Promise<Result> {
+  const { supabase, userId } = await me();
+  if (!["closer", "same", "further"].includes(input.closer)) return { ok: false, message: "Choose closer, about the same or further away." };
+  const { error } = await supabase.from("goal_checkins").insert({
+    client_id: userId,
+    goal_id: input.goalId,
+    kind: "weekly",
+    closer: input.closer,
+    helped: clean(input.note),
+  });
+  if (error) return { ok: false, message: FAILED };
+  revalidate();
+  return { ok: true };
+}
+
+// "It's taken": score the area again and say what changed. The Next Step is
+// then complete; the re-score is also recorded as a review with the area's
+// score, so My Journey shows it like the monthly reviews before it.
+export async function markTaken(input: { goalId: string; score: number; changed: string }): Promise<Result> {
+  const { supabase, userId } = await me();
+  const s = score(input.score);
+  if (!s) return { ok: false, message: "Score the area as it is today." };
+  const changed = clean(input.changed);
+  const { data, error } = await supabase
+    .from("goals")
+    .update({ taken_score: s, taken_at: new Date().toISOString(), what_changed: changed, status: "completed" })
+    .eq("id", input.goalId)
+    .eq("client_id", userId)
+    .is("taken_at", null)
+    .select("id");
+  if (error || !data?.length) return { ok: false, message: FAILED };
+  await supabase.from("goal_checkins").insert({
+    client_id: userId,
+    goal_id: input.goalId,
+    kind: "monthly",
+    area_score: s,
+    next_step: "done",
+    helped: changed,
+  });
+  revalidate();
+  return { ok: true };
+}
+
+export type GoalContext = { goal: Goal; area: string; areaId: string | null; planId: string | null; moves: Move[]; lastCloser: string | null };
+
+// One of their own Next Steps, for the check-in and taken pages.
+export async function getNextStep(goalId: string): Promise<GoalContext | null> {
+  const { supabase, userId } = await me();
+  const { data: goal } = await supabase.from("goals").select("*").eq("id", goalId).eq("client_id", userId).maybeSingle();
+  if (!goal) return null;
+  const [{ data: plan }, { data: moves }, { data: last }] = await Promise.all([
+    goal.clear_plan_id ? supabase.from("clear_plans").select("life_area_id").eq("id", goal.clear_plan_id).maybeSingle() : Promise.resolve({ data: null }),
+    supabase.from("goal_moves").select("*").eq("goal_id", goalId).order("position").order("created_at"),
+    supabase.from("goal_checkins").select("closer").eq("goal_id", goalId).eq("kind", "weekly").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const areaId = (plan?.life_area_id as string | undefined) ?? null;
+  const { data: area } = areaId ? await supabase.from("life_areas").select("name").eq("id", areaId).maybeSingle() : { data: null };
+  return {
+    goal: goal as Goal,
+    area: (area?.name as string | undefined) ?? goal.focus_area?.trim() ?? "Your Next Step",
+    areaId,
+    planId: goal.clear_plan_id,
+    moves: (moves ?? []) as Move[],
+    lastCloser: (last?.closer as string | null | undefined) ?? null,
+  };
+}
+
+// One Next Step's moves (My Space shows the first one not yet done).
+export async function getMovesForGoal(goalId: string): Promise<Move[]> {
+  const { supabase } = await me();
+  const { data } = await supabase.from("goal_moves").select("*").eq("goal_id", goalId).order("position").order("created_at");
+  return (data ?? []) as Move[];
+}

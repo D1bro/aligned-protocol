@@ -7,10 +7,9 @@ import { saveStartingPoint } from "@/lib/actions/clear";
 export type StartArea = { id: string; name: string; score: number; note: string | null };
 
 // The "aha" at the top of the snapshot: the area asking for the most
-// attention, the person's own words about it, and one reflective question
-// pitched one point above their score. This is step 1 of Build your plan;
-// saving it leads straight into the other four steps (no account needed
-// until the plan is set).
+// attention, the person's own words about it, and screen 1 of The Next Step:
+// what's actually going on in this area right now? Saving it leads straight
+// into the other four screens (no account needed until it's set).
 export function StartingPoint({
   auditId,
   areas,
@@ -37,24 +36,23 @@ export function StartingPoint({
   const chosen = areas.find((a) => a.id === chosenId)!;
   const isLowest = chosen.score === lowestScore;
   const target = Math.min(10, chosen.score + 1);
-  const question = chosen.score >= 10 ? "What would keep this at a 10?" : `What would a ${target} look like?`;
 
   async function submit() {
     setPending(true);
     setError(null);
-    const result = await saveStartingPoint({ auditId, lifeAreaId: chosen.id, target, answer });
+    const result = await saveStartingPoint({ auditId, lifeAreaId: chosen.id, target, answer, field: "current_reality" });
     if (!result.ok) {
       setError(result.message);
       setPending(false);
       return;
     }
-    router.push("/plan?latest=1");
+    router.push(`/next-step/build?plan=${result.planId}&step=2`);
   }
 
   return (
     <div className="au-start">
-      <div className="eyebrow"><span className="eydot" /> Build your plan · step 1 of 5 · your starting point</div>
-      <p className="au-start-sub">You&rsquo;ve seen the wider picture. Now turn one area into something you can act on.</p>
+      <div className="eyebrow"><span className="eydot" /> The Next Step · 1 of 5 · where you are</div>
+      <p className="au-start-sub">You&rsquo;ve seen the wider picture. Now find the one step that gets you unstuck in one area.</p>
 
       {isLowest && lowest.length > 1 && !picking ? (
         <>
@@ -92,30 +90,20 @@ export function StartingPoint({
         </blockquote>
       ) : null}
 
-      <label className="au-start-q" htmlFor="step-up">{question}</label>
-      <p className="au-start-help">
-        {chosen.score >= 10
-          ? "What’s working here that you want to protect?"
-          : "What would it feel like if this area started to improve? Not a complete fix — one honest step up."}
-      </p>
-      <textarea
-        id="step-up"
-        rows={3}
-        value={answer}
-        onChange={(e) => setAnswer(e.target.value)}
-        placeholder={chosen.score >= 10 ? "What keeps it here…" : `A ${target} would mean…`}
-      />
+      <label className="au-start-q" htmlFor="step-up">What&rsquo;s actually going on in this area right now?</label>
+      <p className="au-start-help">In your own words. As much or as little as you like. Only you, and your coach if you have one, can see this.</p>
+      <textarea id="step-up" rows={3} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="In your own words…" />
 
       <div className="au-start-actions">
         <button type="button" className="btn btn-p" onClick={submit} disabled={pending}>
-          {pending ? "Saving…" : "Build my plan →"}
+          {pending ? "Saving…" : "Find my Next Step →"}
         </button>
         <button type="button" className="au-text-link as-btn" onClick={() => setPicking((p) => !p)} aria-expanded={picking}>
           {picking ? "Keep this area" : "I’d rather start somewhere else"}
         </button>
       </div>
       <p className="au-start-note">
-        Four more short steps, about ten minutes.{isGuest ? " No account needed until your plan is set." : ""}
+        Four more short screens, about ten minutes.{isGuest ? " No account needed until your Next Step is set." : ""}
       </p>
       {error ? <p className="au-status err" role="alert">{error}</p> : null}
 

@@ -16,7 +16,7 @@ export function GuestBar({ hasResults }: { hasResults: boolean }) {
       </div>
     );
   }
-  const here = pathname === "/audit/results" || pathname === "/plan/set";
+  const here = pathname === "/audit/results" || pathname === "/next-step/set";
   return (
     <div className="guest-bar is-unsaved">
       <span className="guest-bar-msg">

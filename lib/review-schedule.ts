@@ -48,8 +48,10 @@ function nextReviewDay(fromDay: number, days: number[], afterReview: boolean): n
   return d;
 }
 
+// `monthly: false` (The Next Step, 10 Nov 2026): every review is the weekly
+// check-in; the area is scored again when the Next Step is taken.
 export function nextReview(
-  input: { start: string; actionWhen: string | null | undefined; reviews: { created_at: string }[] },
+  input: { start: string; actionWhen: string | null | undefined; reviews: { created_at: string }[]; monthly?: boolean },
   now: Date = new Date(),
   timeZone = BUSINESS_TZ
 ): NextReview {
@@ -59,7 +61,8 @@ export function nextReview(
   const day = nextReviewDay(from, days, !!latest);
   const number = input.reviews.length + 1;
   const today = dayNumber(localDate(now, timeZone));
-  return { date: ymdOf(day), kind: number % 4 === 0 ? "monthly" : "weekly", number, due: today >= day, daysAway: day - today };
+  const monthly = input.monthly !== false && number % 4 === 0;
+  return { date: ymdOf(day), kind: monthly ? "monthly" : "weekly", number, due: today >= day, daysAway: day - today };
 }
 
 // The next few review dates if each is done on its day, for "what happens

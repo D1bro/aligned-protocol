@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { nextAfterJoining } from "../lib/continue-journey.ts";
 
 test("a new profile with a starting point, or a plan under way, goes into the plan", () => {
-  assert.equal(nextAfterJoining({ hasAudit: true, plan: "chosen" }), "/plan?latest=1");
-  assert.equal(nextAfterJoining({ hasAudit: true, plan: "in_progress" }), "/plan?latest=1");
+  assert.equal(nextAfterJoining({ hasAudit: true, plan: "chosen" }), "/next-step");
+  assert.equal(nextAfterJoining({ hasAudit: true, plan: "in_progress" }), "/next-step");
 });
 
 test("a plan built as a guest lands on My Space, saved", () => {

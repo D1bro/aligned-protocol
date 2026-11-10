@@ -98,11 +98,11 @@ export function MemberCoaching({
       },
       {
         done: goals.length > 0,
-        title: "Choose where to start in My Plan",
+        title: "Choose where to start in The Next Step",
         body: goals.length ? (
-          <>Your goal: {goals[0].title} <Link href="/plan" className="au-text-link">My Plan</Link></>
+          <>Your Next Step: {goals[0].title} <Link href="/next-step" className="au-text-link">The Next Step</Link></>
         ) : (
-          <>Pick one area and a first goal. You can change it together in the session. <Link href="/plan" className="au-text-link">Open My Plan →</Link></>
+          <>Pick one area and set your Next Step. You can change it together in the session. <Link href="/next-step" className="au-text-link">Open The Next Step →</Link></>
         ),
       },
       {
@@ -179,7 +179,7 @@ export function MemberCoaching({
                     <span className="mc-tick" aria-hidden="true">✓</span>
                     <div>
                       <p>{s.body}</p>
-                      {g ? <Link href="/plan" className="mcd-chip">{g.area ?? "Your goal"}</Link> : null}
+                      {g ? <Link href="/next-step" className="mcd-chip">{g.area ?? "Your goal"}</Link> : null}
                       <em>
                         {s.due_date ? `By ${formatDate(s.due_date)} · ` : ""}
                         {u ? `You said: ${PROGRESS[u.progress] ?? u.progress}, ${formatDate(u.created_at)}${u.note ? ` — “${u.note}”` : ""}` : "No update yet"}
@@ -208,7 +208,7 @@ export function MemberCoaching({
         </div>
 
         <div className="admin-card">
-          <h3>Your goals</h3>
+          <h3>Your Next Steps</h3>
           {goals.length ? (
             <ul className="mcd-goals">
               {goals.map((g) => (
@@ -225,9 +225,9 @@ export function MemberCoaching({
               ))}
             </ul>
           ) : (
-            <p className="admin-card-sub">Your goals appear here once you&rsquo;ve set one.</p>
+            <p className="admin-card-sub">Your Next Steps appear here once you&rsquo;ve set one.</p>
           )}
-          <Link href="/plan" className="au-text-link">Open My Plan →</Link>
+          <Link href="/next-step" className="au-text-link">Open The Next Step →</Link>
         </div>
       </div>
 
@@ -246,11 +246,11 @@ export function MemberCoaching({
                     {c.suggested_focus.goal ? <>, with a first goal like &ldquo;{c.suggested_focus.goal}&rdquo;</> : null}.
                   </p>
                   <p>
-                    <Link href={`/plan?choose=1&suggested=${encodeURIComponent(c.suggested_focus.area_id)}`} className="btn btn-o">
+                    <Link href={`/next-step?choose=1&suggested=${encodeURIComponent(c.suggested_focus.area_id)}`} className="btn btn-o">
                       Choose where to start →
                     </Link>
                   </p>
-                  <p className="admin-card-sub">It&rsquo;s your choice: pick this area or another in My Plan.</p>
+                  <p className="admin-card-sub">It&rsquo;s your choice: pick this area or another in The Next Step.</p>
                 </div>
               ) : null}
               <Link href={`/coaching/sessions/${last.session_id}`} className="au-text-link">Read the full notes →</Link>
@@ -280,7 +280,7 @@ export function MemberCoaching({
               <h3>Your audit and plan</h3>
               <p className="admin-card-sub">Your coach works from the same audit and plan you see here.</p>
               <p>
-                <Link href="/audit/results" className="au-text-link">My snapshot</Link> · <Link href="/plan" className="au-text-link">My Plan</Link>
+                <Link href="/audit/results" className="au-text-link">My snapshot</Link> · <Link href="/next-step" className="au-text-link">The Next Step</Link>
               </p>
             </>
           )}

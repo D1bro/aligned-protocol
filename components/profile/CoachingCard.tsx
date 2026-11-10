@@ -83,7 +83,7 @@ export function CoachingCard({
             {suggestion.goal ? <>, with a first goal like &ldquo;{suggestion.goal}&rdquo;</> : null}.
           </p>
           <p>
-            <Link href={`/plan?choose=1&suggested=${encodeURIComponent(suggestion.area_id)}`} className="au-text-link">Choose where to start →</Link>
+            <Link href={`/next-step?choose=1&suggested=${encodeURIComponent(suggestion.area_id)}`} className="au-text-link">Choose where to start →</Link>
           </p>
         </div>
       ) : null}

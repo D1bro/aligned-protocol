@@ -11,7 +11,7 @@ const inMySpace = (p: string) => p === "/" || p.startsWith("/alignment") || p.st
 const DESTINATIONS: MobileNavLink[] = [
   { group: "You", href: "/", label: "My Space", icon: "home", match: inMySpace },
   { group: "You", href: "/audit", label: "The Aligned Protocol", icon: "target", match: (p) => p.startsWith("/audit") },
-  { group: "You", href: "/plan", label: "My Plan", icon: "map", match: (p) => p.startsWith("/plan") },
+  { group: "You", href: "/next-step", label: "The Next Step", icon: "map", match: (p) => p.startsWith("/next-step") || p.startsWith("/plan") },
   { group: "You", href: "/journey", label: "My Journey", icon: "journey", match: (p) => p.startsWith("/journey") },
 ];
 const MORE_LINKS: MobileNavLink[] = [
@@ -27,11 +27,12 @@ const MORE_LINKS: MobileNavLink[] = [
 const COACHING: MobileNavLink = { group: "You", href: "/coaching", label: "Coaching", icon: "chat", match: (p) => p.startsWith("/coaching") };
 const MORE_COACHING: MobileNavLink = { ...COACHING, group: "More" };
 
-// The phone tab bar: the four destinations, with a shorter label for the
-// Protocol so all five tabs fit (More opens the drawer with the rest).
+// The phone tab bar: the four destinations, with shorter labels for the
+// Protocol and The Next Step so all five tabs fit (More opens the drawer with the rest).
 // Members with a coach get Coaching in place of My Journey, which stays in
 // the drawer (Duane, 9 Nov 2026).
-const TABS: MobileNavLink[] = DESTINATIONS.map((d) => (d.href === "/audit" ? { ...d, label: "Protocol" } : d));
+const SHORT: Record<string, string> = { "/audit": "Protocol", "/next-step": "Next Step" };
+const TABS: MobileNavLink[] = DESTINATIONS.map((d) => (SHORT[d.href] ? { ...d, label: SHORT[d.href] } : d));
 const COACHED_TABS: MobileNavLink[] = TABS.map((t) => (t.href === "/journey" ? COACHING : t));
 
 // Coaches and admins can use the member pages too, with a way back to the console.

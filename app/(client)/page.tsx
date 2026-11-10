@@ -38,8 +38,9 @@ import { daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
 import { longDay, nextReview, plannedDays } from "@/lib/review-schedule";
 import { weekStreak } from "@/lib/momentum";
 import { fallbackOf } from "@/lib/plan-action";
+import { isSet } from "@/lib/next-step";
+import { getMovesForGoal } from "@/lib/actions/next-step";
 
-const filled = (v: string | null | undefined) => !!v?.trim();
 // "Friday 6 Nov" for a review date (YYYY-MM-DD), and today's date in their zone.
 const shortDay = (ymd: string) =>
   new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(new Date(`${ymd}T12:00:00Z`));
@@ -52,7 +53,6 @@ const monthLabel = (zone: string | null | undefined) => {
   try { return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: zone || "Europe/London" }).format(new Date()); }
   catch { return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "Europe/London" }).format(new Date()); }
 };
-const addDays = (ymd: string, n: number) => new Date(Date.parse(`${ymd}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 // The dashboard's grid: cells span 2, 3, 4 or all 6 columns on a wide screen
 // (two columns on a tablet, one on a phone, in the order they're written).
 const Cell = ({ span, children }: { span: 2 | 3 | 4 | 6; children: React.ReactNode }) => <div className={`ms-cell ms-s${span}`}>{children}</div>;
@@ -153,7 +153,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   // The goal being worked on: the main goal if there is one; otherwise the
   // plan for the latest audit (not started, in progress, or just finished).
   const goal = main?.goal ?? null;
-  const planned = !!goal && filled(goal.frequency) && filled(goal.success_criteria);
+  const planned = isSet(goal);
   const latestPlanArea = areas.find((a) => a.id === (planState.plan?.life_area_id ?? audit.focus_area_id)) ?? null;
   const area = main?.area ?? latestPlanArea;
   const areaIdx = area ? areas.findIndex((a) => a.id === area.id) : -1;
@@ -169,17 +169,21 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   // This week, once the plan is set: the commitment from their last weekly
   // review (or the plan's action), the fallback, and the next review.
   const reviews = planned ? await getReviews(goal!.id) : null;
-  const next = planned && reviews ? nextReview({ start: goal!.created_at ?? audit.completed_at, actionWhen: goal!.action_when, reviews: reviews.all }) : null;
+  // Weekly check-ins only: the area is scored again when the Next Step is taken.
+  const next = planned && reviews ? nextReview({ start: goal!.set_at ?? goal!.created_at ?? audit.completed_at, actionWhen: goal!.action_when, reviews: reviews.weekly, monthly: false }) : null;
+  // Today's action: the first move not yet done (an old plan's action is its first move).
+  const moves = planned ? await getMovesForGoal(goal!.id) : [];
+  const openMove = moves.find((m) => !m.done_at) ?? null;
   const run = reviews ? weekStreak(reviews.all) : null;
   const why = main?.plan?.why_it_matters?.trim() || goal?.motivation_text?.trim() || "";
   const reviewCommitment = reviews?.weekly.at(-1)?.next_commitment?.trim() || "";
-  const commitment = reviewCommitment || goal?.goal_title?.trim() || goal?.action_text?.trim() || "";
+  const commitment = reviewCommitment || openMove?.body.trim() || goal?.action_text?.trim() || goal?.goal_title?.trim() || "";
+  const commitmentWhen = reviewCommitment ? null : openMove ? openMove.when_text : goal?.action_when ?? null;
+  const checkInHref = goal ? `/next-step/check-in?goal=${goal.id}` : "/next-step";
   const fallback = fallbackOf(main?.plan);
-  const reviewName = next?.kind === "monthly" ? "monthly review" : "weekly review";
-  // Every fourth review is the monthly one: how many weekly reviews until then.
-  const toMonthly = next && next.kind === "weekly" ? 4 - (next.number % 4) : 0;
+  const reviewName = "weekly check-in";
   // The week's actions, counted: planned days of the plan's action plus their own.
-  const progress = week.available ? weekProgress(week.weekStart, reviewCommitment ? [] : plannedDays(goal?.action_when), week.actions) : null;
+  const progress = week.available ? weekProgress(week.weekStart, reviewCommitment ? [] : plannedDays(commitmentWhen), week.actions) : null;
 
   // Steps from the last shared coaching session that are linked to this goal.
   const lastShared = coaching.summaries[0] ?? null;
@@ -193,14 +197,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   // Before the plan is set: the one next step.
   const action = goal
-    ? { href: "/plan", label: "Finish my plan →" }
+    ? { href: "/next-step", label: "Finish setting my Next Step →" }
     : !area
-      ? { href: "/plan", label: "Choose my first area →" }
+      ? { href: "/next-step", label: "Choose where to start →" }
       : planState.stage === "in_progress"
-        ? { href: "/plan", label: `Continue my plan: step ${planState.step} of 5 →` }
+        ? { href: "/next-step", label: `Carry on: step ${planState.step} of 5 →` }
         : planState.stage === "done"
-          ? { href: "/plan?new=1", label: "Set my next goal →" }
-          : { href: "/plan", label: "Build my plan →" };
+          ? { href: "/next-step?choose=1", label: "Set my next Next Step →" }
+          : { href: "/next-step", label: "Set my Next Step →" };
 
   const path = PATHS[0];
   const doneSlugs = new Set(lessons.filter((l) => l.completed_at).map((l) => l.lesson_slug));
@@ -233,13 +237,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   return (
     <div className="page au-page profile-v2">
       {welcome === "plan" && next ? (
-        <p className="clear-welcome" role="status"><b>Your plan is saved.</b> Your first review is {longDay(next.date)}.</p>
+        <p className="clear-welcome" role="status"><b>Your Next Step is saved.</b> Your first check-in is {longDay(next.date)}.</p>
       ) : null}
       {welcome === "saved" ? (
         <p className="clear-welcome" role="status"><b>Your starting point is saved.</b> Your Alignment Map from {formatDate(audit.completed_at)} is here whenever you want it.</p>
       ) : null}
       {reviewed ? (
-        <p className="clear-welcome" role="status"><b>Review saved.</b> This week is updated with your next commitment.</p>
+        <p className="clear-welcome" role="status"><b>Check-in saved.</b></p>
       ) : null}
 
       <DuskHero>
@@ -267,12 +271,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 </div>
                 {why ? <p className="next-action-sub">Why it matters: <em className="pf-why">&ldquo;{why}&rdquo;</em></p> : null}
                 <div className="next-action-cta">
-                  <Link href="/plan" className="btn btn-g">See my plan →</Link>
+                  <Link href="/next-step" className="btn btn-g">See my Next Step →</Link>
                 </div>
                 {main?.otherActive.length ? (
                   <p className="next-action-note">
-                    This is your main goal. You have {main.otherActive.length} other active goal
-                    {main.otherActive.length === 1 ? "" : "s"}: <Link href="/plan#other-goals">choose your main goal in My Plan</Link>.
+                    You have {main.otherActive.length} other Next Step
+                    {main.otherActive.length === 1 ? "" : "s"} under way: <Link href="/next-step">choose which shows here on The Next Step</Link>.
                   </p>
                 ) : null}
               </section>
@@ -300,19 +304,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     <div><dt>Aiming for</dt><dd>{target}/10</dd></div>
                   </dl>
                 ) : null}
-                <p className="pf-sub">
-                  {next.kind === "monthly"
-                    ? next.due ? "Your monthly review is due: score the area again." : `Your monthly review is ${shortDay(next.date)}.`
-                    : `Your monthly review comes after ${toMonthly} more weekly review${toMonthly === 1 ? "" : "s"}, around ${shortDay(addDays(next.date, 7 * toMonthly))}.`}
-                </p>
-                <p className="ms-note">{checkIns.length} monthly review{checkIns.length === 1 ? "" : "s"} done for this goal</p>
-                {next.kind === "monthly" && next.due ? <Link href="/plan/review" className="btn btn-p">Do my monthly review →</Link> : null}
+                <p className="pf-sub">When your Next Step is taken, you&rsquo;ll score {area.name} again.</p>
+                {moves.length ? <p className="ms-note">{moves.filter((m) => m.done_at).length} of {moves.length} moves done</p> : null}
               </section>
             </Cell>
 
             {/* 3. Today: the plan's action (and the daily practice for members). */}
             <Cell span={2}>
-              <TodayCard action={commitment} actionWhen={reviewCommitment ? null : goal?.action_when ?? null} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} />
+              <TodayCard action={commitment} actionWhen={commitmentWhen} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} />
             </Cell>
 
             {/* 4. This week: the weekly review and the run of reviews. */}
@@ -334,23 +333,23 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 ) : null}
                 <p className="pf-sub">
                   <b>{next.due ? `Your ${reviewName} is due.` : `Next ${reviewName}: ${shortDay(next.date)}.`}</b>{" "}
-                  {next.due ? "Five minutes: what helped, what to adjust, and your focus for next week." : next.daysAway === 1 ? "Tomorrow." : `In ${next.daysAway} days.`}
+                  {next.due ? "About a minute. One question: is it closer?" : next.daysAway === 1 ? "Tomorrow." : `In ${next.daysAway} days.`}
                 </p>
                 {run ? (
                   <>
-                    <span className="pf-bars" role="img" aria-label={`A weekly review in ${run.weeks.filter(Boolean).length} of the last ${run.weeks.length} weeks`}>
+                    <span className="pf-bars" role="img" aria-label={`A weekly check-in in ${run.weeks.filter(Boolean).length} of the last ${run.weeks.length} weeks`}>
                       {run.weeks.map((on, i) => <span key={i} className={on ? "on" : undefined} />)}
                     </span>
                     <p className="ms-note">
-                      Reviews in {run.weeks.filter(Boolean).length} of the last {run.weeks.length} weeks
+                      Check-ins in {run.weeks.filter(Boolean).length} of the last {run.weeks.length} weeks
                       {run.streak > 1 ? ` · ${run.streak} in a row` : ""}
                     </p>
                   </>
                 ) : null}
                 {next.due ? (
-                  <Link href="/plan/review" className="btn btn-p">Do my {reviewName} →</Link>
+                  <Link href={checkInHref} className="btn btn-p">Do my {reviewName} →</Link>
                 ) : (
-                  <Link href="/plan/review" className="au-text-link">Review early</Link>
+                  <Link href={checkInHref} className="au-text-link">Check in early</Link>
                 )}
               </section>
             </Cell>
@@ -369,24 +368,24 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 {area ? <span className="focus-glow"><AreaBadge order={area.sort_order} size={22} /></span> : null}
                 <h2 id="next-action-h">
                   {goal
-                    ? `Choose your first action for ${area?.name ?? "this goal"}`
+                    ? `Finish setting your Next Step for ${area?.name ?? "this area"}`
                     : !area
                       ? "Choose your first area to work on"
                       : planState.stage === "in_progress"
-                        ? `Finish your plan for ${area.name}`
+                        ? `Finish setting your Next Step for ${area.name}`
                         : planState.stage === "done"
-                          ? "Goal done. What’s next?"
-                          : `Turn ${area.name} into one clear goal`}
+                          ? "Next Step taken. What’s next?"
+                          : `Set your Next Step for ${area.name}`}
                 </h2>
               </div>
               <p className="next-action-sub">
                 {goal || planState.stage === "in_progress"
                   ? "Your answers are saved. Pick up where you left off."
                   : planState.stage === "done"
-                    ? "Set your next goal for this area, or choose a new area."
+                    ? "Set your next one here, or choose another area."
                     : !area && roomToGrow
-                      ? `Many people start with the area that has the most room to grow; for you that’s ${roomToGrow.name}, ${roomToGrow.score}/10. It’s your choice. Five guided steps turn it into one clear action for this week.`
-                      : "Five guided steps. It ends with one action, when you’ll do it, and a short weekly review."}
+                      ? `Many people start with the area that has the most room to grow; for you that’s ${roomToGrow.name}, ${roomToGrow.score}/10. It’s your choice. Your Next Step is the one change that gets you out of where you’re stuck.`
+                      : "Five short screens. It ends with your Next Step, the moves that get you there, and a weekly check-in."}
               </p>
               <div className="next-action-cta">
                 <Link href={action.href} className="btn btn-p">{action.label}</Link>

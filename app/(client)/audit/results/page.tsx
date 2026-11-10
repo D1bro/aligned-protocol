@@ -67,7 +67,7 @@ export default async function ResultsPage() {
       ? {
           areaName: areas[planArea].name,
           score: startAreas[planArea].score,
-          target: Math.min(10, plan?.step_up_target ?? startAreas[planArea].score + 1),
+          target: goal?.aim_score ?? null,
           stage,
           step,
           goalTitle: goal?.goal_title ?? null,
@@ -115,7 +115,7 @@ export default async function ResultsPage() {
         startAreas={startAreas}
         snapshot={snapshot}
         initialAreaId={initialAreaId}
-        initialAnswer={plan?.step_up_answer ?? ""}
+        initialAnswer={plan?.current_reality ?? ""}
         isGuest={isGuest}
         total={total}
         planCard={planCard}
@@ -125,7 +125,7 @@ export default async function ResultsPage() {
         {isGuest ? (
           <>
             <SaveStart
-              skipHref={planCard ? "/plan" : "#step-up"}
+              skipHref={planCard ? "/next-step" : "#step-up"}
               film={FILMS.S01 ? (
                 <GuideVideo
                   clip={FILMS.S01}
@@ -166,43 +166,43 @@ export default async function ResultsPage() {
             <li>
               <span className="au-step-n">01</span>
               <h3>Your starting point is set</h3>
-              <p>{planCard.areaName}, from {planCard.score} towards {planCard.target}. Your plan builds on it.</p>
-              <Link href="/plan" className="au-text-link">Open my plan</Link>
+              <p>{planCard.areaName}, from {planCard.score}. Your Next Step builds on it.</p>
+              <Link href="/next-step" className="au-text-link">Open The Next Step</Link>
             </li>
           ) : (
             <li>
               <span className="au-step-n">01</span>
               <h3>Name your starting point</h3>
-              <p>Answer the question above in your own words. It becomes the first step of your plan.</p>
+              <p>Answer the question above in your own words. It&rsquo;s the first of five short screens to your Next Step.</p>
               <a href="#step-up" className="au-text-link">Go to the question</a>
             </li>
           )}
           {isGuest ? (
             <li className="primary">
               <span className="au-step-n">02</span>
-              <h3>Build your plan</h3>
-              <p>Five guided steps turn your starting point into one clear action. Build it first; save it to a free account when it&rsquo;s set.</p>
-              <a href={plan ? "/plan" : "#step-up"} className="btn btn-p">Build my plan →</a>
+              <h3>Find your Next Step</h3>
+              <p>Five short screens find the one change that gets you unstuck. Set it first; save it to a free account when it&rsquo;s set.</p>
+              <a href={plan ? "/next-step" : "#step-up"} className="btn btn-p">Find my Next Step →</a>
             </li>
           ) : planCard?.stage === "done" ? (
             <li className="primary">
               <span className="au-step-n">02</span>
-              <h3>Keep going with your action</h3>
-              <p>Your plan is set. Small, steady repetitions are what move a score — check back on your plan as you go.</p>
-              <Link href="/plan" className="btn btn-p">Open my plan</Link>
+              <h3>Keep going with your moves</h3>
+              <p>Your Next Step is set. Tick off your moves as you go, and check in each week.</p>
+              <Link href="/next-step" className="btn btn-p">Open The Next Step</Link>
             </li>
           ) : (
             <li className="primary">
               <span className="au-step-n">02</span>
-              <h3>Build your plan</h3>
-              <p>Five guided steps turn your starting point into one clear action you can take this week.</p>
-              <Link href="/plan" className="btn btn-p">Build my plan →</Link>
+              <h3>Find your Next Step</h3>
+              <p>Five short screens find the one change that gets you out of where you&rsquo;re stuck.</p>
+              <Link href="/next-step" className="btn btn-p">Find my Next Step →</Link>
             </li>
           )}
           <li>
             <span className="au-step-n">03</span>
             <h3>Come back and compare</h3>
-            <p>A one-minute weekly review keeps your plan going, and each month you score the area again. Revisit all ten areas in about three months, or sooner after a meaningful change, to see what&rsquo;s moved.</p>
+            <p>A one-minute weekly check-in keeps your Next Step moving, and you score the area again once it&rsquo;s taken. Revisit all ten areas in about three months, or sooner after a meaningful change, to see what&rsquo;s moved.</p>
             {isGuest ? null : <Link href="/" className="au-text-link">Go to My Space</Link>}
           </li>
         </ol>

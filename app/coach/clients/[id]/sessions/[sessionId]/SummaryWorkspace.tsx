@@ -360,7 +360,7 @@ export function SummaryWorkspace({
                 aria-label="Why this area"
                 onChange={(e) => edit({ suggested_focus: { ...content.suggested_focus, why: e.target.value } })}
               />
-              <em>{firstName} chooses for themself in My Plan; this only points the way.</em>
+              <em>{firstName} chooses for themself in The Next Step; this only points the way.</em>
             </>
           ) : null}
         </div>
