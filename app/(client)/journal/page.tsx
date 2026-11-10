@@ -68,7 +68,7 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
           {journal.entries.length} {journal.entries.length === 1 ? "entry" : "entries"}
           {query ? <> with &ldquo;{query}&rdquo;</> : null}
           {month ? <> in {monthName(month)}</> : null}
-          {month ? <> · <Link href={`/journey/months/${month}`}>See {monthName(month).split(" ")[0]} in My Journey</Link></> : null}
+          {month ? <> · <Link href={`/journey/months/${month}`}>Look back on {monthName(month).split(" ")[0]}</Link></> : null}
         </p>
       ) : null}
 

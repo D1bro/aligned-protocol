@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { MemberCoaching as Data } from "@/lib/actions/member-coaching";
+import { MY_JOURNEY_SHOWN } from "@/lib/life-months";
 import { formatDate } from "@/lib/audit-schedule";
 import { sessionDayTime } from "@/lib/time";
 import { stepStates, stepTally } from "@/lib/momentum";
@@ -273,7 +274,7 @@ export function MemberCoaching({
                   </li>
                 ))}
               </ul>
-              <Link href="/journey" className="au-text-link">See it in My Journey →</Link>
+              {MY_JOURNEY_SHOWN ? <Link href="/journey" className="au-text-link">See it in My Journey →</Link> : null}
             </>
           ) : (
             <>

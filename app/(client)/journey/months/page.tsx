@@ -9,7 +9,7 @@ import { BirthDateForm } from "@/components/journey/BirthDateForm";
 
 export const metadata: Metadata = { title: "1,000 Months" };
 
-// 1,000 Months, inside My Journey: optional, never a countdown. With a date of
+// 1,000 Months, under More: optional, never a countdown. With a date of
 // birth it draws their months a row per calendar year; without one it still
 // shows this year, and invites them to add it.
 export default async function MonthsPage() {
@@ -20,8 +20,7 @@ export default async function MonthsPage() {
 
   return (
     <div className="page au-page lm-page">
-      <Link href="/journey" className="au-text-link">← My Journey</Link>
-      <div className="eyebrow"><span className="eydot" /> My Journey · 1,000 Months</div>
+      <div className="eyebrow"><span className="eydot" /> 1,000 Months</div>
       <h1 className="au-latest-h">Your life, <em>month by month.</em></h1>
       <p className="lead">
         A way to see where your time has gone and choose where it goes next. This month is highlighted; the months

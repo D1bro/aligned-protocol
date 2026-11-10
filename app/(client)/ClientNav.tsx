@@ -3,16 +3,15 @@
 import { usePathname } from "next/navigation";
 import { MobileNav, NavFooter, NavLinks, type MobileNavLink } from "@/components/ui/MobileNav";
 
-// Brief v4.0 (Nov 2026): four destinations, then everything else under
-// "More". The daily practice and journal are part of My Space (its daily card
-// links to both, and My Journey links to the journal), so they light up My
-// Space rather than having menu items of their own.
+// Brief v4.0 (Nov 2026): the destinations, then everything else under
+// "More". The daily practice is part of My Space, so it lights up My Space.
+// My Journey is out of the menu for now and 1,000 Months is under More
+// (Duane, 10 Nov 2026).
 const inMySpace = (p: string) => p === "/" || p.startsWith("/alignment");
 const DESTINATIONS: MobileNavLink[] = [
   { group: "You", href: "/", label: "My Space", icon: "home", match: inMySpace },
   { group: "You", href: "/audit", label: "The Aligned Protocol", icon: "target", match: (p) => p.startsWith("/audit") },
   { group: "You", href: "/next-step", label: "The Next Step", icon: "map", match: (p) => p.startsWith("/next-step") || p.startsWith("/plan") },
-  { group: "You", href: "/journey", label: "My Journey", icon: "journey", match: (p) => p.startsWith("/journey") },
 ];
 // The journal has its own place under You (Duane, 10 Nov 2026). It's part of
 // Aligned Practice and Momentum, so it shows a lock for everyone else.
@@ -22,6 +21,7 @@ const MORE_LINKS: MobileNavLink[] = [
   { group: "More", href: "/musings", label: "Musings", icon: "quote", match: (p) => p.startsWith("/musings") },
   { group: "More", href: "/podcast", label: "Podcast", icon: "mic", match: (p) => p.startsWith("/podcast") },
   { group: "More", href: "/tools", label: "Tools", icon: "bulb", match: (p) => p.startsWith("/tools") },
+  { group: "More", href: "/journey/months", label: "1,000 Months", icon: "journey", match: (p) => p.startsWith("/journey") },
   { group: "More", href: "/membership", label: "Membership", icon: "star", match: (p) => p.startsWith("/membership") },
 ];
 
@@ -31,13 +31,13 @@ const MORE_LINKS: MobileNavLink[] = [
 const COACHING: MobileNavLink = { group: "You", href: "/coaching", label: "Coaching", icon: "chat", match: (p) => p.startsWith("/coaching") };
 const MORE_COACHING: MobileNavLink = { ...COACHING, group: "More" };
 
-// The phone tab bar: the four destinations, with shorter labels for the
-// Protocol and The Next Step so all five tabs fit (More opens the drawer with the rest).
-// Members with a coach get Coaching in place of My Journey, which stays in
-// the drawer (Duane, 9 Nov 2026).
+// The phone tab bar: the destinations, with shorter labels for the Protocol
+// and The Next Step so all five tabs fit (More opens the drawer with the
+// rest). The fourth tab is Coaching for members with a coach, else the
+// journal.
 const SHORT: Record<string, string> = { "/audit": "Protocol", "/next-step": "Next Step" };
 const TABS: MobileNavLink[] = DESTINATIONS.map((d) => (SHORT[d.href] ? { ...d, label: SHORT[d.href] } : d));
-const COACHED_TABS: MobileNavLink[] = TABS.map((t) => (t.href === "/journey" ? COACHING : t));
+const tabsFor = (coached: boolean, journalLocked: boolean): MobileNavLink[] => [...TABS, coached ? COACHING : { ...JOURNAL, locked: journalLocked }];
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
@@ -46,9 +46,9 @@ const linksFor = (staff: boolean, coached: boolean, journalLocked: boolean) => [
   ...(coached ? [COACHING] : []),
   ...DESTINATIONS.slice(1),
   { ...JOURNAL, locked: journalLocked },
-  ...MORE_LINKS.slice(0, 4),
+  ...MORE_LINKS.slice(0, 5),
   ...(coached ? [] : [MORE_COACHING]),
-  ...MORE_LINKS.slice(4),
+  ...MORE_LINKS.slice(5),
   ...(staff ? [STAFF_LINK] : []),
 ];
 
@@ -68,5 +68,5 @@ export function ClientNav({ fullName, staff = false, coached = false, journalLoc
 }
 
 export function ClientMobileNav({ fullName, staff = false, coached = false, journalLocked = false }: { fullName: string | null; staff?: boolean; coached?: boolean; journalLocked?: boolean }) {
-  return <MobileNav links={linksFor(staff, coached, journalLocked)} fullName={fullName} sub="Your details" userHref="/details" tabs={coached ? COACHED_TABS : TABS} />;
+  return <MobileNav links={linksFor(staff, coached, journalLocked)} fullName={fullName} sub="Your details" userHref="/details" tabs={tabsFor(coached, journalLocked)} />;
 }

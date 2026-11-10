@@ -20,6 +20,12 @@ export type MonthState = "before" | "past" | "current" | "future";
 export type MonthCell = { ym: string; state: MonthState };
 
 const LIFE_MONTHS = 1000;
+
+// My Journey is out of the menu and My Space for now (Duane, 10 Nov 2026: it
+// didn't add enough and complicated the flow). Its page stays at /journey so
+// it can come back: set this to true to show it again. 1,000 Months has its
+// own place under More.
+export const MY_JOURNEY_SHOWN = false;
 const isYm = (v: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
 const index = (ym: string) => Number(ym.slice(0, 4)) * 12 + Number(ym.slice(5, 7)) - 1;
 const ymAt = (i: number) => `${Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`;
