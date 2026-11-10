@@ -2638,3 +2638,5 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
   .jr-write { padding: 1.2rem 1rem 1rem; }
   .jr-paper { font-size: 19px !important; }
 }
+.jr-status { margin-top: .6rem; text-align: right; }
+.journal-page .journal-text { font-family: var(--serif); font-size: 19px; line-height: 1.55; color: var(--text); }

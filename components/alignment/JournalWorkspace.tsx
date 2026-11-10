@@ -286,6 +286,7 @@ export function JournalWorkspace({
               <button type="button" className="btn btn-p" disabled={busy || !body.trim()} onClick={save}>{busy ? "Saving…" : "Save privately"}</button>
             </div>
           </div>
+          {status ? <p className={`alignment-status jr-status${status.error ? " alignment-status-error" : ""}`} role={status.error ? "alert" : "status"}>{status.text}</p> : null}
         </section>
       ) : null}
 
@@ -367,7 +368,7 @@ export function JournalWorkspace({
         )}
         {entries.length ? <button type="button" className="btn btn-g" onClick={download}>Export my journal</button> : null}
       </section>
-      {status ? <p className={`alignment-status${status.error ? " alignment-status-error" : ""}`} role={status.error ? "alert" : "status"}>{status.text}</p> : null}
+      {status && !canWrite ? <p className={`alignment-status${status.error ? " alignment-status-error" : ""}`} role={status.error ? "alert" : "status"}>{status.text}</p> : null}
     </div>
   );
 }
