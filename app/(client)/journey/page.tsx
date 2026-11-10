@@ -151,8 +151,8 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
       {checkIns.length === 0 ? (
         <p className="plan-note">
           {main
-            ? <>No monthly reviews yet. Your weekly reviews lead up to the first one, which scores the area again and adds it here. <Link href="/plan/review">Do my review</Link></>
-            : <>No monthly reviews yet. Build your plan in <Link href="/plan">My Plan</Link> and your reviews will build your journey here.</>}
+            ? <>No new scores yet. When your Next Step is taken, you score the area again and it&rsquo;s added here. <Link href="/next-step">Open The Next Step</Link></>
+            : <>No new scores yet. Set your Next Step in <Link href="/next-step">The Next Step</Link>; each one you take adds to your journey here.</>}
         </p>
       ) : null}
 

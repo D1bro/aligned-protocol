@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { DID_IT_LABELS, WEEKLY_LABELS } from "@/lib/checkin-labels";
 import { formatDate } from "@/lib/audit-schedule";
+import { isSet } from "@/lib/next-step";
 import type { ClientSummary } from "@/lib/actions/admin";
 
 // The lists behind each Overview number: who completed audits, who set plans,
@@ -16,7 +17,7 @@ export type View = { key: ViewKey; title: string; lead: string; columns: string[
 
 export const VIEW_LABELS: Record<ViewKey, string> = {
   audits: "Audits completed",
-  plans: "Plans set",
+  plans: "Next Steps set",
   checkins: "Goal check-ins",
   lessons: "Lessons completed",
 };
@@ -61,14 +62,14 @@ export async function buildView(
   if (key === "plans") {
     let q = supabase
       .from("goals")
-      .select("id, client_id, goal_title, focus_area, status, frequency, success_criteria, created_at")
+      .select("id, client_id, goal_title, focus_area, status, frequency, success_criteria, set_at, created_at")
       .order("created_at", { ascending: false })
       .limit(1000);
     if (opts.status) q = q.eq("status", opts.status);
     const { data } = await q;
-    const status: Record<string, string> = { active: "Active", completed: "Done", abandoned: "Let go" };
+    const status: Record<string, string> = { active: "Under way", completed: "Taken", abandoned: "Let go" };
     const rows = (data ?? [])
-      .filter((g) => allowed(g.client_id) && (g.frequency ?? "").trim() && (g.success_criteria ?? "").trim())
+      .filter((g) => allowed(g.client_id) && isSet(g))
       .map((g) => ({
         personId: g.client_id as string,
         date: g.created_at as string,
@@ -76,8 +77,8 @@ export async function buildView(
       }));
     return {
       key,
-      title: opts.status === "completed" ? "Goals completed" : VIEW_LABELS.plans,
-      lead: "Goals with an action, a time and what 'done' looks like.",
+      title: opts.status === "completed" ? "Next Steps taken" : VIEW_LABELS.plans,
+      lead: "Next Steps that are set: the step, its moves, and how they'll know it's taken.",
       columns: ["Person", "Area", "Goal", "Status", "Set"],
       rows,
     };

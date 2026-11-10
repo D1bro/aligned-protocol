@@ -176,7 +176,7 @@ async function LatestAudit({
             <PlanCard
               areaName={areas[startIdx].name}
               score={scores[startIdx]}
-              target={Math.min(10, plan?.step_up_target ?? scores[startIdx] + 1)}
+              target={goal?.aim_score ?? null}
               stage={stage}
               step={step}
               goalTitle={goal?.goal_title ?? null}
@@ -189,7 +189,7 @@ async function LatestAudit({
               <p className="au-latest-big">
                 {areas[startIdx].name} <span>{scores[startIdx]}/10</span>
               </p>
-              {plan?.step_up_answer ? <p>&ldquo;{plan.step_up_answer}&rdquo;</p> : null}
+              {plan?.current_reality || plan?.step_up_answer ? <p>&ldquo;{plan.current_reality || plan.step_up_answer}&rdquo;</p> : null}
             </div>
           ) : null}
 
@@ -206,9 +206,9 @@ async function LatestAudit({
           <div className="au-latest-actions">
             <Link href="/audit/results" className="btn btn-p">View my full snapshot</Link>
             {isGuest ? (
-              <Link href="/audit/results#step-up" className="btn btn-o">Build my plan</Link>
+              <Link href="/audit/results#step-up" className="btn btn-o">Find my Next Step</Link>
             ) : (
-              <Link href="/plan" className="btn btn-o">Go to my plan</Link>
+              <Link href="/next-step" className="btn btn-o">Go to The Next Step</Link>
             )}
             <Link href="/audit/1" className="au-text-link">
               {days <= 0 ? "Retake the audit" : "Revisit early"}

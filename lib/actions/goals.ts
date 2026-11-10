@@ -55,10 +55,10 @@ export async function getMainGoal(): Promise<MainGoal | null> {
     baselineDate = (audit?.completed_at as string | null) ?? null;
     responses = (rs ?? []) as MainGoal["responses"];
     const mine = (rs ?? []).find((r) => r.life_area_id === area?.id);
-    baselineScore = (mine?.satisfaction_score as number | undefined) ?? null;
+    baselineScore = goal.start_score ?? (mine?.satisfaction_score as number | undefined) ?? null;
     baselineNote = ((mine?.note as string | null | undefined) ?? "").trim() || null;
   }
-  const target = p?.step_up_target ?? (baselineScore !== null ? Math.min(10, baselineScore + 1) : null);
+  const target = goal.aim_score ?? p?.step_up_target ?? (baselineScore !== null ? Math.min(10, baselineScore + 1) : null);
 
   return { goal, plan: p, area, baselineScore, baselineDate, baselineNote, responses, target, checkIns, otherActive };
 }
@@ -78,5 +78,6 @@ export async function setMainGoal(goalId: string): Promise<{ ok: boolean; messag
 
   revalidatePath("/");
   revalidatePath("/plan");
+  revalidatePath("/next-step");
   return { ok: true };
 }

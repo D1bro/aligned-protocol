@@ -87,7 +87,7 @@ export function ToolForm({
         <button type="button" className="btn btn-p" disabled={!any || pending} onClick={save}>
           {pending ? "Saving…" : "Save my answers"}
         </button>
-        <Link href="/plan" className="au-text-link">Open my plan</Link>
+        <Link href="/next-step" className="au-text-link">Open The Next Step</Link>
         <span className={`au-small${note?.startsWith("Couldn") ? " clear-err" : ""}`} aria-live="polite">{note}</span>
       </div>
     </div>

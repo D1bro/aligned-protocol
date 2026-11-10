@@ -13,13 +13,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // rows stay with the (now abandoned) guest identity, invisible to everyone,
 // exactly like any guest who never signs up.
 
+type Row = Record<string, unknown>;
 type GuestAudit = {
-  audit: Record<string, unknown>;
-  responses: Record<string, unknown>[];
-  plan: Record<string, unknown> | null;
-  // Goals a guest set while building their plan (they can now build it
-  // before saving).
-  goals: Record<string, unknown>[];
+  audit: Row;
+  responses: Row[];
+  // A plan per area they started a Next Step in, with its goals (the Next
+  // Steps a guest set before saving) and each goal's moves.
+  plans: { plan: Row; goals: { goal: Row; moves: Row[] }[] }[];
 };
 
 // The plan's own answers, copied as they are. Columns from later migrations
@@ -31,7 +31,10 @@ const PLAN_FIELDS = [
 const GOAL_FIELDS = [
   "goal_title", "goal_type", "focus_area", "action_text", "frequency", "action_when", "success_criteria",
   "motivation_text", "start_date", "status", "created_at",
+  // The Next Step (migration 0029)
+  "start_score", "aim_score", "feel_text", "in_the_way", "spill_over", "step_checks", "set_at",
 ];
+const MOVE_FIELDS = ["position", "body", "when_text", "due_date", "done_at", "created_at"];
 const pick = (row: Record<string, unknown>, keys: string[]) =>
   Object.fromEntries(keys.filter((k) => k in row).map((k) => [k, row[k]]));
 
@@ -46,16 +49,23 @@ export async function readGuestWork(supabase: SupabaseClient, guestId: string): 
   for (const audit of audits ?? []) {
     const { data: responses } = await supabase.from("audit_responses").select("*").eq("audit_id", audit.id);
     if (!responses?.length) continue; // opened the audit but never answered anything
-    const { data: plan } = await supabase
+    const { data: planRows } = await supabase
       .from("clear_plans")
       .select("*")
       .eq("audit_id", audit.id)
       .eq("client_id", guestId)
-      .maybeSingle();
-    const { data: goals } = plan
-      ? await supabase.from("goals").select("*").eq("clear_plan_id", plan.id).eq("client_id", guestId)
-      : { data: [] };
-    work.push({ audit, responses, plan: plan ?? null, goals: goals ?? [] });
+      .order("created_at", { ascending: true });
+    const plans: GuestAudit["plans"] = [];
+    for (const plan of planRows ?? []) {
+      const { data: goals } = await supabase.from("goals").select("*").eq("clear_plan_id", plan.id).eq("client_id", guestId);
+      const withMoves = [];
+      for (const goal of goals ?? []) {
+        const { data: moves } = await supabase.from("goal_moves").select("*").eq("goal_id", goal.id);
+        withMoves.push({ goal, moves: moves ?? [] });
+      }
+      plans.push({ plan, goals: withMoves });
+    }
+    work.push({ audit, responses, plans });
   }
   return work;
 }
@@ -73,7 +83,7 @@ export async function saveGuestWorkToAccount(supabase: SupabaseClient, userId: s
     .maybeSingle();
   let seq = (last?.sequence_number as number | undefined) ?? 0;
 
-  for (const { audit, responses, plan, goals } of work) {
+  for (const { audit, responses, plans } of work) {
     seq += 1;
     const { data: copy, error } = await supabase
       .from("audits")
@@ -101,18 +111,26 @@ export async function saveGuestWorkToAccount(supabase: SupabaseClient, userId: s
     );
     if (respErr) throw respErr;
 
-    if (plan) {
+    for (const { plan, goals } of plans) {
       const { data: planCopy, error: planErr } = await supabase
         .from("clear_plans")
         .insert({ client_id: userId, audit_id: copy.id, ...pick(plan, PLAN_FIELDS) })
         .select("id")
         .single();
       if (planErr) throw planErr;
-      if (goals.length) {
-        const { error: goalErr } = await supabase
+      for (const { goal, moves } of goals) {
+        const { data: goalCopy, error: goalErr } = await supabase
           .from("goals")
-          .insert(goals.map((g) => ({ client_id: userId, clear_plan_id: planCopy.id, ...pick(g, GOAL_FIELDS) })));
+          .insert({ client_id: userId, clear_plan_id: planCopy.id, ...pick(goal, GOAL_FIELDS) })
+          .select("id")
+          .single();
         if (goalErr) throw goalErr;
+        if (moves.length) {
+          const { error: moveErr } = await supabase
+            .from("goal_moves")
+            .insert(moves.map((m) => ({ client_id: userId, goal_id: goalCopy.id, ...pick(m, MOVE_FIELDS) })));
+          if (moveErr) throw moveErr;
+        }
       }
     }
   }

@@ -23,7 +23,7 @@ async function guestWork(): Promise<{ hasSnapshot: boolean; startingPointSaved: 
     .limit(1)
     .maybeSingle();
   if (!audit) return none;
-  const { data: plan } = await supabase.from("clear_plans").select("id").eq("audit_id", audit.id).maybeSingle();
+  const { data: plan } = await supabase.from("clear_plans").select("id").eq("audit_id", audit.id).limit(1).maybeSingle();
   return { hasSnapshot: true, startingPointSaved: !!plan };
 }
 

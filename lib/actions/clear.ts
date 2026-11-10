@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { planStarted } from "@/lib/plan-action";
+import { isSet, resumeScreen } from "@/lib/next-step";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -66,6 +67,17 @@ export type Goal = {
   start_date: string;
   status: "active" | "completed" | "abandoned";
   created_at?: string;
+  // The Next Step (migration 0029)
+  start_score?: number | null;
+  aim_score?: number | null;
+  feel_text?: string | null;
+  in_the_way?: string | null;
+  spill_over?: string | null;
+  step_checks?: Record<string, boolean> | null;
+  set_at?: string | null;
+  taken_score?: number | null;
+  taken_at?: string | null;
+  what_changed?: string | null;
 };
 
 // Read-only lookup — used by the dashboard to show the right CTA state
@@ -79,6 +91,9 @@ export async function getClearPlanForAudit(auditId: string): Promise<ClearPlan |
     .select("*")
     .eq("audit_id", auditId)
     .eq("client_id", clientId)
+    // With The Next Step an audit can have a plan per area: the latest.
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   return (data as ClearPlan) ?? null;
 }
@@ -91,16 +106,11 @@ export async function getPlanState(auditId: string) {
   const plan = await getClearPlanForAudit(auditId);
   const goal = plan ? await getGoalForPlan(plan.id) : null;
   const f = (v: string | null | undefined) => !!v?.trim();
-  const done = !!goal && f(goal.frequency) && f(goal.success_criteria);
-  const started = (!!plan && planStarted(plan)) || !!goal;
+  const done = isSet(goal);
+  const started = (!!plan && (planStarted(plan) || f(plan.current_reality))) || !!goal;
   const stage: PlanStage = done ? "done" : started ? "in_progress" : plan ? "chosen" : "none";
-  const step = !plan
-    ? 0
-    : !f(plan.step_up_answer) ? 1
-    : !f(plan.why_it_matters ?? goal?.motivation_text) ? 2
-    : !(plan.blocks?.length ?? 0) ? 3
-    : !goal ? 4
-    : 5;
+  // Which of The Next Step's five screens they're on.
+  const step = !plan ? 0 : Math.min(5, resumeScreen(plan, goal, f(goal?.success_criteria) ? 1 : 0));
   return { plan, goal, stage, step };
 }
 
@@ -134,37 +144,51 @@ export async function saveStartingPoint(input: {
   lifeAreaId: string;
   target: number;
   answer: string;
-}): Promise<{ ok: true } | { ok: false; message: string }> {
+  // The Next Step asks "what's actually going on?" here (its screen 1);
+  // older snapshots asked "what would a [score + 1] look like?".
+  field?: "step_up_answer" | "current_reality";
+}): Promise<{ ok: true; planId: string } | { ok: false; message: string }> {
   const clientId = await requireUserId();
   const supabase = await createClient();
   const answer = input.answer.trim() ? input.answer.trim().slice(0, 2000) : null;
   const target = Math.max(1, Math.min(10, Math.round(input.target)));
-  const existing = await getClearPlanForAudit(input.auditId);
+  const field = input.field ?? "step_up_answer";
+  // A plan per audit and area (The Next Step): this area's, if it exists.
+  const { data: existingRow } = await supabase
+    .from("clear_plans")
+    .select("*")
+    .eq("audit_id", input.auditId)
+    .eq("client_id", clientId)
+    .eq("life_area_id", input.lifeAreaId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const existing = (existingRow as ClearPlan | null) ?? null;
 
   if (existing) {
-    const started = planStarted(existing);
     const { data: updated, error } = await supabase
       .from("clear_plans")
-      .update({
-        ...(started ? {} : { life_area_id: input.lifeAreaId }),
-        step_up_target: target,
-        step_up_answer: answer,
-      })
+      .update({ step_up_target: target, [field]: answer })
       .eq("id", existing.id)
       .select("id");
     if (error || !updated?.length) return { ok: false, message: "Couldn’t save — check your connection and try again." };
-  } else {
-    const { error } = await supabase.from("clear_plans").insert({
+    revalidatePath("/audit/results");
+    return { ok: true, planId: existing.id };
+  }
+  const { data: created, error } = await supabase
+    .from("clear_plans")
+    .insert({
       client_id: clientId,
       audit_id: input.auditId,
       life_area_id: input.lifeAreaId,
       step_up_target: target,
-      step_up_answer: answer,
-    });
-    if (error) return { ok: false, message: "Couldn’t save — check your connection and try again." };
-  }
+      [field]: answer,
+    })
+    .select("id")
+    .single();
+  if (error) return { ok: false, message: "Couldn’t save — check your connection and try again." };
   revalidatePath("/audit/results");
-  return { ok: true };
+  return { ok: true, planId: created.id as string };
 }
 
 // Choose (or change) the area the plan works on. Only before the plan has

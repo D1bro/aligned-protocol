@@ -6,20 +6,18 @@
 // so the rule can be tested directly.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { planStarted } from "./plan-action.ts";
+import { isSet } from "./next-step.ts";
 
 export type PlanProgress = "none" | "chosen" | "in_progress" | "done";
 
 export function nextAfterJoining(p: { hasAudit: boolean; plan: PlanProgress }): string {
   if (!p.hasAudit) return "/";
-  // ?latest=1: the plan for this newest audit, even if an older goal is
-  // still their main one.
-  if (p.plan === "chosen" || p.plan === "in_progress") return "/plan?latest=1";
+  // Part way through setting a Next Step: The Next Step, where it carries on.
+  if (p.plan === "chosen" || p.plan === "in_progress") return "/next-step";
   if (p.plan === "done") return "/?welcome=plan";
   // Saved straight from the snapshot: "your starting point is saved".
   return "/?welcome=saved";
 }
-
-const filled = (v: unknown) => typeof v === "string" && v.trim().length > 0;
 
 // Reads the person's latest audit and its plan with a signed-in client.
 export async function joiningDestination(db: SupabaseClient, userId: string): Promise<string> {
@@ -32,10 +30,10 @@ export async function joiningDestination(db: SupabaseClient, userId: string): Pr
     .limit(1)
     .maybeSingle();
   if (!audit) return nextAfterJoining({ hasAudit: false, plan: "none" });
-  const { data: plan } = await db.from("clear_plans").select("*").eq("audit_id", audit.id).maybeSingle();
+  const { data: plan } = await db.from("clear_plans").select("*").eq("audit_id", audit.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (!plan) return nextAfterJoining({ hasAudit: true, plan: "none" });
-  const { data: goal } = await db.from("goals").select("frequency, success_criteria").eq("clear_plan_id", plan.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  const done = !!goal && filled(goal.frequency) && filled(goal.success_criteria);
+  const { data: goal } = await db.from("goals").select("frequency, success_criteria, set_at").eq("clear_plan_id", plan.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const done = isSet(goal);
   const started = !!goal || planStarted(plan);
   return nextAfterJoining({ hasAudit: true, plan: done ? "done" : started ? "in_progress" : "chosen" });
 }
