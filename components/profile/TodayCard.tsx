@@ -13,6 +13,8 @@ import { TodayActions } from "@/components/profile/TodayActions";
 export async function TodayCard({
   action,
   actionWhen,
+  moveId = null,
+  movesDone = null,
   fallback,
   coachSteps,
   practice,
@@ -22,6 +24,10 @@ export async function TodayCard({
 }: {
   action: string;
   actionWhen: string | null;
+  // Their next move when it's a one-off: ticking it here ticks the move.
+  moveId?: string | null;
+  // Every move of their Next Step is done: what next.
+  movesDone?: { addHref: string; takenHref: string } | null;
   fallback: string | null;
   coachSteps: { id: string; body: string }[];
   practice: boolean;
@@ -30,11 +36,15 @@ export async function TodayCard({
   week: { available: boolean; today: string; actions: PlanAction[] };
 }) {
   const todays = week.actions.filter((a) => a.action_date === week.today);
-  const planTick = todays.find((a) => a.source === "plan" && a.goal_id === goalId) ?? null;
+  const planTick = todays.find((a) => a.source === "plan" && a.goal_id === goalId && a.body === action) ?? null;
   const nextDay = action ? firstActionDate(`${week.today}T12:00:00Z`, actionWhen) : null;
   // With no set days (a focus from their weekly review), it can be done any day.
   const plannedToday = nextDay === week.today || !plannedDays(actionWhen).length;
-  const plan = action && goalId && (plannedToday || planTick) ? { goalId, body: action, done: !!planTick?.done_at } : null;
+  const plan = action && goalId
+    ? moveId
+      ? { goalId, body: action, done: false, moveId }
+      : plannedToday || planTick ? { goalId, body: action, done: !!planTick?.done_at } : null
+    : null;
   const today = practice ? await getTodayAlignment().catch(() => null) : null;
   const wins = today?.wins ?? { arrive: false, intention: false, reflect: false, count: 0 };
 
@@ -46,6 +56,12 @@ export async function TodayCard({
       </div>
       {week.available ? (
         <TodayActions plan={plan} own={todays.filter((a) => a.source === "own")} goals={goals} defaultGoalId={goalId} />
+      ) : null}
+      {movesDone ? (
+        <p className="pf-sub">
+          All your moves for this Next Step are done. <Link href={movesDone.addHref} className="au-text-link">Add my next move</Link>
+          {" "}or, if it&rsquo;s happened, <Link href={movesDone.takenHref} className="au-text-link">it&rsquo;s taken</Link>.
+        </p>
       ) : null}
       {action && !plan ? (
         <p className="pf-sub">

@@ -38,7 +38,7 @@ import { daysUntil, formatDate, nextAuditDue } from "@/lib/audit-schedule";
 import { longDay, nextReview, plannedDays } from "@/lib/review-schedule";
 import { weekStreak } from "@/lib/momentum";
 import { fallbackOf } from "@/lib/plan-action";
-import { isSet } from "@/lib/next-step";
+import { isSet, movesRepeat } from "@/lib/next-step";
 import { getMovesForGoal } from "@/lib/actions/next-step";
 
 // "Friday 6 Nov" for a review date (YYYY-MM-DD), and today's date in their zone.
@@ -174,11 +174,22 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   // Today's action: the first move not yet done (an old plan's action is its first move).
   const moves = planned ? await getMovesForGoal(goal!.id) : [];
   const openMove = moves.find((m) => !m.done_at) ?? null;
+  // An old weekly review's commitment counts only for a plan with no moves;
+  // with The Next Step, the moves are what this week is about.
+  const reviewCommitment = moves.length ? "" : reviews?.weekly.at(-1)?.next_commitment?.trim() || "";
   const run = reviews ? weekStreak(reviews.all) : null;
   const why = main?.plan?.why_it_matters?.trim() || goal?.motivation_text?.trim() || "";
-  const reviewCommitment = reviews?.weekly.at(-1)?.next_commitment?.trim() || "";
-  const commitment = reviewCommitment || openMove?.body.trim() || goal?.action_text?.trim() || goal?.goal_title?.trim() || "";
-  const commitmentWhen = reviewCommitment ? null : openMove ? openMove.when_text : goal?.action_when ?? null;
+
+  // Today's action is their next open move. Once a Next Step has moves, the
+  // old plan's action (still stored on the goal) is never shown again.
+  const commitment = reviewCommitment || openMove?.body.trim() || (moves.length ? "" : goal?.action_text?.trim() || "");
+  const commitmentWhen = reviewCommitment ? null : openMove ? (movesRepeat(openMove.when_text) ? openMove.when_text : null) : goal?.action_when ?? null;
+  // A one-off move (no days to repeat on) shows every day until it's done,
+  // and ticking it ticks the move itself.
+  const todayMoveId = !reviewCommitment && openMove && !movesRepeat(openMove.when_text) ? openMove.id : null;
+  const allMovesDone = planned && moves.length > 0 && !openMove && goal
+    ? { addHref: goal.clear_plan_id ? `/next-step/build?plan=${goal.clear_plan_id}&step=5` : "/next-step", takenHref: `/next-step/taken?goal=${goal.id}` }
+    : null;
   const checkInHref = goal ? `/next-step/check-in?goal=${goal.id}` : "/next-step";
   const fallback = fallbackOf(main?.plan);
   const reviewName = "weekly check-in";
@@ -311,7 +322,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
             {/* 3. Today: the plan's action (and the daily practice for members). */}
             <Cell span={2}>
-              <TodayCard action={commitment} actionWhen={commitmentWhen} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} />
+              <TodayCard action={commitment} actionWhen={commitmentWhen} moveId={todayMoveId} movesDone={allMovesDone} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} />
             </Cell>
 
             {/* 4. This week: the weekly review and the run of reviews. */}

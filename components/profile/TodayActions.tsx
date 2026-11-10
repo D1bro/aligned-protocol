@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addOwnAction, removeOwnAction, setOwnActionDone, setPlanActionDone } from "@/lib/actions/planning";
+import { setMoveDone } from "@/lib/actions/next-step";
 import type { PlanAction } from "@/lib/planning";
 
 // Today's actions: the plan's own action when it's planned (or already ticked)
@@ -14,7 +15,8 @@ export function TodayActions({
   goals,
   defaultGoalId,
 }: {
-  plan: { goalId: string; body: string; done: boolean } | null;
+  // moveId: a one-off move, ticked off as the move itself.
+  plan: { goalId: string; body: string; done: boolean; moveId?: string } | null;
   own: PlanAction[];
   goals: { id: string; title: string }[];
   defaultGoalId: string | null;
@@ -53,7 +55,7 @@ export function TodayActions({
           {plan ? (
             <li>
               <label>
-                <input type="checkbox" checked={plan.done} disabled={busy} onChange={(e) => run(() => setPlanActionDone({ goalId: plan.goalId, body: plan.body, done: e.target.checked }))} />
+                <input type="checkbox" checked={plan.done} disabled={busy} onChange={(e) => run(() => (plan.moveId ? setMoveDone(plan.moveId, e.target.checked) : setPlanActionDone({ goalId: plan.goalId, body: plan.body, done: e.target.checked })))} />
                 <span>{plan.body}</span>
               </label>
               <span className="ms-action-tag">From your Next Step</span>

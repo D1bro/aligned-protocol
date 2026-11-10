@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveMonthReflection } from "@/lib/actions/life";
 import { MONTH_COLOURS } from "@/lib/life-months";
@@ -8,7 +9,7 @@ import { MONTH_COLOURS } from "@/lib/life-months";
 // "How would you describe this month?" They choose a colour if one fits, and
 // can add a few words. A hard month can still be a meaningful one; rest isn't
 // failure. Nothing is chosen for them.
-export function MonthReflectionForm({ month, initialColour, initialReflection }: { month: string; initialColour: string | null; initialReflection: string | null }) {
+export function MonthReflectionForm({ month, initialColour, initialReflection, saved = false }: { month: string; initialColour: string | null; initialReflection: string | null; saved?: boolean }) {
   const router = useRouter();
   const [colour, setColour] = useState<string | null>(initialColour);
   const [words, setWords] = useState(initialReflection ?? "");
@@ -48,8 +49,13 @@ export function MonthReflectionForm({ month, initialColour, initialReflection }:
       <label htmlFor="month-words" className="au-detail-k">A few words about it <span className="au-small">Optional</span></label>
       <textarea id="month-words" rows={3} maxLength={1000} value={words} onChange={(e) => setWords(e.target.value)} placeholder="What this month was like, in your own words" />
       <div className="identity-actions">
-        <button type="button" className="btn btn-p" disabled={pending || !changed} onClick={save}>{pending ? "Saving…" : "Save"}</button>
-        {message ? <span className={message.ok ? "lm-saved" : "clear-err"} role={message.ok ? "status" : "alert"}>{message.text}</span> : null}
+        {changed || !saved ? (
+          <button type="button" className="btn btn-p" disabled={pending || !changed} onClick={save}>{pending ? "Saving…" : "Save"}</button>
+        ) : (
+          <span className="lm-saved" role="status">&#10003; Saved. Change anything above to update it.</span>
+        )}
+        {message && !message.ok ? <span className="clear-err" role="alert">{message.text}</span> : null}
+        {saved && !changed ? <Link href="/journey" className="btn btn-o">Back to My Journey</Link> : null}
       </div>
       <p className="au-small">Private to you. A challenging month can still be a meaningful one, and rest isn&rsquo;t failure.</p>
     </div>

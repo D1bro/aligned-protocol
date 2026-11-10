@@ -133,21 +133,6 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <p className="au-start-help">You may not know yet, and that&rsquo;s fine. Roughly is enough. If it helps:</p>
             <Prompts list={p.ten} />
             <textarea id="ns-ten" rows={4} value={ten} onChange={(e) => setTen(e.target.value)} placeholder={p.examples.ten} />
-            <div className="au-sum-card ns-gold">
-              <p className="au-detail-k">Keep this. We won&rsquo;t start here.</p>
-              <p className="ns-strong">
-                {start ? `From ${aScore(start)}, ` : ""}a 10 can feel too far away to start. So we&rsquo;ll keep it as your direction, and first find the one
-                step that gets you out of where you&rsquo;re stuck. That first step often changes things more than any step after it.
-              </p>
-              {start ? (
-                <>
-                  <div className="ns-bar ns-bar-static" aria-hidden="true">
-                    {Array.from({ length: 10 }, (_, i) => <span key={i} className={i + 1 <= start ? "now" : i === 9 ? "far" : undefined} />)}
-                  </div>
-                  <p className="ns-bar-ends"><b>Now: {start}</b><span>Your 10</span></p>
-                </>
-              ) : null}
-            </div>
           </>
         )}
 

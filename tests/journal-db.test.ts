@@ -51,3 +51,17 @@ test("the journal folder is private to each member", async () => {
   assert.equal(await val(db, `select count(*)::int from storage.objects where bucket_id = 'journal'`), 0);
   assert.equal(await val(db, `select public from storage.buckets where id = 'journal'`), false);
 });
+
+test("an entry can be written in one of the ten areas, or as free writing (0030)", async () => {
+  await asUser(db, sam);
+  const area = await val<string>(db, `select id from public.life_areas where name = 'Relationships & Connection'`);
+  assert.equal(
+    await errorOf(db, `insert into public.journal_entries (client_id, entry_date, body, life_area_id) values ($1, '2026-11-10', 'I realised something', $2)`, [sam, area]),
+    null
+  );
+  assert.equal(await val(db, `select count(*)::int from public.journal_entries where client_id = $1 and life_area_id = $2`, [sam, area]), 1);
+  assert.ok(await val<number>(db, `select count(*)::int from public.journal_entries where client_id = $1 and life_area_id is null`, [sam]) >= 1, "free writing stays as it was");
+  assert.ok(await errorOf(db, `insert into public.journal_entries (client_id, entry_date, body, life_area_id) values ($1, '2026-11-10', 'x', gen_random_uuid())`, [sam]), "only a real area");
+  await asUser(db, robin);
+  assert.equal(await val(db, `select count(*)::int from public.journal_entries where life_area_id = $1`, [area]), 0, "still private");
+});

@@ -11,7 +11,8 @@ import { checkVideoUrl, ownImages } from "@/lib/journal";
 // Momentum. Only the writer can read it; coaches and admins can't. After a
 // membership ends, entries stay theirs to read and export. Since 0025 an entry
 // can link to one of their goals, carry one video link and up to four images
-// in their own folder of the private 'journal' bucket.
+// in their own folder of the private 'journal' bucket. Since 0030 an entry
+// is written in one of the ten areas of their chart, or as free writing.
 
 export type JournalEntry = {
   id: string;
@@ -19,6 +20,8 @@ export type JournalEntry = {
   prompt: string | null;
   body: string;
   goal_id: string | null;
+  // The life area it's written in; null is free writing (migration 0030).
+  life_area_id: string | null;
   video_url: string | null;
   images: string[];
   created_at: string;
@@ -26,7 +29,7 @@ export type JournalEntry = {
   // Short-lived links to show their images (not stored).
   imageUrls?: string[];
 };
-const COLUMNS = "id, entry_date, prompt, body, goal_id, video_url, images, created_at, updated_at";
+const COLUMNS = "id, entry_date, prompt, body, goal_id, life_area_id, video_url, images, created_at, updated_at";
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 // Signed links (an hour) for every image on these entries.
@@ -52,14 +55,17 @@ async function member(writing: boolean) {
   return { supabase, userId: user.id };
 }
 
-// Newest first, optionally only entries with these words or in one month
-// ("YYYY-MM"). `available` is false before migration 0025 has run.
-export async function getJournal(options: { limit?: number; q?: string; month?: string } = {}): Promise<{ available: boolean; entries: JournalEntry[] }> {
+// Newest first, optionally only entries with these words, in one month
+// ("YYYY-MM") or in one section ("free", or a life area's id). `available`
+// is false before migration 0030 has run.
+export async function getJournal(options: { limit?: number; q?: string; month?: string; area?: string } = {}): Promise<{ available: boolean; entries: JournalEntry[] }> {
   const m = await member(false);
   if (!m) return { available: false, entries: [] };
   let query = m.supabase.from("journal_entries").select(COLUMNS);
   const words = options.q?.trim().replace(/[%_,()]/g, " ").trim();
   if (words) query = query.or(`body.ilike.%${words}%,prompt.ilike.%${words}%`);
+  if (options.area === "free") query = query.is("life_area_id", null);
+  else if (options.area && /^[0-9a-f-]{36}$/i.test(options.area)) query = query.eq("life_area_id", options.area);
   if (options.month && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.month)) {
     const [y, mo] = options.month.split("-").map(Number);
     const next = mo === 12 ? `${y + 1}-01-01` : `${y}-${String(mo + 1).padStart(2, "0")}-01`;
@@ -79,6 +85,7 @@ export async function saveJournalEntry(input: {
   prompt: string | null;
   body: string;
   goalId?: string | null;
+  lifeAreaId?: string | null;
   videoUrl?: string;
   images?: string[];
 }): Promise<Result> {
@@ -94,7 +101,7 @@ export async function saveJournalEntry(input: {
   if (!images) return { ok: false, message: "Up to four of your own images per entry." };
   // Images taken off an entry are deleted from storage once it saves.
   const before = input.id ? await m.supabase.from("journal_entries").select("images").eq("id", input.id).maybeSingle() : null;
-  const row = { entry_date: input.entryDate, prompt: input.prompt?.trim().slice(0, 300) || null, body, goal_id: input.goalId || null, video_url: video.value, images };
+  const row = { entry_date: input.entryDate, prompt: input.prompt?.trim().slice(0, 300) || null, body, goal_id: input.goalId || null, life_area_id: input.lifeAreaId || null, video_url: video.value, images };
   const query = input.id
     ? m.supabase.from("journal_entries").update(row).eq("id", input.id)
     : m.supabase.from("journal_entries").insert({ ...row, client_id: m.userId });
@@ -122,7 +129,7 @@ export async function deleteJournalEntry(id: string): Promise<Result> {
 export async function exportJournal(): Promise<{ ok: true; data: unknown } | { ok: false; message: string }> {
   const m = await member(false);
   if (!m) return { ok: false, message: "Please sign in again." };
-  const { data, error } = await m.supabase.from("journal_entries").select("entry_date, prompt, body, goal_id, video_url, images, created_at, updated_at").order("entry_date");
+  const { data, error } = await m.supabase.from("journal_entries").select("entry_date, prompt, body, goal_id, life_area_id, video_url, images, created_at, updated_at").order("entry_date");
   if (error) return { ok: false, message: "Couldn’t export just now — try again." };
-  return { ok: true, data: { schema: { name: "aligned.journal", version: 2 }, exported_at: new Date().toISOString(), entries: data ?? [] } };
+  return { ok: true, data: { schema: { name: "aligned.journal", version: 3 }, exported_at: new Date().toISOString(), entries: data ?? [] } };
 }

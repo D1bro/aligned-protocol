@@ -4,6 +4,8 @@ import { Logo } from "@/components/ui/Logo";
 import { ClientNav, ClientMobileNav } from "./ClientNav";
 import { getLatestCompletedAudit } from "@/lib/actions/audit";
 import { GuestBar } from "./GuestBar";
+import { getMyAccess } from "@/lib/actions/membership";
+import { canUseDailyAlignment } from "@/lib/alignment";
 
 // Member pages are personal: keep them out of search results. The audit
 // welcome page opts back in (app/(client)/audit/page.tsx).
@@ -17,7 +19,7 @@ export default async function ClientLayout({ children }: { children: React.React
   // Coaches and admins can use the member pages too (they land in /coach
   // after signing in). Redirecting them to "/" here looped forever.
   const staff = profile.role === "coach" || profile.role === "admin";
-  // A member with a coach sees Coaching first in the menu.
+  // A member with a coach sees Coaching second in the menu, after My Space.
   const coached = !!profile.coach_id;
 
   if (profile.isAnonymous) {
@@ -33,13 +35,17 @@ export default async function ClientLayout({ children }: { children: React.React
     return <GuestShell hasResults={!!results}>{children}</GuestShell>;
   }
 
+  // The journal is part of Aligned Practice and Momentum: a lock in the menu otherwise.
+  const access = await getMyAccess().catch(() => null);
+  const journalLocked = !canUseDailyAlignment(profile.role, access?.tier);
+
   return (
     <div className="shell has-tabs">
       <aside className="sidebar">
         <Logo subtitle="Protocol" />
-        <ClientNav fullName={profile.full_name} staff={staff} coached={coached} />
+        <ClientNav fullName={profile.full_name} staff={staff} coached={coached} journalLocked={journalLocked} />
       </aside>
-      <ClientMobileNav fullName={profile.full_name} staff={staff} coached={coached} />
+      <ClientMobileNav fullName={profile.full_name} staff={staff} coached={coached} journalLocked={journalLocked} />
       <div className="main">{children}</div>
     </div>
   );

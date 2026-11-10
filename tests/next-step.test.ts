@@ -2,7 +2,7 @@
 // picks up, and that every area has its own prompts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aScore, isSet, promptsFor, resumeScreen, stepsBetween } from "../lib/next-step.ts";
+import { aScore, isSet, movesRepeat, promptsFor, resumeScreen, stepsBetween } from "../lib/next-step.ts";
 
 const AREAS = [
   "Health & Energy", "Mindset & Thinking", "Confidence & Self-Belief", "Relationships & Connection", "Career, Work & Business",
@@ -41,4 +41,13 @@ test("wording helpers", () => {
   assert.equal(aScore(5), "a 5");
   assert.equal(stepsBetween(4, 5), "one step");
   assert.equal(stepsBetween(3, 6), "3 steps");
+});
+
+test("a move repeats only when it says so; a day on its own is a deadline", () => {
+  assert.equal(movesRepeat("Every Sunday at 6pm"), true);
+  assert.equal(movesRepeat("each Monday"), true);
+  assert.equal(movesRepeat("Daily"), true);
+  assert.equal(movesRepeat("By Friday"), false);
+  assert.equal(movesRepeat("Today"), false);
+  assert.equal(movesRepeat(null), false);
 });

@@ -106,24 +106,25 @@ export async function getMonthStory(ym: string): Promise<MonthStory | null> {
   const [intention, actions, reviews, audits, goals, journal] = await Promise.all([
     supabase.from("monthly_intentions").select("intention").eq("client_id", userId).eq("month", from).maybeSingle(),
     supabase.from("plan_actions").select("done_at").eq("client_id", userId).gte("action_date", from).lt("action_date", to),
-    supabase.from("goal_checkins").select("kind").eq("client_id", userId).gte("created_at", from).lt("created_at", to),
+    supabase.from("goal_checkins").select("kind, did_it, next_step").eq("client_id", userId).gte("created_at", from).lt("created_at", to),
     supabase.from("audits").select("id, completed_at, total_score").eq("client_id", userId).eq("status", "completed").gte("completed_at", from).lt("completed_at", to).order("completed_at"),
-    supabase.from("goals").select("goal_title, status, created_at, updated_at").eq("client_id", userId),
+    supabase.from("goals").select("goal_title, status, created_at, updated_at, set_at, taken_at").eq("client_id", userId),
     supabase.from("journal_entries").select("id, entry_date, body").eq("client_id", userId).gte("entry_date", from).lt("entry_date", to).order("entry_date"),
   ]);
   const inMonth = (iso: string | null | undefined) => !!iso && iso >= from && iso < to;
-  const goalRows = (goals.data ?? []) as { goal_title: string | null; status: string; created_at: string; updated_at: string | null }[];
+  const goalRows = (goals.data ?? []) as { goal_title: string | null; status: string; created_at: string; updated_at: string | null; set_at: string | null; taken_at: string | null }[];
   const title = (g: { goal_title: string | null }) => g.goal_title?.trim() || "A goal";
   const actionRows = (actions.data ?? []) as { done_at: string | null }[];
-  const reviewRows = (reviews.data ?? []) as { kind: string | null }[];
+  const reviewRows = (reviews.data ?? []) as { kind: string | null; did_it: string | null; next_step: string | null }[];
   return {
     intention: (intention.data?.intention as string | undefined) ?? null,
     actions: { done: actionRows.filter((a) => a.done_at).length, total: actionRows.length },
     weeklyReviews: reviewRows.filter((r) => r.kind === "weekly").length,
-    monthlyReviews: reviewRows.filter((r) => r.kind !== "weekly").length,
+    // Taking a Next Step is recorded with the area's new score; it shows as "Next Step taken".
+    monthlyReviews: reviewRows.filter((r) => r.kind !== "weekly" && !(r.next_step === "done" && !r.did_it)).length,
     audits: ((audits.data ?? []) as { id: string; completed_at: string; total_score: number | null }[]).map((a) => ({ id: a.id, date: a.completed_at, score: a.total_score })),
-    goalsSet: goalRows.filter((g) => inMonth(g.created_at)).map(title),
-    goalsDone: goalRows.filter((g) => g.status === "completed" && inMonth(g.updated_at)).map(title),
+    goalsSet: goalRows.filter((g) => inMonth(g.set_at ?? g.created_at)).map(title),
+    goalsDone: goalRows.filter((g) => (g.taken_at ? inMonth(g.taken_at) : g.status === "completed" && inMonth(g.updated_at))).map(title),
     journal: {
       available: !journal.error,
       entries: ((journal.data ?? []) as { id: string; entry_date: string; body: string }[]).map((e) => {

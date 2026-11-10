@@ -34,11 +34,11 @@ export default async function MonthPage({ params }: { params: Promise<{ month: s
     ? [
         story.intention ? { k: "Intention", v: story.intention, serif: true } : null,
         story.actions.total ? { k: "Actions", v: `${story.actions.done} of ${story.actions.total} done` } : null,
-        story.weeklyReviews ? { k: "Weekly reviews", v: String(story.weeklyReviews) } : null,
+        story.weeklyReviews ? { k: "Weekly check-ins", v: String(story.weeklyReviews) } : null,
         story.monthlyReviews ? { k: "Monthly reviews", v: String(story.monthlyReviews) } : null,
         ...story.audits.map((a) => ({ k: "Audit", v: `${formatDate(a.date)}${a.score !== null ? ` · whole-life ${a.score}/100` : ""}` })),
-        ...story.goalsSet.map((g) => ({ k: "Goal set", v: g })),
-        ...story.goalsDone.map((g) => ({ k: "Goal done", v: g })),
+        ...story.goalsSet.map((g) => ({ k: "Next Step set", v: g })),
+        ...story.goalsDone.map((g) => ({ k: "Next Step taken", v: g })),
       ].filter((x): x is { k: string; v: string; serif?: boolean } => !!x)
     : [];
 
@@ -55,7 +55,7 @@ export default async function MonthPage({ params }: { params: Promise<{ month: s
       {available ? (
         <section className="pf-tile lm-section" aria-labelledby="lm-reflect-h">
           <h2 id="lm-reflect-h" className="pl-h">{ym === today ? "How is this month going?" : "How would you describe this month?"}</h2>
-          <MonthReflectionForm month={ym} initialColour={reflection?.colour ?? null} initialReflection={reflection?.reflection ?? null} />
+          <MonthReflectionForm month={ym} initialColour={reflection?.colour ?? null} initialReflection={reflection?.reflection ?? null} saved={!!reflection} />
         </section>
       ) : null}
 
