@@ -5,6 +5,7 @@ import { deleteJournalEntry, exportJournal, saveJournalEntry, type JournalEntry 
 import { createClient } from "@/lib/supabase/client";
 import { byMonth, IMAGE_TYPES, MAX_IMAGE_BYTES, MAX_IMAGES, PROMPTS, todaysPrompt, videoSite } from "@/lib/journal";
 import { monthName } from "@/lib/life-months";
+import { AREA_ICONS, Icon } from "@/components/ui/Icon";
 
 function dateLabel(date: string) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T12:00:00Z`));
@@ -28,9 +29,14 @@ async function shrink(file: File): Promise<Blob | null> {
 }
 
 type Picture = { path: string; url: string };
+export type JournalArea = { id: string; name: string; sort_order: number };
+const FREE = "free";
 
-// The one journal: write (with a prompt if it helps), link a goal, add up to
-// four images and a video link; read back by month, edit, delete, export.
+// The one journal (Duane, 10 Nov 2026): choose where to write (free writing,
+// or the section for one of the ten areas of your chart), pick the day, and
+// write freely. Prompts, a link to a Next Step, images and a video link are
+// there if wanted, folded away. Read back by section and month, edit, delete,
+// export.
 // Nothing is saved until "Save privately"; there's no autosave or local
 // storage. Images go straight to the member's private folder; any added but
 // not saved are removed again on cancel.
@@ -41,6 +47,9 @@ export function JournalWorkspace({
   userId,
   goals,
   planPrompts,
+  areas,
+  startArea = FREE,
+  showEverySection = false,
   startWriting = false,
 }: {
   initial: JournalEntry[];
@@ -49,10 +58,18 @@ export function JournalWorkspace({
   userId: string;
   goals: { id: string; title: string }[];
   planPrompts: string[];
+  areas: JournalArea[];
+  // "free", or a life area's id (?area= on the journal page).
+  startArea?: string;
+  // Searching by words or month: show matches from every section.
+  showEverySection?: boolean;
   startWriting?: boolean;
 }) {
   const prompts = [...planPrompts, todaysPrompt(today), ...PROMPTS.filter((p) => p !== todaysPrompt(today)).slice(0, 3)];
   const [entries, setEntries] = useState(initial);
+  const [section, setSection] = useState(areas.some((a) => a.id === startArea) ? startArea : FREE);
+  const [showAll, setShowAll] = useState(showEverySection);
+  const [extras, setExtras] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [date, setDate] = useState(today);
   const [prompt, setPrompt] = useState<string | null>(null);
@@ -72,8 +89,16 @@ export function JournalWorkspace({
   }, [startWriting, canWrite]);
   useEffect(() => setEntries(initial), [initial]);
 
+  function choose(id: string) {
+    setSection(id);
+    setShowAll(false);
+    window.history.replaceState(null, "", id === FREE ? "/journal" : `/journal?area=${id}`);
+    bodyRef.current?.focus({ preventScroll: true });
+  }
+
   function reset() {
     setEditing(null);
+    setExtras(false);
     setDate(today);
     setPrompt(null);
     setBody("");
@@ -121,7 +146,16 @@ export function JournalWorkspace({
   async function save() {
     setBusy(true);
     setStatus(null);
-    const r = await saveJournalEntry({ id: editing, entryDate: date, prompt, body, goalId: goalId || null, videoUrl: video, images: pictures.map((p) => p.path) });
+    const r = await saveJournalEntry({
+      id: editing,
+      entryDate: date,
+      prompt,
+      body,
+      goalId: goalId || null,
+      lifeAreaId: section === FREE ? null : section,
+      videoUrl: video,
+      images: pictures.map((p) => p.path),
+    });
     setBusy(false);
     if (!r.ok) return setStatus({ text: r.message, error: true });
     const saved = r.entry!;
@@ -155,56 +189,95 @@ export function JournalWorkspace({
   }
 
   const goalTitle = new Map(goals.map((g) => [g.id, g.title]));
+  const areaOf = new Map(areas.map((a) => [a.id, a]));
+  const current = section === FREE ? null : areaOf.get(section) ?? null;
+  const sectionName = current?.name ?? "Free writing";
+  const count = (id: string) => entries.filter((e) => (e.life_area_id ?? FREE) === id).length;
+  const shown = showAll ? entries : entries.filter((e) => (e.life_area_id ?? FREE) === section);
+  const sections = [{ id: FREE, name: "Free writing", icon: "pen" as const }, ...areas.map((a) => ({ id: a.id, name: a.name, icon: AREA_ICONS[a.sort_order] ?? ("pen" as const) }))];
 
   return (
     <div className="alignment-stack">
+      <section className="jr-sections" aria-labelledby="jr-sections-h">
+        <h2 id="jr-sections-h" className="jr-k">{canWrite ? "Where do you want to write today?" : "Your sections"}</h2>
+        <div className="jr-tiles" role="group" aria-label="Journal sections">
+          {sections.map((x) => (
+            <button key={x.id} type="button" className="jr-tile" aria-pressed={section === x.id} onClick={() => choose(x.id)}>
+              <span className="jr-tile-icon"><Icon name={x.icon} size={18} /></span>
+              <span className="jr-tile-name">{x.name}</span>
+              <span className="jr-tile-count">{count(x.id) ? `${count(x.id)} ${count(x.id) === 1 ? "entry" : "entries"}` : ""}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {canWrite ? (
-        <section className="alignment-card" aria-labelledby="journal-write-h" id="write">
-          <p className="alignment-kicker">{editing ? "Editing an entry" : "New entry"}</p>
-          <h2 id="journal-write-h">{prompt ?? "Write whatever is here today."}</h2>
-          <div className="au-chips" role="group" aria-label="Start from a prompt (optional)">
-            {prompts.map((p) => (
-              <button key={p} type="button" aria-pressed={prompt === p} onClick={() => setPrompt(prompt === p ? null : p)}>{p}</button>
-            ))}
-          </div>
-          <label className="alignment-label" htmlFor="journal-body">Your entry</label>
-          <textarea ref={bodyRef} className="alignment-field journal-body" id="journal-body" rows={9} maxLength={20000} value={body} onChange={(e) => setBody(e.target.value)} />
-
-          <div className="journal-extras">
-            <div className="journal-row">
-              <label className="alignment-label" htmlFor="journal-date">Date</label>
-              <input className="alignment-field journal-date" id="journal-date" type="date" max={today} value={date} onChange={(e) => setDate(e.target.value)} />
+        <section className="jr-write" aria-labelledby="journal-write-h" id="write">
+          <div className="jr-write-head">
+            <div>
+              <p className="jr-k">{editing ? "Editing an entry" : "New entry"}</p>
+              <h2 id="journal-write-h" className="jr-write-h">{sectionName}</h2>
             </div>
-            {goals.length ? (
-              <div className="journal-row">
-                <label className="alignment-label" htmlFor="journal-goal">About a goal <span className="au-small">Optional</span></label>
-                <select className="alignment-field" id="journal-goal" value={goalId} onChange={(e) => setGoalId(e.target.value)}>
-                  <option value="">Not linked to a goal</option>
-                  {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-                </select>
+            <label className="jr-date">
+              <span className="sr-only">Date</span>
+              <input type="date" max={today} value={date} onChange={(e) => setDate(e.target.value)} aria-label="The day you're writing about" />
+            </label>
+          </div>
+          {prompt ? <p className="jr-prompt">{prompt}</p> : null}
+          <label className="sr-only" htmlFor="journal-body">Your entry</label>
+          <textarea
+            ref={bodyRef}
+            className="jr-paper"
+            id="journal-body"
+            rows={10}
+            maxLength={20000}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder={current ? `Write freely about ${current.name.split(" & ")[0].toLowerCase()}…` : "Write whatever is here today…"}
+          />
+
+          <button type="button" className="jr-extras-toggle" aria-expanded={extras} onClick={() => setExtras((x) => !x)}>
+            {extras ? "Hide the extras" : "Add a prompt, a photo, a video link or your Next Step"}
+          </button>
+          {extras ? (
+            <div className="jr-extras">
+              <div className="au-chips" role="group" aria-label="Start from a prompt (optional)">
+                {prompts.map((p) => (
+                  <button key={p} type="button" aria-pressed={prompt === p} onClick={() => setPrompt(prompt === p ? null : p)}>{p}</button>
+                ))}
               </div>
-            ) : null}
-            <div className="journal-row">
-              <label className="alignment-label" htmlFor="journal-video">A video link <span className="au-small">Optional</span></label>
-              <input className="alignment-field" id="journal-video" type="url" inputMode="url" placeholder="https://" value={video} onChange={(e) => setVideo(e.target.value)} />
+              <div className="journal-extras">
+                {goals.length ? (
+                  <div className="journal-row">
+                    <label className="alignment-label" htmlFor="journal-goal">About a Next Step <span className="au-small">Optional</span></label>
+                    <select className="alignment-field" id="journal-goal" value={goalId} onChange={(e) => setGoalId(e.target.value)}>
+                      <option value="">Not linked</option>
+                      {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                    </select>
+                  </div>
+                ) : null}
+                <div className="journal-row">
+                  <label className="alignment-label" htmlFor="journal-video">A video link <span className="au-small">Optional</span></label>
+                  <input className="alignment-field" id="journal-video" type="url" inputMode="url" placeholder="https://" value={video} onChange={(e) => setVideo(e.target.value)} />
+                </div>
+              </div>
+              <div className="journal-pictures">
+                {pictures.map((p) => (
+                  <figure key={p.path}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- a private, short-lived link */}
+                    <img src={p.url} alt="" />
+                    <button type="button" aria-label="Remove this image" onClick={() => setPictures((list) => list.filter((x) => x.path !== p.path))}>×</button>
+                  </figure>
+                ))}
+                {pictures.length < MAX_IMAGES ? (
+                  <label className="journal-add-image">
+                    <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => addImages(e.target.files)} disabled={busy} />
+                    + Add {pictures.length ? "another image" : "images"} <span className="au-small">up to {MAX_IMAGES}</span>
+                  </label>
+                ) : null}
+              </div>
             </div>
-          </div>
-
-          <div className="journal-pictures">
-            {pictures.map((p) => (
-              <figure key={p.path}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- a private, short-lived link */}
-                <img src={p.url} alt="" />
-                <button type="button" aria-label="Remove this image" onClick={() => setPictures((list) => list.filter((x) => x.path !== p.path))}>×</button>
-              </figure>
-            ))}
-            {pictures.length < MAX_IMAGES ? (
-              <label className="journal-add-image">
-                <input ref={fileRef} type="file" accept="image/*" multiple onChange={(e) => addImages(e.target.files)} disabled={busy} />
-                + Add {pictures.length ? "another image" : "images"} <span className="au-small">up to {MAX_IMAGES}</span>
-              </label>
-            ) : null}
-          </div>
+          ) : null}
 
           <div className="alignment-form-footer">
             <p className="alignment-small"><b>Only you can see your journal. Your coach can&rsquo;t.</b></p>
@@ -217,16 +290,24 @@ export function JournalWorkspace({
       ) : null}
 
       <section className="alignment-card" aria-labelledby="journal-list-h">
-        <h2 id="journal-list-h">Your entries</h2>
-        {entries.length ? (
-          byMonth(entries).map((g) => (
+        <div className="jr-list-head">
+          <h2 id="journal-list-h">{showAll ? "All your entries" : sectionName}</h2>
+          <button type="button" className="alignment-secondary" onClick={() => setShowAll((x) => !x)}>
+            {showAll ? `Only ${sectionName}` : "Show every section"}
+          </button>
+        </div>
+        {shown.length ? (
+          byMonth(shown).map((g) => (
             <div key={g.month} className="journal-month">
               <h3>{monthName(g.month)}</h3>
               <ol className="journal-list">
                 {g.entries.map((e) => (
                   <li key={e.id}>
-                    <p className="journal-when">{dateLabel(e.entry_date)}</p>
-                    {e.goal_id && goalTitle.has(e.goal_id) ? <p className="journal-goal">About: {goalTitle.get(e.goal_id)}</p> : null}
+                    <p className="journal-when">
+                      {dateLabel(e.entry_date)}
+                      {showAll ? <span className="jr-tag">{e.life_area_id ? areaOf.get(e.life_area_id)?.name ?? "A life area" : "Free writing"}</span> : null}
+                    </p>
+                    {e.goal_id && goalTitle.has(e.goal_id) ? <p className="journal-goal">About your Next Step: {goalTitle.get(e.goal_id)}</p> : null}
                     {e.prompt ? <p className="journal-prompt">{e.prompt}</p> : null}
                     <p className="journal-text">{e.body}</p>
                     {e.imageUrls?.length ? (
@@ -251,6 +332,8 @@ export function JournalWorkspace({
                           className="alignment-secondary"
                           onClick={() => {
                             setEditing(e.id);
+                            setSection(e.life_area_id && areaOf.has(e.life_area_id) ? e.life_area_id : FREE);
+                            setExtras(!!(e.prompt || e.goal_id || e.video_url || e.images?.length));
                             setDate(e.entry_date);
                             setPrompt(e.prompt);
                             setBody(e.body);
@@ -280,7 +363,7 @@ export function JournalWorkspace({
             </div>
           ))
         ) : (
-          <p className="alignment-empty">No entries here. There&rsquo;s nothing to catch up on.</p>
+          <p className="alignment-empty">{showAll ? "No entries yet." : `Nothing in ${sectionName} yet.`} There&rsquo;s nothing to catch up on.</p>
         )}
         {entries.length ? <button type="button" className="btn btn-g" onClick={download}>Export my journal</button> : null}
       </section>
