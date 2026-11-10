@@ -262,8 +262,16 @@ export async function saveScreen(planId: string, input: ScreenInput): Promise<Re
 export async function takeOnNextStep(planId: string): Promise<Result> {
   const ctx = await getBuildContext(planId);
   if (!ctx?.goal || !ctx.moves.length || !ctx.goal.success_criteria?.trim()) return { ok: false, message: "Finish the five screens first." };
-  if (!ctx.goal.set_at) {
-    const { supabase } = await me();
+  const { supabase } = await me();
+  // Set again before its first check-in (a rewrite, or an old My Plan goal
+  // made into a Next Step): it starts today, so the first check-in is a week
+  // from now rather than due straight away.
+  let restart = !ctx.goal.set_at;
+  if (!restart) {
+    const { count } = await supabase.from("goal_checkins").select("id", { count: "exact", head: true }).eq("goal_id", ctx.goal.id);
+    restart = !count;
+  }
+  if (restart) {
     const { data, error } = await supabase.from("goals").update({ set_at: new Date().toISOString() }).eq("id", ctx.goal.id).select("id");
     if (error || !data?.length) return { ok: false, message: FAILED };
   }
