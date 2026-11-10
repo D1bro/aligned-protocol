@@ -82,7 +82,7 @@ export function MomentumStrip({
       </div>
 
       <div className="mo-tile">
-        <p className="mo-k">Steps from last session</p>
+        <p className="mo-k">Agreed in your session</p>
         {tally.total ? (
           <>
             <p className="mo-big">{tally.moved} of {tally.total}</p>
@@ -92,7 +92,7 @@ export function MomentumStrip({
         ) : (
           <>
             <p className="mo-big">None yet</p>
-            <p className="mo-sub">You&rsquo;ll agree your next steps in a session.</p>
+            <p className="mo-sub">You&rsquo;ll agree steps together in a session.</p>
           </>
         )}
       </div>

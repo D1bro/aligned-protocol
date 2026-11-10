@@ -5,6 +5,8 @@ import type { MyBilling } from "@/lib/actions/billing";
 import type { Package } from "@/lib/actions/packages";
 import { stripeStatus } from "@/lib/stripe";
 import { cleanAreas, type CalibratedArea } from "@/lib/calibration";
+import type { Goal } from "@/lib/actions/clear";
+import { isSet } from "@/lib/next-step";
 
 // What a member sees of their coaching and billing, loaded for one client.
 // Used by the member's own pages and by the console's "See as client"
@@ -90,7 +92,7 @@ export type GoalCard = { id: string; title: string; area: string | null; now: nu
 export async function loadGoalCards(supabase: Db, clientId: string): Promise<GoalCard[]> {
   const { data: goals } = await supabase
     .from("goals")
-    .select("id, goal_title, goal_type, clear_plan_id, created_at")
+    .select("id, goal_title, goal_type, clear_plan_id, created_at, start_score, aim_score")
     .eq("client_id", clientId)
     .eq("status", "active")
     .order("created_at", { ascending: false });
@@ -110,13 +112,14 @@ export async function loadGoalCards(supabase: Db, clientId: string): Promise<Goa
     const plan = (plans ?? []).find((p) => p.id === g.clear_plan_id) ?? null;
     const last = (checks ?? []).find((c) => c.goal_id === g.id && typeof c.area_score === "number");
     const base = plan ? (responses ?? []).find((r) => r.audit_id === plan.audit_id && r.life_area_id === plan.life_area_id) : null;
-    const now = (last?.area_score as number | undefined) ?? (base?.satisfaction_score as number | undefined) ?? null;
+    const now = (last?.area_score as number | undefined) ?? (g.start_score as number | null) ?? (base?.satisfaction_score as number | undefined) ?? null;
     return {
       id: g.id as string,
       title: (g.goal_title as string | null)?.trim() || "Your goal",
       area: (areas ?? []).find((a) => a.id === plan?.life_area_id)?.name ?? null,
       now,
-      target: (plan?.step_up_target as number | null | undefined) ?? (now !== null ? Math.min(10, now + 1) : null),
+      // The score they think their Next Step could take them to (no fixed +1).
+      target: (g.aim_score as number | null) ?? (plan?.step_up_target as number | null | undefined) ?? null,
       main: g.id === mainId,
     };
   });
@@ -134,5 +137,61 @@ export async function loadCalibratedChart(supabase: Db, clientId: string): Promi
   return {
     sharedAt: data.shared_at as string,
     areas: cleanAreas(data.areas, [...names.keys()]).map((a) => ({ ...a, name: names.get(a.life_area_id) ?? "" })),
+  };
+}
+
+// The Next Step (migration 0029): a member's Next Steps under way and taken,
+// with their moves, their 10 for the area and their weekly check-ins. The
+// member's page and the console's preview both use this.
+export type Move = { id: string; goal_id: string; position: number; body: string; when_text: string | null; due_date: string | null; done_at: string | null };
+export type NextStepCard = {
+  goal: Goal;
+  area: string;
+  planId: string | null;
+  moves: Move[];
+  set: boolean;
+  ten: string | null;
+  lastCloser: string | null;
+  checkIns: { created_at: string }[];
+};
+
+export async function loadNextSteps(supabase: Db, clientId: string): Promise<{ active: NextStepCard[]; taken: NextStepCard[] }> {
+  const { data: goals } = await supabase
+    .from("goals")
+    .select("*")
+    .eq("client_id", clientId)
+    .or("status.eq.active,taken_at.not.is.null")
+    .order("created_at", { ascending: false });
+  const list = (goals ?? []) as Goal[];
+  const ids = list.map((g) => g.id);
+  const planIds = [...new Set(list.map((g) => g.clear_plan_id).filter((x): x is string => !!x))];
+  const [{ data: moves }, { data: plans }, { data: areas }, { data: checkIns }] = await Promise.all([
+    ids.length ? supabase.from("goal_moves").select("*").in("goal_id", ids).order("position").order("created_at") : Promise.resolve({ data: [] }),
+    planIds.length ? supabase.from("clear_plans").select("id, life_area_id, life_vision").in("id", planIds) : Promise.resolve({ data: [] }),
+    supabase.from("life_areas").select("id, name"),
+    ids.length
+      ? supabase.from("goal_checkins").select("goal_id, closer, created_at").in("goal_id", ids).eq("kind", "weekly").order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
+  const areaName = new Map((areas ?? []).map((a) => [a.id as string, a.name as string]));
+  const planArea = new Map((plans ?? []).map((p) => [p.id as string, areaName.get(p.life_area_id as string) ?? null]));
+  const ten = new Map((plans ?? []).map((p) => [p.id as string, ((p.life_vision as string | null) ?? "").trim() || null]));
+  const weekly = (checkIns ?? []) as { goal_id: string; closer: string | null; created_at: string }[];
+  const cards: NextStepCard[] = list.map((g) => ({
+    goal: g,
+    area: (g.clear_plan_id && planArea.get(g.clear_plan_id)) || g.focus_area?.trim() || "Your Next Step",
+    planId: g.clear_plan_id,
+    moves: ((moves ?? []) as Move[]).filter((m) => m.goal_id === g.id),
+    set: isSet(g),
+    ten: (g.clear_plan_id && ten.get(g.clear_plan_id)) || null,
+    lastCloser: weekly.find((c) => c.goal_id === g.id)?.closer ?? null,
+    checkIns: weekly.filter((c) => c.goal_id === g.id),
+  }));
+  return {
+    // The main one first, then newest.
+    active: cards
+      .filter((c) => c.goal.status === "active" && !c.goal.taken_at)
+      .sort((a, b) => Number(b.goal.goal_type === "primary") - Number(a.goal.goal_type === "primary")),
+    taken: cards.filter((c) => !!c.goal.taken_at),
   };
 }

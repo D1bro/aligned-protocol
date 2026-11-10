@@ -6,6 +6,7 @@ import { BuySessions } from "@/components/coaching/BuySessions";
 import { MemberInvoices } from "@/components/coaching/MemberInvoices";
 import { CoachingTabs, coachingTab } from "@/components/coaching/CoachingTabs";
 import { YourCoach } from "@/components/coaching/YourCoach";
+import { NextStepOverview } from "@/components/next-step/NextStepOverview";
 
 // "See as client": the client's own coaching pages, with their data, made
 // read-only (inert) so nothing can be done on their behalf.
@@ -41,13 +42,24 @@ export default async function ClientPreviewPage({
         <p className="cpv-k">Preview · read-only</p>
         <h1>What {first === "they" ? "they see" : `${first} sees`}</h1>
         <p>
-          Their coaching card on My Space and their Coaching page, with their real data. Buttons are switched off here.
+          Their coaching card on My Space, their Coaching page and The Next Step, with their real data. Buttons are switched off here.
           Not shown, because {first === "they" ? "they don’t" : `${first} doesn’t`} see them: your private notes, transcripts,
           reflections and any summary you haven&rsquo;t shared.{" "}
           {first === "they" ? "Their" : `${first}’s`} own unshared preparation is private to them, so it&rsquo;s blank here.
           {p.viewerBills ? "" : " Invoices, and packages offered only to selected clients, show for billing admins only."}
         </p>
       </div>
+
+      {p.nextSteps.active.length || p.nextSteps.taken.length ? (
+        <>
+          <p className="cpv-where">The Next Step</p>
+          <div className="cpv-screen ns-home">
+            <NextStepOverview active={p.nextSteps.active} taken={p.nextSteps.taken} readOnly />
+          </div>
+        </>
+      ) : (
+        <p className="plan-note">No Next Step set yet: on The Next Step {first === "they" ? "they" : first} {first === "they" ? "see" : "sees"} where to start.</p>
+      )}
 
       {shown ? (
         <>

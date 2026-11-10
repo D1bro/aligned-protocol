@@ -200,6 +200,9 @@ export async function getClientProfile(clientId: string) {
     supabase.from("coach_notes").select("*").eq("client_id", clientId).order("updated_at", { ascending: false }),
   ]);
 
+  // The Next Step's moves (migration 0029): the coach reads their client's.
+  const { data: moves } = await supabase.from("goal_moves").select("*").eq("client_id", clientId).order("position").order("created_at");
+
   const auditIds = (audits.data ?? []).map((a) => a.id as string);
   const { data: responses } = auditIds.length
     ? await supabase.from("audit_responses").select("audit_id, life_area_id, satisfaction_score, note").in("audit_id", auditIds)
@@ -214,6 +217,7 @@ export async function getClientProfile(clientId: string) {
     plans: (plans.data ?? []) as Record<string, unknown>[],
     goals: (goals.data ?? []) as Record<string, unknown>[],
     checkIns: (checkIns.data ?? []) as Record<string, unknown>[],
+    moves: (moves ?? []) as { id: string; goal_id: string; body: string; when_text: string | null; done_at: string | null }[],
     notes: (notes.data ?? []) as Record<string, unknown>[],
     reflections: (reflections.data ?? []) as { lesson_slug: string; reflection: string | null; completed_at: string | null; updated_at: string }[],
     enquiries: (enquiries.data ?? []) as Record<string, unknown>[],

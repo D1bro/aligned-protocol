@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveCheckIn } from "@/lib/actions/next-step";
-import { Moves } from "../Moves";
+import { Moves } from "@/components/next-step/Moves";
 import type { Move } from "@/lib/actions/next-step";
 
 const CHOICES = [

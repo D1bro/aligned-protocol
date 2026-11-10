@@ -2581,3 +2581,15 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .ns-next-opt span { font-size: 13px; color: var(--text2); }
 .ns-next-opt.ns-next-main { border-color: rgba(211,167,88,.45); background: #1a1812; }
 .ns-next-opt:hover { border-color: var(--gold); color: var(--text); }
+.ns-tick { width: 16px; height: 16px; margin-top: 3px; flex-shrink: 0; border: 1.5px solid var(--bg5); border-radius: 4px; }
+.ns-move-list li.done .ns-tick { background: var(--gold); border-color: var(--gold); }
+/* The console's view of a client's Next Steps */
+.coach-ns { margin-bottom: 1.5rem; }
+.coach-ns-k { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin: .5rem 0 .5rem; }
+.coach-ns-moves { list-style: none; display: grid; gap: .3rem; font-size: 14px; color: var(--text); }
+.coach-ns-moves li span { color: var(--gold); margin-right: .5rem; }
+.coach-ns-moves li.done { color: var(--text2); }
+.coach-ns-moves em { color: var(--text3); font-style: normal; }
+.desk-move { display: block; color: var(--text2); font-size: 13px; }
+.past-goals .coach-ns-changed { display: block; margin-top: .2rem; }
+.ns-support { margin-top: 1.25rem; }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { getClientProfile } from "@/lib/actions/admin";
 import { formatDate } from "@/lib/audit-schedule";
 import { formatSessionTime } from "@/lib/time";
+import { CLOSER_LABELS } from "@/lib/checkin-labels";
 
 type Profile = Awaited<ReturnType<typeof getClientProfile>>;
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -33,10 +34,12 @@ export function OverviewTab({
     (s) => !lastShared?.published_at || new Date(s.shared_at as string) > new Date(lastShared.published_at as string)
   );
   const latestAudit = p.audits[0] ?? null;
+  const moves = mainGoal ? p.moves.filter((m) => m.goal_id === mainGoal.id) : [];
+  const lastCheckIn = mainGoal ? p.checkIns.find((c) => c.goal_id === mainGoal.id && c.kind === "weekly") ?? null : null;
 
   const own = [
     p.identityStatement ? { label: "Who they're becoming", text: p.identityStatement } : null,
-    str(mainGoal?.motivation_text) ? { label: "Why their goal matters", text: str(mainGoal?.motivation_text)! } : null,
+    str(mainGoal?.motivation_text) ? { label: "Why their Next Step matters", text: str(mainGoal?.motivation_text)! } : null,
     focusNote ? { label: "Their audit note on this area", text: focusNote } : null,
   ].filter(Boolean) as { label: string; text: string }[];
 
@@ -78,19 +81,22 @@ export function OverviewTab({
       </section>
 
       <section className="admin-card" aria-labelledby="ov-focus-h">
-        <h2 id="ov-focus-h">Current focus</h2>
+        <h2 id="ov-focus-h">Their Next Step</h2>
         {mainGoal ? (
           <dl className="ov-facts">
             {str(mainGoal.focus_area) ? (<><dt>Area</dt><dd>{str(mainGoal.focus_area)}</dd></>) : null}
-            <dt>Main goal</dt>
+            <dt>Next Step</dt>
             <dd>{str(mainGoal.goal_title)}</dd>
-            {str(mainGoal.action_text) ? (<><dt>Action</dt><dd>{str(mainGoal.action_text)}</dd></>) : null}
-            {str(mainGoal.action_when) ?? str(mainGoal.frequency) ? (<><dt>When</dt><dd>{str(mainGoal.action_when) ?? str(mainGoal.frequency)}</dd></>) : null}
+            {mainGoal.start_score ? (
+              <><dt>Score</dt><dd>{String(mainGoal.start_score)}{mainGoal.aim_score && Number(mainGoal.aim_score) > Number(mainGoal.start_score) ? ` → aiming for ${mainGoal.aim_score}` : ""}</dd></>
+            ) : null}
+            {moves.length ? (<><dt>Moves</dt><dd>{moves.filter((m) => m.done_at).length} of {moves.length} done</dd></>) : null}
+            {lastCheckIn ? (<><dt>Last check-in</dt><dd>{CLOSER_LABELS[String(lastCheckIn.closer)] ?? "Weekly review"}, {formatDate(lastCheckIn.created_at as string)}</dd></>) : null}
           </dl>
         ) : (
           <p className="admin-card-sub">No Next Step under way. They set it in The Next Step; nothing is set here for them.</p>
         )}
-        <Link href={`/coach/clients/${p.client.id}?tab=goals`} className="au-text-link">Goals and audit</Link>
+        <Link href={`/coach/clients/${p.client.id}?tab=goals`} className="au-text-link">Next Steps and audit</Link>
       </section>
 
       <section className="admin-card" aria-labelledby="ov-before-h">

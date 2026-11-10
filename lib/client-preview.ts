@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/actions/admin";
 import { canBill } from "@/lib/actions/billing";
 import { env } from "@/lib/env";
-import { loadBilling, loadCalibratedChart, loadCoaching, loadGoalCards, loadOfferedPackages } from "@/lib/member-view";
+import { loadBilling, loadCalibratedChart, loadCoaching, loadGoalCards, loadNextSteps, loadOfferedPackages } from "@/lib/member-view";
 
 // "See as client": what one client sees on their Coaching page and the
 // coaching card on My Space, read by their coach or an admin. Loaded
@@ -20,7 +20,7 @@ export async function getClientPreview(clientId: string) {
   const { data: client } = await supabase.from("profiles").select("id, full_name, email, coach_id, role").eq("id", clientId).maybeSingle();
   if (!client || (me.role !== "admin" && client.coach_id !== me.id)) redirect("/coach/clients");
 
-  const [coaching, billing, packages, expiries, goals, viewerBills, goalCards, chart, audits] = await Promise.all([
+  const [coaching, billing, packages, expiries, goals, viewerBills, goalCards, chart, audits, nextSteps] = await Promise.all([
     loadCoaching(supabase, clientId, { drafts: false }),
     loadBilling(supabase, clientId),
     loadOfferedPackages(supabase, clientId, PACKAGE_COLUMNS),
@@ -30,6 +30,7 @@ export async function getClientPreview(clientId: string) {
     loadGoalCards(supabase, clientId),
     loadCalibratedChart(supabase, clientId),
     supabase.from("audits").select("id").eq("client_id", clientId).eq("status", "completed").limit(1),
+    loadNextSteps(supabase, clientId),
   ]);
   // "Your coach", as the client sees it at the top of their Coaching page.
   const [{ data: coachProfile }, { data: coachPublic }] = client.coach_id
@@ -58,6 +59,7 @@ export async function getClientPreview(clientId: string) {
     expiries: (expiries.error ? [] : expiries.data ?? []) as { expires_at: string; quantity: number }[],
     goals: active.map((g) => ({ id: g.id, title: g.goal_title?.trim() || "Your goal" })),
     goalCards,
+    nextSteps,
     chart,
     coach,
     auditDone: (audits.data ?? []).length > 0,

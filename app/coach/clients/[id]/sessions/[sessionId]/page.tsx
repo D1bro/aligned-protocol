@@ -79,6 +79,7 @@ export default async function SessionDeskPage({
   );
   const active = p.goals.filter((g) => g.status === "active").sort((a, b) => Number(b.goal_type === "primary") - Number(a.goal_type === "primary"));
   const mainGoal = active[0] ?? null;
+  const goalMoves = mainGoal ? p.moves.filter((m) => m.goal_id === mainGoal.id) : [];
   const snap = session.goal_snapshot;
   const auditUsed = p.audits.find((a) => a.id === session.audit_id) ?? null;
   const myNote = coaching.notes.find((n) => n.session_id === session.id && n.author_id === p.viewer.id) ?? null;
@@ -156,8 +157,8 @@ export default async function SessionDeskPage({
             goal: str(mainGoal.goal_title) ?? "Their goal",
             why: str(plan?.why_it_matters) ?? str(mainGoal.motivation_text),
             area: planArea?.name ?? null,
-            now: (lastMonthly?.area_score as number | undefined) ?? baseline,
-            target: (plan?.step_up_target as number | null | undefined) ?? null,
+            now: (lastMonthly?.area_score as number | undefined) ?? (mainGoal.start_score as number | null) ?? baseline,
+            target: (mainGoal.aim_score as number | null) ?? (plan?.step_up_target as number | null | undefined) ?? null,
             focusThisWeek: str(lastWeekly?.next_commitment),
             intention,
           }
@@ -246,20 +247,30 @@ export default async function SessionDeskPage({
             </section>
             {previousBlock}
             <section className="admin-card" aria-labelledby="desk-goal-h">
-              <h2 id="desk-goal-h">Their main goal</h2>
+              <h2 id="desk-goal-h">Their Next Step</h2>
               {mainGoal ? (
                 <dl className="ov-facts">
-                  {str(mainGoal.focus_area) ? (<><dt>Area</dt><dd>{str(mainGoal.focus_area)}</dd></>) : null}
-                  <dt>Goal</dt>
+                  {str(mainGoal.focus_area) ? (<><dt>Area</dt><dd>{str(mainGoal.focus_area)}{mainGoal.start_score ? ` · ${mainGoal.start_score}${mainGoal.aim_score && Number(mainGoal.aim_score) > Number(mainGoal.start_score) ? ` → aiming for ${mainGoal.aim_score}` : ""}` : ""}</dd></>) : null}
+                  <dt>Next Step</dt>
                   <dd>{str(mainGoal.goal_title)}</dd>
-                  {str(mainGoal.motivation_text) ? (<><dt>Why it matters</dt><dd>{str(mainGoal.motivation_text)}</dd></>) : null}
-                  {str(mainGoal.success_criteria) ? (<><dt>Done when</dt><dd>{str(mainGoal.success_criteria)}</dd></>) : null}
+                  {str(mainGoal.motivation_text) ? (<><dt>Why this one</dt><dd>{str(mainGoal.motivation_text)}</dd></>) : null}
+                  {str(mainGoal.in_the_way) ? (<><dt>What&rsquo;s in the way</dt><dd>{str(mainGoal.in_the_way)}</dd></>) : null}
+                  {str(mainGoal.success_criteria) ? (<><dt>How they&rsquo;ll know</dt><dd>{str(mainGoal.success_criteria)}</dd></>) : null}
+                  {goalMoves.length ? (
+                    <>
+                      <dt>Moves</dt>
+                      <dd>
+                        {goalMoves.filter((m) => m.done_at).length} of {goalMoves.length} done
+                        {goalMoves.filter((m) => !m.done_at).slice(0, 3).map((m) => <span key={m.id} className="desk-move">○ {m.body}</span>)}
+                      </dd>
+                    </>
+                  ) : null}
                 </dl>
               ) : (
-                <p className="admin-card-sub">No active goal.</p>
+                <p className="admin-card-sub">No Next Step under way.</p>
               )}
               {snap?.goal_title && mainGoal && snap.goal_title !== str(mainGoal.goal_title) ? (
-                <p className="admin-card-sub">When this session was booked their goal was: &ldquo;{snap.goal_title}&rdquo;</p>
+                <p className="admin-card-sub">When this session was booked their Next Step was: &ldquo;{snap.goal_title}&rdquo;</p>
               ) : null}
               <p className="admin-card-sub">
                 {auditUsed
@@ -294,7 +305,7 @@ export default async function SessionDeskPage({
           <div className="desk-main">
             <section className="admin-card" aria-label="Working focus">
               <p className="au-detail-k">Working focus</p>
-              <p className="desk-question">{str(mainGoal?.goal_title) ?? "No main goal set — follow what they bring."}</p>
+              <p className="desk-question">{str(mainGoal?.goal_title) ?? "No Next Step set — follow what they bring."}</p>
             </section>
             {previousBlock}
             <section className="admin-card" aria-label="Points to confirm">

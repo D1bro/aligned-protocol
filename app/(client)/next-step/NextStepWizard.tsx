@@ -233,6 +233,15 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <p className="au-start-help">If it helps:</p>
             <Prompts list={p.way} />
             <textarea id="ns-way" rows={4} value={inTheWay} onChange={(e) => setInTheWay(e.target.value)} placeholder={p.examples.way} />
+            {ctx.lowWellbeing ? (
+              <div className="au-sum-card clear-support ns-support">
+                <h3>You don&rsquo;t have to do this alone</h3>
+                <p>
+                  If things feel heavy right now, it&rsquo;s worth talking to someone you trust, your GP, or a qualified professional. If you&rsquo;re
+                  in crisis, contact your local emergency services or a crisis line.
+                </p>
+              </div>
+            ) : null}
             <div className="au-sum-card ns-spill">
               <label className="au-start-q" htmlFor="ns-spill">How is being stuck affecting the rest of your life? <span className="au-small">Optional</span></label>
               <p className="au-start-help">The areas of your chart lean on each other. Notice where this one spills over.</p>

@@ -166,7 +166,7 @@ export function MemberCoaching({
       <div className="mcd-two">
         <div className="admin-card">
           <div className="mc-steps-head">
-            <h3>Your next steps</h3>
+            <h3>Agreed in your session</h3>
             {last ? <span className="admin-card-sub">From {lastDay}</span> : null}
           </div>
           {mine.length ? (
@@ -179,7 +179,7 @@ export function MemberCoaching({
                     <span className="mc-tick" aria-hidden="true">✓</span>
                     <div>
                       <p>{s.body}</p>
-                      {g ? <Link href="/next-step" className="mcd-chip">{g.area ?? "Your goal"}</Link> : null}
+                      {g ? <Link href="/next-step" className="mcd-chip">{g.area ?? "Your Next Step"}</Link> : null}
                       <em>
                         {s.due_date ? `By ${formatDate(s.due_date)} · ` : ""}
                         {u ? `You said: ${PROGRESS[u.progress] ?? u.progress}, ${formatDate(u.created_at)}${u.note ? ` — “${u.note}”` : ""}` : "No update yet"}
@@ -191,7 +191,7 @@ export function MemberCoaching({
               })}
             </ul>
           ) : (
-            <p className="admin-card-sub">You&rsquo;ll agree your next steps together in a session.</p>
+            <p className="admin-card-sub">You&rsquo;ll agree steps together in a session.</p>
           )}
           {tally.total && tally.moved === tally.total ? (
             <p className="mc-cele">
