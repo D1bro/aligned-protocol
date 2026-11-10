@@ -137,7 +137,7 @@ export default async function ClientsPage({
         <div className="admin-table" role="table" aria-label="Clients">
           <div className="admin-row head" role="row">
             <span role="columnheader">Client</span>
-            <span role="columnheader">Main goal</span>
+            <span role="columnheader">Next Step</span>
             <span role="columnheader">Stage</span>
             <span role="columnheader">Latest audit</span>
             <span role="columnheader">Lessons</span>

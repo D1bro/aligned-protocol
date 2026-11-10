@@ -32,7 +32,7 @@ const TABS = [
   ["overview", "Overview"],
   ["details", "Details"],
   ["sessions", "Sessions"],
-  ["goals", "Goals and audit"],
+  ["goals", "Next Steps and audit"],
   ["notes", "Coach notes"],
   ["billing", "Payments and invoices"],
   ["learning", "Learning"],
@@ -80,7 +80,6 @@ export default async function ClientProfilePage({
 
   const active = p.goals.filter((g) => g.status === "active").sort((x, y) => Number(y.goal_type === "primary") - Number(x.goal_type === "primary"));
   const mainGoal = active[0] ?? null;
-  const mainPlan = mainGoal ? p.plans.find((pl) => pl.id === mainGoal.clear_plan_id) ?? null : null;
   const goalTitle = new Map(p.goals.map((g) => [g.id as string, str(g.goal_title) ?? "Goal"]));
   const name = client.full_name?.trim() || client.email || "Guest (no account)";
   const firstName = client.full_name?.trim().split(/\s+/)[0] || "them";
@@ -245,62 +244,115 @@ export default async function ClientProfilePage({
 
       {tab === "goals" ? (
         p.goals.length ? (
-          <section aria-label="Plan and goals">
-            {mainGoal ? (
-              <>
-                <div className="sec-head">Main goal{str(mainGoal.focus_area) ? ` · ${str(mainGoal.focus_area)}` : ""}</div>
-                <div className="coach-clear">
-                  {[
-                    ["Goal", str(mainGoal.goal_title)],
-                    ["The change (next point up)", str(mainPlan?.step_up_answer)],
-                    ["Why it matters", str(mainGoal.motivation_text)],
-                    ["The action", str(mainGoal.action_text)],
-                    ["When", str(mainGoal.action_when) ?? str(mainGoal.frequency)],
-                    ["Done when", str(mainGoal.success_criteria)],
-                    [
-                      "If it gets hard",
-                      str(mainPlan?.if_obstacle) && str(mainPlan?.if_response) ? `If ${str(mainPlan?.if_obstacle)}, then I’ll ${str(mainPlan?.if_response)}.` : null,
-                    ],
-                    ["C · Current reality", cleanReality(str(mainPlan?.current_reality))],
-                    ["L · Life vision (a 10)", str(mainPlan?.life_vision)],
-                    [
-                      "E · What’s in the way",
-                      [Array.isArray(mainPlan?.blocks) ? (mainPlan?.blocks as string[]).join(", ") : null, str(mainPlan?.emotional_blocks)].filter(Boolean).join(" — ") || null,
-                    ],
-                    ["Tried before", str(mainPlan?.tried_before)],
-                    ["Set", formatDate(mainGoal.created_at as string)],
-                  ]
-                    .filter(([, v]) => v)
-                    .map(([k, v]) => (
-                      <div key={k as string}><span>{k}</span><p>{v}</p></div>
-                    ))}
+          <section aria-label="Next Steps">
+            {active.length ? <div className="sec-head">Next Steps under way</div> : null}
+            {active.map((g) => {
+              const plan = p.plans.find((pl) => pl.id === g.clear_plan_id) ?? null;
+              const area = areas.find((a) => a.id === plan?.life_area_id)?.name ?? str(g.focus_area);
+              const start = g.start_score as number | null;
+              const aim = g.aim_score as number | null;
+              const checks = (g.step_checks ?? null) as Record<string, boolean> | null;
+              const checkLine = checks
+                ? [["different", "Would feel different"], ["reach", "Within reach"], ["visible", "Someone could tell"]]
+                    .filter(([k]) => k in checks)
+                    .map(([k, label]) => `${label}: ${checks[k] ? "yes" : "not yet"}`)
+                    .join(" · ")
+                : null;
+              const moves = p.moves.filter((m) => m.goal_id === g.id);
+              return (
+                <div key={g.id as string} className="coach-ns">
+                  <p className="coach-ns-k">
+                    {area ?? "Next Step"}
+                    {start ? ` · ${start}` : ""}
+                    {start && aim && aim > start ? ` → aiming for ${aim}` : ""}
+                    {g.id === mainGoal?.id && active.length > 1 ? " · shown first" : ""}
+                    {g.set_at || (str(g.frequency) && str(g.success_criteria)) ? "" : " · not set yet"}
+                  </p>
+                  <div className="coach-clear">
+                    {[
+                      ["Next Step", str(g.goal_title)],
+                      ["Why this one", str(g.motivation_text)],
+                      ["How it will feel", str(g.feel_text)],
+                      ["The checks", checkLine],
+                      [
+                        "What’s in the way",
+                        str(g.in_the_way) ??
+                          ([Array.isArray(plan?.blocks) ? (plan?.blocks as string[]).join(", ") : null, str(plan?.emotional_blocks)].filter(Boolean).join(" — ") || null),
+                      ],
+                      ["How being stuck spills over", str(g.spill_over)],
+                      ["How they’ll know it’s taken", str(g.success_criteria)],
+                      ["Where they are, in their words", cleanReality(str(plan?.current_reality))],
+                      ["Their 10", str(plan?.life_vision)],
+                      ["Set", formatDate((g.set_at ?? g.created_at) as string)],
+                    ]
+                      .filter(([, v]) => v)
+                      .map(([k, v]) => (
+                        <div key={k as string}><span>{k}</span><p>{v}</p></div>
+                      ))}
+                  </div>
+                  {moves.length ? (
+                    <>
+                      <p className="coach-ns-k">Moves · {moves.filter((m) => m.done_at).length} of {moves.length} done</p>
+                      <ul className="coach-ns-moves">
+                        {moves.map((m) => (
+                          <li key={m.id} className={m.done_at ? "done" : undefined}>
+                            <span aria-hidden="true">{m.done_at ? "✓" : "○"}</span>
+                            {m.body}
+                            {m.when_text ? <em> · {m.when_text}</em> : null}
+                            {m.done_at ? <em> · done {formatDate(m.done_at)}</em> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
                 </div>
+              );
+            })}
+            {p.goals.some((g) => g.taken_at) ? (
+              <>
+                <div className="sec-head">Taken</div>
+                <ul className="past-goals">
+                  {p.goals.filter((g) => g.taken_at).map((g) => (
+                    <li key={g.id as string}>
+                      <span className="past-status completed">
+                        {g.start_score && g.taken_score ? `${g.start_score} → ${g.taken_score}` : "✓ Taken"}
+                      </span>
+                      <div>
+                        <p>{str(g.goal_title)}</p>
+                        <span>
+                          {[str(g.focus_area), `taken ${formatDate(g.taken_at as string)}`, g.aim_score ? `aimed for ${g.aim_score}` : null].filter(Boolean).join(" · ")}
+                        </span>
+                        {str(g.what_changed) ? <span className="coach-ns-changed">What changed: &ldquo;{str(g.what_changed)}&rdquo;</span> : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </>
             ) : null}
-            <div className="sec-head">All goals</div>
+            <div className="sec-head">All Next Steps</div>
             <ul className="past-goals">
               {p.goals.map((g) => (
                 <li key={g.id as string}>
                   <span className={`past-status ${g.status}`}>
-                    {g.id === mainGoal?.id ? "Main" : g.status === "completed" ? "✓ Done" : STATUS[g.status as string] ?? g.status}
+                    {g.status === "active" ? "Under way" : g.taken_at ? "✓ Taken" : g.status === "completed" ? "✓ Done" : STATUS[g.status as string] ?? g.status}
                   </span>
                   <div>
                     <p>{str(g.goal_title)}</p>
-                    <span>{[str(g.focus_area), `set ${formatDate(g.created_at as string)}`].filter(Boolean).join(" · ")}</span>
+                    <span>{[str(g.focus_area), `set ${formatDate((g.set_at ?? g.created_at) as string)}`].filter(Boolean).join(" · ")}</span>
                   </div>
                 </li>
               ))}
             </ul>
           </section>
         ) : (
-          <Empty text="No goals yet." />
+          <Empty text="No Next Steps yet." />
         )
       ) : null}
 
       {tab === "goals" ? (
         p.checkIns.length ? (
           <>
-          <h2 className="sec-head">Reviews</h2>
+          <h2 className="sec-head">Check-ins and reviews</h2>
           <ol className="checkin-list">
             {p.checkIns.map((c) => (
               <li key={c.id as string}>
@@ -308,8 +360,8 @@ export default async function ClientProfilePage({
                   <b>{formatDate(c.created_at as string)}</b>
                   <span>{reviewLine(c as Parameters<typeof reviewLine>[0], NEXT)}</span>
                 </div>
-                <p><span>Goal:</span> {goalTitle.get(c.goal_id as string)}</p>
-                {str(c.helped) ? <p><span>{c.kind === "weekly" ? "Helped or got in the way:" : "Helped:"}</span> {str(c.helped)}</p> : null}
+                <p><span>Next Step:</span> {goalTitle.get(c.goal_id as string)}</p>
+                {str(c.helped) ? <p><span>{c.closer ? "What moved it, or got in the way:" : c.kind === "weekly" ? "Helped or got in the way:" : c.next_step === "done" && !c.did_it ? "What changed:" : "Helped:"}</span> {str(c.helped)}</p> : null}
                 {str(c.next_commitment) ? <p><span>Next week:</span> {str(c.next_commitment)}</p> : null}
                 {str(c.got_in_way) ? <p><span>Got in the way:</span> {str(c.got_in_way)}</p> : null}
               </li>
@@ -317,7 +369,7 @@ export default async function ClientProfilePage({
           </ol>
           </>
         ) : (
-          <Empty text="No goal check-ins yet." />
+          <Empty text="No check-ins yet." />
         )
       ) : null}
 

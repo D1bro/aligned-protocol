@@ -90,7 +90,7 @@ export function CoachingCard({
 
       {steps.length ? (
         <div>
-          <p className="profile-card-k">Your next steps{last ? ` · from ${formatDate(last.published_at)}` : ""}</p>
+          <p className="profile-card-k">Agreed in your session{last ? ` · from ${formatDate(last.published_at)}` : ""}</p>
           {tally.total ? (
             <div className="coaching-progress">
               <StepBar states={states} />
@@ -125,7 +125,7 @@ export function CoachingCard({
       ) : last ? (
         <p className="admin-card-sub">No open steps from your last session.</p>
       ) : (
-        <p className="admin-card-sub">Your coach&rsquo;s notes and your next steps appear here once your coach shares your session summary.</p>
+        <p className="admin-card-sub">Your coach&rsquo;s notes and what you agreed appear here once your coach shares your session summary.</p>
       )}
     </section>
   );

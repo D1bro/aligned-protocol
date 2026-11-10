@@ -138,7 +138,7 @@ test("without the tick, the summary email stays a link only", () => {
   const m = buildMessage({ kind: "summary_shared", firstName: "Sam", sessionLabel: "today", coachName: "C", link: "https://x.test" });
   assert.equal(m.subject, "Notes from our session");
   assert.match(m.text, /Thanks for our session\./);
-  assert.ok(!m.text.includes("Your next steps"));
+  assert.ok(!m.text.includes("Agreed in your session"));
 });
 
 test("with no booking, the next meeting falls back to what was said", () => {
@@ -152,6 +152,6 @@ test("the update email says what's done and what's next, and opens the coaching 
     done: ["Checked the account on Sunday"], nextSteps: ["Plan tomorrow each evening"],
   });
   assert.match(m.text, /Done since last time[\s\S]*✓ Checked the account on Sunday/);
-  assert.match(m.text, /Your next steps[\s\S]*• Plan tomorrow each evening/);
+  assert.match(m.text, /Agreed in your session[\s\S]*• Plan tomorrow each evening/);
   assert.match(m.html, /href="https:\/\/x\.test\/coaching"[^>]*>[\s\S]*Open your coaching page/);
 });

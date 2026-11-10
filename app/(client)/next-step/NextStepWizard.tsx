@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveScreen, takeOnNextStep, type BuildContext, type ScreenInput } from "@/lib/actions/next-step";
-import { CHECKS, SCREENS, promptsFor, stepsBetween } from "@/lib/next-step";
+import { CHECKS, SCREENS, aScore, promptsFor, stepsBetween } from "@/lib/next-step";
 import { NsFilm, NEXT_STEP_FILMS } from "./NsFilm";
 
 type MoveRow = { key: string; id?: string; body: string; when: string };
@@ -136,7 +136,7 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <div className="au-sum-card ns-gold">
               <p className="au-detail-k">Keep this. We won&rsquo;t start here.</p>
               <p className="ns-strong">
-                {start ? `From a ${start}, ` : ""}a 10 can feel too far away to start. So we&rsquo;ll keep it as your direction, and first find the one
+                {start ? `From ${aScore(start)}, ` : ""}a 10 can feel too far away to start. So we&rsquo;ll keep it as your direction, and first find the one
                 step that gets you out of where you&rsquo;re stuck. That first step often changes things more than any step after it.
               </p>
               {start ? (
@@ -158,7 +158,7 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <div className="au-sum-card ns-gold">
               <p className="au-detail-k">Why your Next Step matters</p>
               <p className="ns-strong">
-                {start ? `From a ${start}, ` : ""}a 10 can feel so far away that it keeps you stuck. Your Next Step isn&rsquo;t the 10. It&rsquo;s the one
+                {start ? `From ${aScore(start)}, ` : ""}a 10 can feel so far away that it keeps you stuck. Your Next Step isn&rsquo;t the 10. It&rsquo;s the one
                 change that gets you out of where you are now: out of survival, and into a place where you can think and plan.
               </p>
               <div className="ns-three">
@@ -233,6 +233,15 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <p className="au-start-help">If it helps:</p>
             <Prompts list={p.way} />
             <textarea id="ns-way" rows={4} value={inTheWay} onChange={(e) => setInTheWay(e.target.value)} placeholder={p.examples.way} />
+            {ctx.lowWellbeing ? (
+              <div className="au-sum-card clear-support ns-support">
+                <h3>You don&rsquo;t have to do this alone</h3>
+                <p>
+                  If things feel heavy right now, it&rsquo;s worth talking to someone you trust, your GP, or a qualified professional. If you&rsquo;re
+                  in crisis, contact your local emergency services or a crisis line.
+                </p>
+              </div>
+            ) : null}
             <div className="au-sum-card ns-spill">
               <label className="au-start-q" htmlFor="ns-spill">How is being stuck affecting the rest of your life? <span className="au-small">Optional</span></label>
               <p className="au-start-help">The areas of your chart lean on each other. Notice where this one spills over.</p>
@@ -255,7 +264,7 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
               {moves.map((m, i) => (
                 <li key={m.key}>
                   <input type="text" aria-label={`Move ${i + 1}`} maxLength={200} value={m.body} onChange={(e) => setMove(m.key, "body", e.target.value)} placeholder={i === 0 ? p.examples.move : "Another move"} />
-                  <input type="text" aria-label={`When, for move ${i + 1}`} maxLength={120} value={m.when} onChange={(e) => setMove(m.key, "when", e.target.value)} placeholder="When? e.g. By Friday, Every Monday" />
+                  <input type="text" aria-label={`When, for move ${i + 1}`} maxLength={120} value={m.when} onChange={(e) => setMove(m.key, "when", e.target.value)} placeholder="When? e.g. Every Monday" />
                   {moves.length > 1 ? (
                     <button type="button" className="ns-remove" aria-label={`Remove move ${i + 1}`} onClick={() => setMoves((ms) => ms.filter((x) => x.key !== m.key))}>✕</button>
                   ) : <span />}

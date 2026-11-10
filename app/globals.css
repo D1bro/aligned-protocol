@@ -2471,6 +2471,8 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .ns-three b { display: block; font-family: var(--font-sora), 'Sora', sans-serif; font-size: 14px; color: var(--text); }
 .ns-three span { font-size: 13px; color: var(--text2); }
 .ns-prompts { list-style: none; display: flex; flex-wrap: wrap; gap: .3rem 1.25rem; margin: 0 0 .75rem; font-size: 14px; color: var(--text2); }
+.au-sum-card .ns-prompts { display: flex; }
+.au-sum-card .ns-prompts li { display: block; font-size: 14px; color: var(--text2); }
 .ns-prompts li::before { content: ""; display: inline-block; width: 10px; height: 1.5px; background: var(--gold); vertical-align: middle; margin-right: 8px; }
 .ns-big { font-family: var(--serif) !important; font-size: 26px !important; color: var(--gold2) !important; }
 .ns-bar { display: grid; grid-template-columns: repeat(10, minmax(0,1fr)); gap: 6px; max-width: 820px; margin: .4rem 0 .6rem; }
@@ -2479,7 +2481,7 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .ns-bar button:disabled { cursor: default; }
 .ns-bar button.now { color: var(--text); }
 .ns-bar button.now span { background: var(--gold); }
-.ns-bar button.aim span { background: rgba(211,167,88,.4); }
+.ns-bar button.aim span { background: rgba(211,167,88,.55); }
 .ns-bar button.tgt { color: var(--gold2); font-weight: 700; }
 .ns-bar button.tgt span { background: rgba(211,167,88,.4); box-shadow: 0 0 0 2px var(--gold2); }
 .ns-bar button:not(:disabled):not(.tgt):hover span { background: #3a4357; }
@@ -2525,7 +2527,7 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .ns-seg span { flex: 1; height: 8px; border-radius: 4px; background: var(--bg5); }
 .ns-seg span.d { background: var(--gold); }
 .ns-move-list { list-style: none; display: grid; gap: .15rem; margin: .5rem 0 1rem; }
-.ns-move-list li { display: flex; gap: .65rem; align-items: flex-start; padding: .35rem 0; font-size: 14px; color: var(--text); }
+.ns-move-list li, .au-sum-card .ns-move-list li { display: flex; justify-content: flex-start; gap: .65rem; align-items: flex-start; padding: .35rem 0; font-size: 14px; color: var(--text); }
 .ns-move-list input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--gold); flex-shrink: 0; cursor: pointer; }
 .ns-move-list label { cursor: pointer; }
 .ns-move-list li.done .ns-move-body { color: var(--text2); text-decoration: line-through; }
@@ -2575,8 +2577,19 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .ns-taken-result b { color: var(--gold); }
 .ns-taken-result span { color: var(--text2); font-weight: 500; font-size: 16px; }
 .ns-next { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .9rem; }
-.ns-next form { display: contents; }
 .ns-next-opt { display: flex; flex-direction: column; gap: 4px; padding: 1.1rem 1.2rem; border-radius: 14px; border: 1px solid var(--bdr2); background: var(--bg2); color: var(--text); text-decoration: none; text-align: left; font: inherit; cursor: pointer; }
 .ns-next-opt span { font-size: 13px; color: var(--text2); }
-.ns-next-opt.main { border-color: rgba(211,167,88,.45); background: #1a1812; }
+.ns-next-opt.ns-next-main { border-color: rgba(211,167,88,.45); background: #1a1812; }
 .ns-next-opt:hover { border-color: var(--gold); color: var(--text); }
+.ns-tick { width: 16px; height: 16px; margin-top: 3px; flex-shrink: 0; border: 1.5px solid var(--bg5); border-radius: 4px; }
+.ns-move-list li.done .ns-tick { background: var(--gold); border-color: var(--gold); }
+/* The console's view of a client's Next Steps */
+.coach-ns { margin-bottom: 1.5rem; }
+.coach-ns-k { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin: .5rem 0 .5rem; }
+.coach-ns-moves { list-style: none; display: grid; gap: .3rem; font-size: 14px; color: var(--text); }
+.coach-ns-moves li span { color: var(--gold); margin-right: .5rem; }
+.coach-ns-moves li.done { color: var(--text2); }
+.coach-ns-moves em { color: var(--text3); font-style: normal; }
+.desk-move { display: block; color: var(--text2); font-size: 13px; }
+.past-goals .coach-ns-changed { display: block; margin-top: .2rem; }
+.ns-support { margin-top: 1.25rem; }

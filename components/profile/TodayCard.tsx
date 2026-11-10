@@ -49,7 +49,7 @@ export async function TodayCard({
       ) : null}
       {action && !plan ? (
         <p className="pf-sub">
-          Nothing from your plan today{nextDay ? `; next: ${longDay(nextDay).split(" ")[0]}` : ""}.
+          Nothing from your Next Step today{nextDay ? `; next: ${longDay(nextDay).split(" ")[0]}` : ""}.
           {!week.available ? <> Your action: {action}</> : null}
         </p>
       ) : null}

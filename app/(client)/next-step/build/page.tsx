@@ -14,5 +14,5 @@ export default async function BuildNextStepPage({ searchParams }: { searchParams
   const asked = step ? Math.min(5, Math.max(1, Number(step) || 1)) : null;
   // Already set and not changing anything: show it set.
   if (!asked && ctx.goal?.set_at) redirect(`/next-step/set?plan=${planId}`);
-  return <NextStepWizard key={`${planId}:${asked ?? resume}`} ctx={ctx} startScreen={asked ?? Math.min(5, resume)} />;
+  return <NextStepWizard key={planId} ctx={ctx} startScreen={asked ?? Math.min(5, resume)} />;
 }

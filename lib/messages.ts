@@ -148,7 +148,7 @@ export function buildMessage(m: MessageInput): Message {
         return compose(
           "Your session notes",
           c.focus || "Your session notes",
-          `Notes and next steps from our session on ${m.sessionLabel}.`,
+          `Notes and what we agreed in our session on ${m.sessionLabel}.`,
           [
             { p: `Hi ${m.firstName},` },
             { p: `Here are the notes from our session on ${m.sessionLabel}, the same as in your member area.` },
@@ -158,7 +158,7 @@ export function buildMessage(m: MessageInput): Message {
             c.summary ? { p: c.summary } : null,
             c.insights.length ? { small: "What you noticed" } : null,
             c.insights.length ? { box: c.insights.map((x) => `• ${x}`) } : null,
-            c.steps.length ? { small: "Your next steps" } : null,
+            c.steps.length ? { small: "Agreed in your session" } : null,
             c.steps.length ? { steps: c.steps.map((x) => ({ title: x.text, text: x.due ? `By ${x.due}` : "" })) } : null,
             c.coachSteps.length ? { small: "What I'll do" } : null,
             c.coachSteps.length ? { box: c.coachSteps.map((x) => `• ${x}`) } : null,
@@ -182,14 +182,14 @@ export function buildMessage(m: MessageInput): Message {
         return compose(
           ref ? `Notes from our session on ${ref}` : "Notes from our session",
           "Notes from our session",
-          "The notes and the next steps we agreed are in your member area.",
+          "The notes and what we agreed are in your member area.",
           [
             { p: `Hi ${m.firstName},` },
-            { p: `Thanks for ${recent ? ref : ref ? `our session on ${ref}` : "our session"}. I’ve updated your coaching page with the notes from our session and the next steps we agreed.` },
+            { p: `Thanks for ${recent ? ref : ref ? `our session on ${ref}` : "our session"}. I’ve updated your coaching page with the notes from our session and what we agreed.` },
             noteBlock(m.note),
             m.done?.length ? { small: "Done since last time" } : null,
             m.done?.length ? { box: m.done.map((x) => `✓ ${x}`) } : null,
-            m.nextSteps?.length ? { small: "Your next steps" } : null,
+            m.nextSteps?.length ? { small: "Agreed in your session" } : null,
             m.nextSteps?.length ? { box: m.nextSteps.map((x) => `• ${x}`) } : null,
             { button: { href: m.link, label: "Open your coaching page" } },
             {
@@ -215,7 +215,7 @@ export function buildMessage(m: MessageInput): Message {
           m.steps.length > 0 && { small: "The steps you agreed last time" },
           m.steps.length > 0 && { box: m.steps.map((x) => `• ${x}`) },
           { p: "Anything you’d like to bring? You can add it under “Before we meet” on your coaching page. It stays private until you share it." },
-          m.joinUrl ? { smallLink: { lead: "Your notes and next steps are on", label: "your coaching page", href: m.link } } : { button: { href: m.link, label: "Open your coaching page" } },
+          m.joinUrl ? { smallLink: { lead: "Your notes and what we agreed are on", label: "your coaching page", href: m.link } } : { button: { href: m.link, label: "Open your coaching page" } },
           { p: "If the time no longer works, just reply to this email." },
           { signOff: `See you tomorrow,\n${firstOf(m.coachName)}` },
         ],

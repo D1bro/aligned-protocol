@@ -254,7 +254,7 @@ export function SummaryWorkspace({
         </div>
 
         <div className="sw-field">
-          <span>{firstName}&rsquo;s next steps</span>
+          <span>Agreed in the session: {firstName}&rsquo;s steps</span>
           {content.client_actions.map((a, i) => (
             <div key={i} className="sw-action">
               <input
@@ -460,7 +460,7 @@ function Preview({
       ) : null}
       {content.client_actions.filter((a) => a.text.trim()).length ? (
         <>
-          <h4>Your next steps</h4>
+          <h4>Agreed in your session</h4>
           <ul>
             {content.client_actions.filter((a) => a.text.trim()).map((a, i) => (
               <li key={i}>

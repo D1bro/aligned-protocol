@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ClearPlan, Goal } from "@/lib/actions/clear";
 import type { LifeArea } from "@/lib/actions/audit";
-import { isSet } from "@/lib/next-step";
 
 // The Next Step: reads and writes. A Next Step is a goals row on a plan
 // (clear_plans) for one audit and one area. The plan holds the area-level
@@ -13,7 +12,8 @@ import { isSet } from "@/lib/next-step";
 // goal_moves hold the moves. Migration 0029.
 
 type Db = Awaited<ReturnType<typeof createClient>>;
-export type Move = { id: string; goal_id: string; position: number; body: string; when_text: string | null; due_date: string | null; done_at: string | null };
+import { loadNextSteps, type Move } from "@/lib/member-view";
+export type { Move } from "@/lib/member-view";
 export type Result = { ok: true } | { ok: false; message: string };
 const FAILED = "Couldn’t save — check your connection and try again.";
 
@@ -109,6 +109,8 @@ export type BuildContext = {
   // The Next Step being set on this plan (null before screen 3).
   goal: Goal | null;
   moves: Move[];
+  // Emotional Wellbeing scored 3 or lower: point gently to support.
+  lowWellbeing: boolean;
 };
 
 // Everything the five screens need. The goal is the plan's latest one while
@@ -118,10 +120,13 @@ export async function getBuildContext(planId: string): Promise<BuildContext | nu
   const { supabase, userId } = await me();
   const { data: plan } = await supabase.from("clear_plans").select("*").eq("id", planId).eq("client_id", userId).maybeSingle();
   if (!plan?.life_area_id) return null;
-  const [{ data: area }, { data: goal }, start] = await Promise.all([
+  const [{ data: area }, { data: goal }, start, { data: wellbeing }] = await Promise.all([
     supabase.from("life_areas").select("*").eq("id", plan.life_area_id).maybeSingle(),
     supabase.from("goals").select("*").eq("clear_plan_id", planId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     startingScore(supabase, userId, plan as ClearPlan),
+    plan.audit_id
+      ? supabase.from("audit_responses").select("satisfaction_score, life_areas!inner(name)").eq("audit_id", plan.audit_id).eq("life_areas.name", "Emotional Wellbeing").maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
   if (!area) return null;
   const current = goal && goal.status === "active" && !goal.taken_at ? (goal as Goal) : null;
@@ -137,6 +142,7 @@ export async function getBuildContext(planId: string): Promise<BuildContext | nu
     auditNote: start.note,
     goal: current,
     moves: (moves ?? []) as Move[],
+    lowWellbeing: typeof wellbeing?.satisfaction_score === "number" && wellbeing.satisfaction_score <= 3,
   };
 }
 
@@ -265,58 +271,12 @@ export async function takeOnNextStep(planId: string): Promise<Result> {
   return { ok: true };
 }
 
-export type NextStepCard = {
-  goal: Goal;
-  area: string;
-  planId: string | null;
-  moves: Move[];
-  set: boolean;
-  // Their 10 for the area, parked.
-  ten: string | null;
-  lastCloser: string | null;
-  // Dates of their weekly check-ins, for the next one's date.
-  checkIns: { created_at: string }[];
-};
+export type { NextStepCard } from "@/lib/member-view";
 
 // The member's Next Steps: under way (set or still being set) and taken.
-export async function getMyNextSteps(): Promise<{ active: NextStepCard[]; taken: NextStepCard[] }> {
+export async function getMyNextSteps() {
   const { supabase, userId } = await me();
-  const { data: goals } = await supabase
-    .from("goals")
-    .select("*")
-    .eq("client_id", userId)
-    .or("status.eq.active,taken_at.not.is.null")
-    .order("created_at", { ascending: false });
-  const list = (goals ?? []) as Goal[];
-  const ids = list.map((g) => g.id);
-  const planIds = [...new Set(list.map((g) => g.clear_plan_id).filter((x): x is string => !!x))];
-  const [{ data: moves }, { data: plans }, { data: areas }, { data: checkIns }] = await Promise.all([
-    ids.length ? supabase.from("goal_moves").select("*").in("goal_id", ids).order("position").order("created_at") : Promise.resolve({ data: [] }),
-    planIds.length ? supabase.from("clear_plans").select("id, life_area_id, life_vision").in("id", planIds) : Promise.resolve({ data: [] }),
-    supabase.from("life_areas").select("id, name"),
-    ids.length
-      ? supabase.from("goal_checkins").select("goal_id, closer, created_at").in("goal_id", ids).eq("kind", "weekly").order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
-  ]);
-  const ten = new Map((plans ?? []).map((p) => [p.id as string, ((p.life_vision as string | null) ?? "").trim() || null]));
-  const weekly = (checkIns ?? []) as { goal_id: string; closer: string | null; created_at: string }[];
-  const areaName = new Map((areas ?? []).map((a) => [a.id as string, a.name as string]));
-  const planArea = new Map((plans ?? []).map((p) => [p.id as string, areaName.get(p.life_area_id as string) ?? null]));
-  const cards = list.map((g) => ({
-    goal: g,
-    area: (g.clear_plan_id && planArea.get(g.clear_plan_id)) || g.focus_area?.trim() || "Your Next Step",
-    planId: g.clear_plan_id,
-    moves: ((moves ?? []) as Move[]).filter((m) => m.goal_id === g.id),
-    set: isSet(g),
-    ten: (g.clear_plan_id && ten.get(g.clear_plan_id)) || null,
-    lastCloser: weekly.find((c) => c.goal_id === g.id)?.closer ?? null,
-    checkIns: weekly.filter((c) => c.goal_id === g.id),
-  }));
-  return {
-    // The main one first, then newest.
-    active: cards.filter((c) => c.goal.status === "active" && !c.goal.taken_at).sort((a, b) => Number(b.goal.goal_type === "primary") - Number(a.goal.goal_type === "primary")),
-    taken: cards.filter((c) => !!c.goal.taken_at),
-  };
+  return loadNextSteps(supabase, userId);
 }
 
 export async function setMoveDone(moveId: string, done: boolean): Promise<Result> {

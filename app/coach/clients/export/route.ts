@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     name = v.title;
   } else {
     const people = filterPeople(all, { q, coach: p.get("coach") ?? "all", stage: p.get("stage") ?? "", guests: !!p.get("guests") }, me.id);
-    header = ["Name", "Email", "Joined", "Coach", "Stage", "Main goal area", "Main goal", "Latest audit", "Audit date", "Goal check-ins", "Goals done", "Lessons done", "Last active"];
+    header = ["Name", "Email", "Joined", "Coach", "Stage", "Next Step area", "Next Step", "Latest audit", "Audit date", "Check-ins", "Next Steps taken", "Lessons done", "Last active"];
     rows = people.map((c) => [
       personName(c),
       c.email ?? "",

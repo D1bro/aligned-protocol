@@ -56,7 +56,7 @@ export function TodayActions({
                 <input type="checkbox" checked={plan.done} disabled={busy} onChange={(e) => run(() => setPlanActionDone({ goalId: plan.goalId, body: plan.body, done: e.target.checked }))} />
                 <span>{plan.body}</span>
               </label>
-              <span className="ms-action-tag">From your plan</span>
+              <span className="ms-action-tag">From your Next Step</span>
             </li>
           ) : null}
           {own.map((a) => (
