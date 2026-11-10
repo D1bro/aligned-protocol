@@ -2,7 +2,7 @@
 // picks up, and that every area has its own prompts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aScore, isSet, movesRepeat, promptsFor, resumeScreen, stepsBetween } from "../lib/next-step.ts";
+import { aScore, isSet, looksLikeSeveral, movesRepeat, promptsFor, resumeScreen, stepName, stepsBetween, weekDays, whyLine } from "../lib/next-step.ts";
 
 const AREAS = [
   "Health & Energy", "Mindset & Thinking", "Confidence & Self-Belief", "Relationships & Connection", "Career, Work & Business",
@@ -50,4 +50,32 @@ test("a move repeats only when it says so; a day on its own is a deadline", () =
   assert.equal(movesRepeat("By Friday"), false);
   assert.equal(movesRepeat("Today"), false);
   assert.equal(movesRepeat(null), false);
+});
+
+test("a step that reads like several gets the gentle nudge; one clear step doesn't", () => {
+  assert.equal(looksLikeSeveral("Launch each of the businesses with complete sales systems and work through it with each of the leaders"), true);
+  assert.equal(looksLikeSeveral("Sign one client at £2,000 a month"), false);
+  assert.equal(looksLikeSeveral("Decide whether to stay in the job"), false);
+  assert.equal(looksLikeSeveral(""), false);
+});
+
+test("a Next Step goes by its short name when it has one", () => {
+  assert.equal(stepName({ step_name: "The Aligned sells on its own", goal_title: "Launch The Aligned with a complete sales system" }), "The Aligned sells on its own");
+  assert.equal(stepName({ step_name: "  ", goal_title: "Sign one client" }), "Sign one client");
+  assert.equal(stepName({ goal_title: "Sign one client" }), "Sign one client");
+});
+
+test("the why is kept to its first sentence, and short", () => {
+  assert.equal(whyLine("It would take away the persistent dark cloud. And more besides."), "It would take away the persistent dark cloud.");
+  assert.equal(whyLine(null), null);
+  const long = whyLine("word ".repeat(80), 40)!;
+  assert.ok(long.length <= 40 && long.endsWith("…"));
+});
+
+test("a week runs Monday to Sunday with the ticked days and today marked", () => {
+  const w = weekDays("2026-11-09", ["2026-11-09", "2026-11-10"], "2026-11-11");
+  assert.deepEqual(w.map((d) => d.letter).join(""), "MTWTFSS");
+  assert.deepEqual(w.map((d) => d.done), [true, true, false, false, false, false, false]);
+  assert.equal(w.find((d) => d.today)?.date, "2026-11-11");
+  assert.deepEqual(w.map((d) => d.future), [false, false, false, true, true, true, true]);
 });

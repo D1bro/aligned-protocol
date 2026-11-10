@@ -78,6 +78,9 @@ export type Goal = {
   taken_score?: number | null;
   taken_at?: string | null;
   what_changed?: string | null;
+  // Migration 0031
+  step_name?: string | null;
+  shared_with_coach_at?: string | null;
 };
 
 // Read-only lookup — used by the dashboard to show the right CTA state

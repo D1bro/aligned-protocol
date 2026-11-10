@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { NextStepCard } from "@/lib/member-view";
 import { StepCard } from "./StepCard";
+import { stepName } from "@/lib/next-step";
 
 const short = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Europe/London" });
 
@@ -36,7 +37,7 @@ export function NextStepOverview({ active, taken, readOnly = false }: { active: 
           <ul className="ns-rows">
             {taken.map((c) => (
               <li key={c.goal.id}>
-                <span>{c.goal.goal_title} <span className="au-small">· {c.area}</span></span>
+                <span>{stepName(c.goal)} <span className="au-small">· {c.area}</span></span>
                 <span>
                   {c.goal.start_score && c.goal.taken_score ? <b>{c.goal.start_score} → {c.goal.taken_score}</b> : null}
                   {c.goal.taken_at ? <span className="au-small"> · taken {short(c.goal.taken_at)}</span> : null}

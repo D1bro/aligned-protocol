@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveScreen, takeOnNextStep, type BuildContext, type ScreenInput } from "@/lib/actions/next-step";
-import { CHECKS, SCREENS, aScore, promptsFor, stepsBetween } from "@/lib/next-step";
+import { CHECKS, SCREENS, looksLikeSeveral, promptsFor, stepsBetween } from "@/lib/next-step";
+import { NsMap, NsStepper } from "@/components/next-step/NsMap";
 import { NsFilm, NEXT_STEP_FILMS } from "./NsFilm";
 
 type MoveRow = { key: string; id?: string; body: string; when: string };
@@ -13,9 +14,10 @@ let keySeq = 0;
 const newKey = () => `m${++keySeq}`;
 const filled = (v: string) => !!v.trim();
 
-// Setting a Next Step: five screens, in the order Duane set (10 Nov 2026):
-// where you are, where you'd love it to be, your Next Step, what's in the
-// way of it, and what it'll take. Each screen saves when you continue.
+// Setting a Next Step: five screens, walked as one map (Duane, 10 Nov 2026):
+// you are here, your destination (the X, their 10), your Next Step (the
+// camp), what's in the way (rough ground) and your route (the moves). Each
+// screen saves when you continue.
 export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startScreen: number }) {
   const router = useRouter();
   const { plan, area, goal } = ctx;
@@ -27,6 +29,7 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
   const [now, setNow] = useState(plan.current_reality ?? "");
   const [ten, setTen] = useState(plan.life_vision ?? "");
   const [title, setTitle] = useState(goal?.goal_title ?? "");
+  const [name, setName] = useState(goal?.step_name ?? "");
   const [aim, setAim] = useState<number | null>(goal?.aim_score ?? null);
   const [why, setWhy] = useState(goal?.motivation_text ?? plan.why_it_matters ?? "");
   const [feel, setFeel] = useState(goal?.feel_text ?? "");
@@ -38,7 +41,7 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
   );
   const [done, setDone] = useState(goal?.success_criteria ?? "");
 
-  const stepTitle = title.trim() || "your Next Step";
+  const stepTitle = name.trim() || title.trim() || "your Next Step";
   const canContinue =
     screen === 3 ? filled(title) && aim !== null && filled(why)
     : screen === 4 ? filled(inTheWay)
@@ -49,7 +52,7 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
     switch (n) {
       case 1: return { screen: 1, now };
       case 2: return { screen: 2, ten };
-      case 3: return { screen: 3, title, aim: aim ?? 0, why, feel, checks };
+      case 3: return { screen: 3, title, name, aim: aim ?? 0, why, feel, checks };
       case 4: return { screen: 4, inTheWay, spill };
       default: return { screen: 5, moves: moves.map(({ id, body, when }) => ({ id, body, when })), done };
     }
@@ -90,19 +93,18 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
     <>
       <div className="page au-page ns-page">
         <div className="eyebrow"><span className="eydot" /> The Next Step · {area.name}</div>
-        <ol className="ns-stepper" aria-label="Setting your Next Step">
-          {SCREENS.map((s, i) => (
-            <li key={s} className={i + 1 === screen ? "on" : i + 1 < screen ? "done" : undefined} aria-current={i + 1 === screen ? "step" : undefined}>
-              <span className="ns-stepper-bar" aria-hidden="true" />
-              {s}
-            </li>
-          ))}
-        </ol>
+        <NsStepper screen={screen} labels={SCREENS} />
 
+        <div className="ns-layout">
+          <aside className="ns-layout-map">
+            <NsMap stage={screen} area={area.name} start={start} aim={aim} moves={moves} />
+          </aside>
+          <div className="ns-layout-main">
         {screen === 1 && (
           <>
-            <h1>Where you <em>are.</em></h1>
-            <p className="lead">Before you choose a step, say where you&rsquo;re standing. Your score and your words from The Aligned Protocol are here to start from.</p>
+            <h1>You are <em>here.</em></h1>
+            <p className="lead">You can&rsquo;t find your way from a place you won&rsquo;t name. Once you know where you&rsquo;re standing, you&rsquo;re no longer lost.</p>
+            <NsFilm clip={NEXT_STEP_FILMS.here} caption="Duane on where you are" />
             <div className="ns-grid2">
               <div className="au-sum-card ns-score">
                 <span className="ns-score-n" aria-hidden="true">{start ?? "–"}</span>
@@ -119,17 +121,18 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
                 </div>
               ) : null}
             </div>
-            <label className="au-start-q" htmlFor="ns-now">What&rsquo;s actually going on in this area right now?</label>
-            <p className="au-start-help">In your own words. As much or as little as you like. Only you, and your coach if you have one, can see this.</p>
+            <label className="au-start-q" htmlFor="ns-now">What&rsquo;s really going on in {area.name} right now?</label>
+            <p className="au-start-help">Include the part you&rsquo;d normally skip over. Only you, and your coach if you have one, will see this.</p>
             <textarea id="ns-now" rows={5} value={now} onChange={(e) => setNow(e.target.value)} placeholder={p.examples.now} />
           </>
         )}
 
         {screen === 2 && (
           <>
-            <h1>Where you&rsquo;d love it <em>to be.</em></h1>
-            <p className="lead">Have some fun with this. Picture {area.name} at a 10. Don&rsquo;t make it sensible. This is the life you&rsquo;re working towards.</p>
-            <label className="au-start-q" htmlFor="ns-ten">What would a 10 look like?</label>
+            <h1>Your <em>destination.</em></h1>
+            <p className="lead">Every map needs an X. Don&rsquo;t make it sensible; make it worth the climb. This is {area.name} at a 10.</p>
+            <NsFilm clip={NEXT_STEP_FILMS.ten} caption="Duane on your destination" />
+            <label className="au-start-q" htmlFor="ns-ten">It&rsquo;s a 10. What does an ordinary Tuesday look like?</label>
             <p className="au-start-help">You may not know yet, and that&rsquo;s fine. Roughly is enough. If it helps:</p>
             <Prompts list={p.ten} />
             <textarea id="ns-ten" rows={4} value={ten} onChange={(e) => setTen(e.target.value)} placeholder={p.examples.ten} />
@@ -139,26 +142,24 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
         {screen === 3 && (
           <>
             <h1>Your Next <em>Step.</em></h1>
-            <p className="lead">You&rsquo;ve seen where you&rsquo;d love it to be. Now for the step that comes first.</p>
-            <div className="au-sum-card ns-gold">
-              <p className="au-detail-k">Why your Next Step matters</p>
-              <p className="ns-strong">
-                {start ? `From ${aScore(start)}, ` : ""}a 10 can feel so far away that it keeps you stuck. Your Next Step isn&rsquo;t the 10. It&rsquo;s the one
-                change that gets you out of where you are now: out of survival, and into a place where you can think and plan.
-              </p>
-              <div className="ns-three">
-                <div><b>It comes first</b><span>Every step towards your 10 starts from here.</span></div>
-                <div><b>It&rsquo;s the hardest</b><span>It takes the most energy and clarity of any step.</span></div>
-                <div><b>It changes the most</b><span>Getting out of the rut often feels bigger than getting from 9 to 10.</span></div>
+            <p className="lead">Not the whole climb. The one move that gets you off the ground. It comes first, it takes the most, and it changes the most.</p>
+            <NsFilm clip={NEXT_STEP_FILMS.step} caption="Duane on your Next Step" />
+            <label className="au-start-q" htmlFor="ns-step">What&rsquo;s the one change that, once it&rsquo;s made, means you&rsquo;re no longer stuck?</label>
+            <p className="au-start-help">
+              It can change around you (a client signed, a debt cleared) or in you (getting clear, making a decision, letting go). If it has
+              &ldquo;and&rdquo; in it, it&rsquo;s probably two steps.
+            </p>
+            <textarea id="ns-step" rows={3} className="ns-big ns-step-text" maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={p.examples.step} />
+            {looksLikeSeveral(title) ? (
+              <div className="ns-nudge" role="note">
+                <p className="ns-strong">That sounds like more than one step.</p>
+                <p>Which one, done first, makes the rest easier? Keep that one here; the others can be your next Next Step.</p>
               </div>
-            </div>
-            <p className="au-start-q">So, what one change would get you out of where you&rsquo;re stuck?</p>
-            <div className="ns-grid2">
-              <div className="au-sum-card"><p className="au-detail-k">It can change around you</p><p>Something that happens out in your life: a client signed, a debt cleared, a move made.</p></div>
-              <div className="au-sum-card"><p className="au-detail-k">Or change in you</p><p>Something you come to: getting clear, making a decision, forgiving, letting go.</p></div>
-            </div>
-            <label className="au-start-q" htmlFor="ns-step">My Next Step is…</label>
-            <input id="ns-step" type="text" className="ns-big" maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={p.examples.step} />
+            ) : null}
+
+            <label className="au-start-q" htmlFor="ns-name">Give it a name you&rsquo;d say out loud <span className="au-small">Optional</span></label>
+            <p className="au-start-help">A few words you&rsquo;ll recognise at a glance. It&rsquo;s what The Next Step page leads with.</p>
+            <input id="ns-name" type="text" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} placeholder="The business sells on its own" />
 
             <p className="au-start-q">How far could it take you?</p>
             <p className="au-start-help">
@@ -208,14 +209,15 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
 
         {screen === 4 && (
           <>
-            <h1>What&rsquo;s in <em>the way?</em></h1>
-            <p className="lead">Now you know your Next Step, look at what stands between you and it. In survival mode it&rsquo;s hard to see clearly, so name it plainly. What you name here, your moves can work on.</p>
+            <h1>What&rsquo;s in <em>the way.</em></h1>
+            <p className="lead">Every route has rough ground. Name it now and it can&rsquo;t ambush you halfway up.</p>
+            <NsFilm clip={NEXT_STEP_FILMS.way} caption="Duane on what gets in the way" />
             <div className="au-sum-card ns-gold ns-pin">
               <p className="au-detail-k">Your Next Step</p>
               <p className="ns-quote">{stepTitle}</p>
             </div>
-            <label className="au-start-q" htmlFor="ns-way">What&rsquo;s in the way of it?</label>
-            <p className="au-start-help">If it helps:</p>
+            <label className="au-start-q" htmlFor="ns-way">What&rsquo;s most likely to stop you, out there or in you?</label>
+            <p className="au-start-help">Be honest. It often starts with one of these:</p>
             <Prompts list={p.way} />
             <textarea id="ns-way" rows={4} value={inTheWay} onChange={(e) => setInTheWay(e.target.value)} placeholder={p.examples.way} />
             {ctx.lowWellbeing ? (
@@ -238,13 +240,11 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
 
         {screen === 5 && (
           <>
-            <h1>What it&rsquo;ll <em>take.</em></h1>
-            <p className="lead">
-              The moves that get you to <b className="ns-white">{stepTitle}</b>. Split it into moves you believe you can do. Some once, some every week. Add what
-              you know now; you can change them as you learn.
-            </p>
-            <NsFilm clip={NEXT_STEP_FILMS.moves} caption="Duane on making your Next Step believable" />
-            <p className="au-detail-k ns-moves-k">Your moves</p>
+            <h1>Your <em>route.</em></h1>
+            <p className="lead">Big steps are made of small moves. Make the first one so clear you could do it tomorrow.</p>
+            <NsFilm clip={NEXT_STEP_FILMS.moves} caption="Duane on your route" />
+            <p className="au-start-q">What are your moves to <b className="ns-white">{stepTitle}</b>, and when will you make them?</p>
+            <p className="au-start-help">Some once, some every week. They&rsquo;ll show up in Today on My Space, and you can change them as you learn.</p>
             <ol className="ns-moves">
               {moves.map((m, i) => (
                 <li key={m.key}>
@@ -262,11 +262,13 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <div className="au-sum-card ns-coach-note">
               <p><b>With a coach?</b> Steps you agree in a session appear with your moves, linked to this Next Step, so you both work from one list.</p>
             </div>
-            <label className="au-start-q" htmlFor="ns-done">How will you know it&rsquo;s taken?</label>
+            <label className="au-start-q" htmlFor="ns-done">How will you know you&rsquo;ve arrived?</label>
             <p className="au-start-help">One clear sign. Could someone else tell it had happened?</p>
             <input id="ns-done" type="text" value={done} onChange={(e) => setDone(e.target.value)} placeholder={p.examples.done} />
           </>
         )}
+          </div>
+        </div>
       </div>
 
       <div className="foot-nav">
