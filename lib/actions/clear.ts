@@ -81,6 +81,9 @@ export type Goal = {
   // Migration 0031
   step_name?: string | null;
   shared_with_coach_at?: string | null;
+  // Migration 0032: "done when", counted
+  count_target?: number | null;
+  count_move_id?: string | null;
 };
 
 // Read-only lookup — used by the dashboard to show the right CTA state

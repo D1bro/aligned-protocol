@@ -6,7 +6,8 @@ export type PlanAction = {
   id: string;
   goal_id: string | null;
   action_date: string;
-  source: "plan" | "own";
+  source: "plan" | "own" | "move";
+  move_id?: string | null;
   body: string;
   done_at: string | null;
 };

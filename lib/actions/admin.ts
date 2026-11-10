@@ -202,6 +202,13 @@ export async function getClientProfile(clientId: string) {
 
   // The Next Step's moves (migration 0029): the coach reads their client's.
   const { data: moves } = await supabase.from("goal_moves").select("*").eq("client_id", clientId).order("position").order("created_at");
+  // The daily log (migration 0032): their ticks over the last 90 days, and
+  // the coach's Next Step reviews. Empty until 0032 has run.
+  const since = new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10);
+  const [{ data: ticks }, { data: reviews }] = await Promise.all([
+    supabase.from("plan_actions").select("goal_id, move_id, action_date, source, done_at").eq("client_id", clientId).in("source", ["plan", "move"]).gte("action_date", since),
+    supabase.from("next_step_reviews").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+  ]);
 
   const auditIds = (audits.data ?? []).map((a) => a.id as string);
   const { data: responses } = auditIds.length
@@ -218,6 +225,8 @@ export async function getClientProfile(clientId: string) {
     goals: (goals.data ?? []) as Record<string, unknown>[],
     checkIns: (checkIns.data ?? []) as Record<string, unknown>[],
     moves: (moves ?? []) as { id: string; goal_id: string; body: string; when_text: string | null; done_at: string | null }[],
+    ticks: (ticks ?? []) as { goal_id: string | null; move_id: string | null; action_date: string; source: string; done_at: string | null }[],
+    reviews: (reviews ?? []) as Record<string, unknown>[],
     notes: (notes.data ?? []) as Record<string, unknown>[],
     reflections: (reflections.data ?? []) as { lesson_slug: string; reflection: string | null; completed_at: string | null; updated_at: string }[],
     enquiries: (enquiries.data ?? []) as Record<string, unknown>[],

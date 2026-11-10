@@ -39,7 +39,8 @@ import { longDay, nextReview, plannedDays } from "@/lib/review-schedule";
 import { weekStreak } from "@/lib/momentum";
 import { fallbackOf } from "@/lib/plan-action";
 import { isSet, movesRepeat } from "@/lib/next-step";
-import { getMovesForGoal } from "@/lib/actions/next-step";
+import { weekLogProgress } from "@/lib/daily-log";
+import { getMovesForGoal, getMyReviews, getMyToday } from "@/lib/actions/next-step";
 
 // "Friday 6 Nov" for a review date (YYYY-MM-DD), and today's date in their zone.
 const shortDay = (ymd: string) =>
@@ -146,6 +147,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     getMonthReflections(),
   ]);
   const credits = coaching.sessions.length ? await getMyCredits() : null;
+  // The daily log: every move due today, and session actions linked or due.
+  const todayLog = await getMyToday(coaching).catch(() => null);
+  // A sharper version of their Next Step from a session, waiting to be kept.
+  const pendingReviews = coaching.sessions.length ? await getMyReviews().catch(() => []) : [];
 
   const scoreByArea = new Map(responses.map((r) => [r.life_area_id, r.satisfaction_score as number]));
   const scores = areas.map((a) => scoreByArea.get(a.id) ?? 0);
@@ -194,7 +199,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const fallback = fallbackOf(main?.plan);
   const reviewName = "weekly check-in";
   // The week's actions, counted: planned days of the plan's action plus their own.
-  const progress = week.available ? weekProgress(week.weekStart, reviewCommitment ? [] : plannedDays(commitmentWhen), week.actions) : null;
+  const progress = !week.available
+    ? null
+    : todayLog?.available && moves.length && goal
+      ? weekLogProgress(moves, week.actions, week.weekStart, goal.id, (iso) => localDate(iso))
+      : weekProgress(week.weekStart, reviewCommitment ? [] : plannedDays(commitmentWhen), week.actions);
 
   // Steps from the last shared coaching session that are linked to this goal.
   const lastShared = coaching.summaries[0] ?? null;
@@ -284,6 +293,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 <div className="next-action-cta">
                   <Link href="/next-step" className="btn btn-g">See my Next Step →</Link>
                 </div>
+                {pendingReviews.length ? (
+                  <p className="next-action-note">From your session: your Next Step, sharpened. <Link href="/next-step">Have a look and keep it</Link>.</p>
+                ) : null}
                 {main?.otherActive.length ? (
                   <p className="next-action-note">
                     You have {main.otherActive.length} other Next Step
@@ -322,7 +334,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
             {/* 3. Today: the plan's action (and the daily practice for members). */}
             <Cell span={2}>
-              <TodayCard action={commitment} actionWhen={commitmentWhen} moveId={todayMoveId} movesDone={allMovesDone} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} />
+              <TodayCard action={commitment} actionWhen={commitmentWhen} moveId={todayMoveId} movesDone={allMovesDone} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} log={todayLog} />
             </Cell>
 
             {/* 4. This week: the weekly review and the run of reviews. */}

@@ -64,7 +64,7 @@ export async function getWeekActions(): Promise<{ available: boolean; today: str
   const end = new Date(Date.parse(`${weekStart}T12:00:00Z`) + 7 * 86_400_000).toISOString().slice(0, 10);
   const { data, error } = await m.supabase
     .from("plan_actions")
-    .select("id, goal_id, action_date, source, body, done_at")
+    .select("*")
     .eq("client_id", m.userId)
     .gte("action_date", weekStart)
     .lt("action_date", end)

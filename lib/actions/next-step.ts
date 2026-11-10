@@ -9,6 +9,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { SITE_URL, sendEmail } from "@/lib/email";
 import { renderEmail, renderText, type Block } from "@/lib/email-layout";
 import { stepName } from "@/lib/next-step";
+import { localDate } from "@/lib/time";
+import { forMember, type ReviewContent } from "@/lib/next-step-review";
 
 // The Next Step: reads and writes. A Next Step is a goals row on a plan
 // (clear_plans) for one audit and one area. The plan holds the area-level
@@ -16,7 +18,8 @@ import { stepName } from "@/lib/next-step";
 // goal_moves hold the moves. Migration 0029.
 
 type Db = Awaited<ReturnType<typeof createClient>>;
-import { loadNextSteps, type Move } from "@/lib/member-view";
+import { loadNextSteps, loadToday, type Move } from "@/lib/member-view";
+import type { MemberCoaching } from "@/lib/actions/member-coaching";
 export type { Move } from "@/lib/member-view";
 export type Result = { ok: true } | { ok: false; message: string };
 const FAILED = "Couldn’t save — check your connection and try again.";
@@ -115,6 +118,9 @@ export type BuildContext = {
   moves: Move[];
   // Emotional Wellbeing scored 3 or lower: point gently to support.
   lowWellbeing: boolean;
+  // What's worked before, in their coach's summaries (the insights from the
+  // last two shared sessions), for the route screen. Empty without a coach.
+  worked: string[];
 };
 
 // Everything the five screens need. The goal is the plan's latest one while
@@ -136,9 +142,18 @@ export async function getBuildContext(planId: string): Promise<BuildContext | nu
   const current = goal && goal.status === "active" && !goal.taken_at ? (goal as Goal) : null;
   // After a Next Step is taken, the next one here starts from the new score.
   const takenScore = !current && goal?.taken_at ? score(goal.taken_score) : null;
-  const { data: moves } = current
-    ? await supabase.from("goal_moves").select("*").eq("goal_id", current.id).order("position").order("created_at")
-    : { data: [] };
+  const [{ data: moves }, { data: shared }] = await Promise.all([
+    current ? supabase.from("goal_moves").select("*").eq("goal_id", current.id).order("position").order("created_at") : Promise.resolve({ data: [] }),
+    supabase.from("session_summaries").select("content").eq("client_id", userId).eq("status", "published").order("published_at", { ascending: false }).limit(2),
+  ]);
+  const worked = [
+    ...new Set(
+      (shared ?? []).flatMap((x) => {
+        const insights = (x.content as { insights?: unknown } | null)?.insights;
+        return Array.isArray(insights) ? insights.filter((i): i is string => typeof i === "string" && !!i.trim()).map((i) => i.trim()) : [];
+      })
+    ),
+  ].slice(0, 6);
   return {
     plan: plan as ClearPlan,
     area: area as LifeArea,
@@ -147,6 +162,7 @@ export async function getBuildContext(planId: string): Promise<BuildContext | nu
     goal: current,
     moves: (moves ?? []) as Move[],
     lowWellbeing: typeof wellbeing?.satisfaction_score === "number" && wellbeing.satisfaction_score <= 3,
+    worked,
   };
 }
 
@@ -155,7 +171,7 @@ export type ScreenInput =
   | { screen: 2; ten: string }
   | { screen: 3; title: string; name?: string; aim: number; why: string; feel: string; checks: Record<string, boolean> }
   | { screen: 4; inTheWay: string; spill: string }
-  | { screen: 5; moves: { id?: string; body: string; when: string }[]; done: string };
+  | { screen: 5; moves: { id?: string; body: string; when: string }[]; done: string; countTarget?: number | null; countMove?: number | null };
 
 // Save one screen. Screens 1–2 write to the plan; screen 3 creates the Next
 // Step (the goal) the first time; 4–5 write to it and its moves.
@@ -236,31 +252,63 @@ export async function saveScreen(planId: string, input: ScreenInput): Promise<Re
     return { ok: true };
   }
 
-  // Screen 5: the moves (kept in the order given) and how they'll know.
-  const moves = (input.moves ?? [])
+  // Screen 5: the moves (kept in the order given), how they'll know, and
+  // (optionally) the number of one move's ticks that means it's done.
+  const saved = await saveMoves(supabase, userId, goalId, ctx.moves, input.moves ?? []);
+  if (!saved.ok) return saved;
+  const done = clean(input.done);
+  if (!done) return { ok: false, message: "Say how you’ll know it’s taken." };
+  const counted = countFields(input.countTarget, input.countMove, saved.ids);
+  const { data, error } = await supabase.from("goals").update({ success_criteria: done, ...counted }).eq("id", goalId).select("id");
+  if (error || !data?.length) return { ok: false, message: FAILED };
+  revalidate();
+  return { ok: true };
+}
+
+// The moves, kept in the order given: existing ones edited in place (their
+// ticks stay with them), new ones added, the rest removed (their ticks are
+// kept in the log). Returns the saved ids in order.
+async function saveMoves(
+  supabase: Db,
+  userId: string,
+  goalId: string,
+  existing: Move[],
+  input: { id?: string; body: string; when: string }[]
+): Promise<{ ok: true; ids: string[] } | { ok: false; message: string }> {
+  const moves = input
     .map((m) => ({ id: m.id, body: clean(m.body, 200), when: clean(m.when, 120) }))
     .filter((m): m is { id: string | undefined; body: string; when: string | null } => !!m.body)
     .slice(0, 20);
-  const done = clean(input.done);
   if (!moves.length) return { ok: false, message: "Add at least one move." };
-  if (!done) return { ok: false, message: "Say how you’ll know it’s taken." };
   const keep = new Set(moves.map((m) => m.id).filter(Boolean));
-  const gone = ctx.moves.filter((m) => !keep.has(m.id)).map((m) => m.id);
+  const gone = existing.filter((m) => !keep.has(m.id)).map((m) => m.id);
   if (gone.length) {
     const { error } = await supabase.from("goal_moves").delete().in("id", gone);
     if (error) return { ok: false, message: FAILED };
   }
+  const ids: string[] = [];
   for (const [position, m] of moves.entries()) {
     const row = { body: m.body, when_text: m.when, position };
-    const { error } = m.id && ctx.moves.some((x) => x.id === m.id)
-      ? await supabase.from("goal_moves").update(row).eq("id", m.id)
-      : await supabase.from("goal_moves").insert({ ...row, client_id: userId, goal_id: goalId });
-    if (error) return { ok: false, message: FAILED };
+    if (m.id && existing.some((x) => x.id === m.id)) {
+      const { error } = await supabase.from("goal_moves").update(row).eq("id", m.id);
+      if (error) return { ok: false, message: FAILED };
+      ids.push(m.id);
+    } else {
+      const { data, error } = await supabase.from("goal_moves").insert({ ...row, client_id: userId, goal_id: goalId }).select("id").single();
+      if (error || !data) return { ok: false, message: FAILED };
+      ids.push(data.id as string);
+    }
   }
-  const { data, error } = await supabase.from("goals").update({ success_criteria: done }).eq("id", goalId).select("id");
-  if (error || !data?.length) return { ok: false, message: FAILED };
-  revalidate();
-  return { ok: true };
+  return { ok: true, ids };
+}
+
+// "Done when", counted: a number of ticks of one move (by its place in the list).
+function countFields(target: unknown, moveIndex: unknown, ids: string[]) {
+  const n = Math.round(Number(target));
+  const i = Number(moveIndex);
+  return Number.isFinite(n) && n >= 1 && n <= 365 && Number.isInteger(i) && ids[i]
+    ? { count_target: n, count_move_id: ids[i] }
+    : { count_target: null, count_move_id: null };
 }
 
 // "Take this step": the Next Step is set.
@@ -292,6 +340,12 @@ export async function getMyNextSteps() {
   return loadNextSteps(supabase, userId);
 }
 
+// Today on My Space: the moves due today and the session actions linked or due.
+export async function getMyToday(coaching: MemberCoaching | null) {
+  const { supabase, userId } = await me();
+  return loadToday(supabase, userId, coaching);
+}
+
 export async function setMoveDone(moveId: string, done: boolean): Promise<Result> {
   const { supabase } = await me();
   const { data, error } = await supabase
@@ -300,6 +354,31 @@ export async function setMoveDone(moveId: string, done: boolean): Promise<Result
     .eq("id", moveId)
     .select("id");
   if (error || !data?.length) return { ok: false, message: FAILED };
+  revalidate();
+  return { ok: true };
+}
+
+// Today's tick on a repeating move ("Spin class, Monday and Thursday"): one
+// per move per day, the daily log. A one-off move is ticked with setMoveDone.
+export async function setMoveTick(moveId: string, done: boolean): Promise<Result> {
+  const { supabase, userId } = await me();
+  const { data: move } = await supabase.from("goal_moves").select("id, goal_id, body").eq("id", moveId).eq("client_id", userId).maybeSingle();
+  if (!move) return { ok: false, message: FAILED };
+  const today = localDate(new Date());
+  const done_at = done ? new Date().toISOString() : null;
+  const { data: existing } = await supabase
+    .from("plan_actions")
+    .select("id")
+    .eq("move_id", moveId)
+    .eq("action_date", today)
+    .eq("source", "move")
+    .maybeSingle();
+  const { error } = existing
+    ? await supabase.from("plan_actions").update({ done_at }).eq("id", existing.id)
+    : await supabase.from("plan_actions").insert({
+        client_id: userId, goal_id: move.goal_id, move_id: moveId, action_date: today, source: "move", body: (move.body as string).slice(0, 200), done_at,
+      });
+  if (error) return { ok: false, message: FAILED };
   revalidate();
   return { ok: true };
 }
@@ -419,5 +498,68 @@ export async function shareWithCoach(goalId: string): Promise<Result> {
   if (!sent.ok) return { ok: false, message: "Couldn’t send just now. Try again in a moment." };
   await supabase.from("goals").update({ shared_with_coach_at: new Date().toISOString() }).eq("id", goalId).eq("client_id", userId);
   revalidatePath("/next-step/set");
+  return { ok: true };
+}
+
+// The coach's Next Step review, as the member sees it: the sharper version
+// agreed in a session, sent to them to keep. The AI read is never included.
+export type MemberReview = { id: string; goalId: string; sentAt: string; content: Omit<ReviewContent, "ai"> };
+export async function getMyReviews(): Promise<MemberReview[]> {
+  const { supabase, userId } = await me();
+  const { data, error } = await supabase
+    .from("next_step_reviews")
+    .select("id, goal_id, content, sent_at")
+    .eq("client_id", userId)
+    .not("sent_at", "is", null)
+    .is("answered_at", null)
+    .order("sent_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []).map((r) => ({ id: r.id as string, goalId: r.goal_id as string, sentAt: r.sent_at as string, content: forMember(r.content as ReviewContent) }));
+}
+
+// Keep it: their Next Step takes the agreed words (they own them; this is
+// them applying it). Not now: it's put aside and nothing changes.
+export async function answerReview(reviewId: string, keep: boolean): Promise<Result> {
+  const { supabase, userId } = await me();
+  const { data: review } = await supabase
+    .from("next_step_reviews")
+    .select("id, goal_id, content")
+    .eq("id", reviewId)
+    .eq("client_id", userId)
+    .is("answered_at", null)
+    .maybeSingle();
+  if (!review) return { ok: false, message: "This has already been answered." };
+  if (keep) {
+    const c = review.content as ReviewContent;
+    const goalId = review.goal_id as string;
+    const { data: goal } = await supabase.from("goals").select("*").eq("id", goalId).eq("client_id", userId).maybeSingle();
+    if (!goal) return { ok: false, message: FAILED };
+    const fields: Record<string, unknown> = {};
+    if (clean(c.title, 200)) fields.goal_title = clean(c.title, 200);
+    if (c.name !== undefined && clean(c.name, 80)) fields.step_name = clean(c.name, 80);
+    if (clean(c.why)) fields.motivation_text = clean(c.why);
+    if (clean(c.done)) fields.success_criteria = clean(c.done);
+    if (score(c.aim)) fields.aim_score = score(c.aim);
+    if (c.moves?.length) {
+      const { data: existing } = await supabase.from("goal_moves").select("*").eq("goal_id", goalId).order("position").order("created_at");
+      const saved = await saveMoves(supabase, userId, goalId, (existing ?? []) as Move[], c.moves);
+      if (!saved.ok) return saved;
+      if (c.countTarget) Object.assign(fields, countFields(c.countTarget, c.countMove, saved.ids));
+    }
+    if (Object.keys(fields).length) {
+      const { data, error } = await supabase.from("goals").update(fields).eq("id", goalId).select("id");
+      if (error || !data?.length) return { ok: false, message: FAILED };
+    }
+    if (fields.motivation_text && goal.clear_plan_id) {
+      await supabase.from("clear_plans").update({ why_it_matters: fields.motivation_text }).eq("id", goal.clear_plan_id);
+    }
+  }
+  const { data, error } = await supabase
+    .from("next_step_reviews")
+    .update({ answer: keep ? "kept" : "not_now", answered_at: new Date().toISOString() })
+    .eq("id", reviewId)
+    .select("id");
+  if (error || !data?.length) return { ok: false, message: FAILED };
+  revalidate();
   return { ok: true };
 }
