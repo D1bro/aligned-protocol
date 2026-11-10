@@ -80,11 +80,14 @@ const GENERAL: Prompts = {
     "What would you be doing, day to day?",
     "How would you know you’d made it?",
   ],
+  // What most often stands in the way, of a change in you as much as one
+  // around you: what you believe about yourself, your confidence, and what
+  // you're still carrying from the past (Duane, 10 Nov 2026).
   way: [
-    "What do you worry about most?",
-    "What keeps coming back?",
+    "What do you believe about yourself that makes this hard?",
+    "Where does your confidence drop when you picture doing it?",
+    "What from the past are you still carrying into this?",
     "What are you avoiding?",
-    "What have you tried before that didn’t work?",
   ],
   spill: [
     "How are you sleeping?",
@@ -154,7 +157,7 @@ const BY_AREA: Record<string, AreaPrompts> = {
   },
   "Relationships & Connection": {
     ten: "Who would be in your life, and how would it feel to be with them?",
-    way: "What conversation have you been avoiding?",
+    way: "What are you still holding on to, or holding back?",
     examples: {
       now: "In your own words, about the relationships that matter most…",
       ten: "Relationships that feel loving, clear and safe…",
