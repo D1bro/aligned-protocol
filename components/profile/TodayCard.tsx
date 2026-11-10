@@ -5,6 +5,7 @@ import type { PlanAction } from "@/lib/planning";
 import { Icon } from "@/components/ui/Icon";
 import { Mark, WINS } from "@/components/profile/DailyAlignmentCard";
 import { TodayActions } from "@/components/profile/TodayActions";
+import type { TodayAction, TodayMove } from "@/lib/daily-log";
 
 // Today on My Space: today's actions, from their plan (never a separate
 // to-do list) plus any they add, linked to a goal where it fits; any steps
@@ -21,6 +22,7 @@ export async function TodayCard({
   goalId,
   goals,
   week,
+  log = null,
 }: {
   action: string;
   actionWhen: string | null;
@@ -34,13 +36,17 @@ export async function TodayCard({
   goalId: string | null;
   goals: { id: string; title: string }[];
   week: { available: boolean; today: string; actions: PlanAction[] };
+  // The daily log (migration 0032): every move due today and the session
+  // actions linked or due. When it's there, it replaces the single action.
+  log?: { available: boolean; moves: (TodayMove & { step: string })[]; actions: TodayAction[]; total: number } | null;
 }) {
+  const daily = !!log?.available && (log.total > 0 || log.actions.length > 0);
   const todays = week.actions.filter((a) => a.action_date === week.today);
   const planTick = todays.find((a) => a.source === "plan" && a.goal_id === goalId && a.body === action) ?? null;
   const nextDay = action ? firstActionDate(`${week.today}T12:00:00Z`, actionWhen) : null;
   // With no set days (a focus from their weekly review), it can be done any day.
   const plannedToday = nextDay === week.today || !plannedDays(actionWhen).length;
-  const plan = action && goalId
+  const plan = daily ? null : action && goalId
     ? moveId
       ? { goalId, body: action, done: false, moveId }
       : plannedToday || planTick ? { goalId, body: action, done: !!planTick?.done_at } : null
@@ -55,7 +61,14 @@ export async function TodayCard({
         <h2 id="ms-today-h">Today</h2>
       </div>
       {week.available ? (
-        <TodayActions plan={plan} own={todays.filter((a) => a.source === "own")} goals={goals} defaultGoalId={goalId} />
+        <TodayActions
+          plan={plan}
+          moves={daily ? log!.moves : []}
+          sessionActions={daily ? log!.actions : []}
+          own={todays.filter((a) => a.source === "own")}
+          goals={goals}
+          defaultGoalId={goalId}
+        />
       ) : null}
       {movesDone ? (
         <p className="pf-sub">
@@ -63,14 +76,15 @@ export async function TodayCard({
           {" "}or, if it&rsquo;s happened, <Link href={movesDone.takenHref} className="au-text-link">it&rsquo;s taken</Link>.
         </p>
       ) : null}
-      {action && !plan ? (
+      {daily && !log!.moves.length && !movesDone ? <p className="pf-sub">Nothing from your Next Step today.</p> : null}
+      {!daily && action && !plan ? (
         <p className="pf-sub">
           Nothing from your Next Step today{nextDay ? `; next: ${longDay(nextDay).split(" ")[0]}` : ""}.
           {!week.available ? <> Your action: {action}</> : null}
         </p>
       ) : null}
       {plan && fallback ? <ul className="pf-tags"><li>Hard day: {fallback.charAt(0).toLowerCase() + fallback.slice(1)}</li></ul> : null}
-      {coachSteps.length ? (
+      {!daily && coachSteps.length ? (
         <div className="next-action-coaching">
           <p className="au-detail-k">Agreed with your coach</p>
           <ul>{coachSteps.map((c) => <li key={c.id}>{c.body}</li>)}</ul>

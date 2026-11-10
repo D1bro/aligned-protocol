@@ -19,6 +19,12 @@ import { getLatestCalibration, getSessionCalibration } from "@/lib/actions/calib
 import { getClientIntention, getClientRecord } from "@/lib/actions/staff-profiles";
 import { getClientContact } from "@/lib/actions/details";
 import { localTimeLabel } from "@/lib/details";
+import { SinceLastTime } from "@/components/coach/SinceLastTime";
+import { StepReview } from "@/components/coach/StepReview";
+import type { StepReview as StepReviewRow } from "@/lib/actions/step-review";
+import type { ReviewContent } from "@/lib/next-step-review";
+import { addDays, daysLabel, moveDays } from "@/lib/daily-log";
+import { localDate } from "@/lib/time";
 
 // AI drafting can take a while; allow up to 5 minutes (Vercel caps this per plan).
 export const maxDuration = 300;
@@ -166,6 +172,42 @@ export default async function SessionDeskPage({
       otherGoals: active.slice(1).map((g) => str(g.goal_title) ?? "A goal"),
     };
   }
+  // Since last time and the Next Step review (migration 0032): the member's
+  // daily log since the last session held, and the sharper version agreed.
+  const lastHeld = coaching.sessions
+    .filter((x) => x.state === "held" && x.id !== session.id && new Date(x.scheduled_at) < new Date(session.scheduled_at))
+    .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())[0];
+  const sinceDay = lastHeld ? localDate(lastHeld.scheduled_at) : addDays(localDate(new Date()), -13);
+  const mainId = (mainGoal?.id as string | undefined) ?? null;
+  const reviewRow = mainId ? p.reviews.find((r) => r.goal_id === mainId) ?? null : null;
+  const stepReview: StepReviewRow | null = reviewRow
+    ? {
+        id: reviewRow.id as string,
+        goalId: reviewRow.goal_id as string,
+        content: (reviewRow.content as ReviewContent) ?? {},
+        sentAt: (reviewRow.sent_at as string | null) ?? null,
+        answer: (reviewRow.answer as string | null) ?? null,
+        answeredAt: (reviewRow.answered_at as string | null) ?? null,
+        updatedAt: reviewRow.updated_at as string,
+      }
+    : null;
+  const recentShared = coaching.summaries.filter((x) => x.status === "published").slice(0, 2);
+  const workedBefore = [
+    ...new Set(
+      recentShared.flatMap((x) => {
+        const ins = (x.content as { insights?: unknown } | null)?.insights;
+        return Array.isArray(ins) ? ins.filter((i): i is string => typeof i === "string" && !!i.trim()) : [];
+      })
+    ),
+  ].slice(0, 6);
+  const olderOpen = coaching.commitments
+    .filter((c) => c.owner === "client" && c.status === "open" && c.summary_id !== lastShared?.id)
+    .map((c) => ({ id: c.id as string, body: str(c.body) ?? "", due_date: (c.due_date as string | null) ?? null, created_at: c.created_at as string }));
+  const goalCheckIns = mainId
+    ? p.checkIns
+        .filter((c) => c.goal_id === mainId && c.kind === "weekly" && localDate(c.created_at as string) >= sinceDay)
+        .map((c) => ({ created_at: c.created_at as string, closer: (c.closer as string | null) ?? null, helped: (c.helped as string | null) ?? null }))
+    : [];
   const latestAuditForCal = p.audits[0] ?? null;
 
   const previousBlock = (
@@ -239,6 +281,7 @@ export default async function SessionDeskPage({
       </nav>
 
       {stage === "prepare" ? (
+        <>
         <div className="desk-grid">
           <div className="desk-main">
             <section className="admin-card desk-open" aria-label="Opening question">
@@ -260,8 +303,15 @@ export default async function SessionDeskPage({
                     <>
                       <dt>Moves</dt>
                       <dd>
-                        {goalMoves.filter((m) => m.done_at).length} of {goalMoves.length} done
-                        {goalMoves.filter((m) => !m.done_at).slice(0, 3).map((m) => <span key={m.id} className="desk-move">○ {m.body}</span>)}
+                        {goalMoves.slice(0, 5).map((m) => {
+                          const days = moveDays(m.when_text);
+                          return (
+                            <span key={m.id} className="desk-move">
+                              {days.length ? "↻" : m.done_at ? "✓" : "○"} {m.body}
+                              {days.length ? ` · ${daysLabel(days)}` : m.when_text ? ` · ${m.when_text}` : ""}
+                            </span>
+                          );
+                        })}
                       </dd>
                     </>
                   ) : null}
@@ -279,6 +329,25 @@ export default async function SessionDeskPage({
                 <Link href={`/coach/clients/${client.id}?tab=goals`}>Goals and audit</Link>
               </p>
             </section>
+            {mainGoal ? (
+              <SinceLastTime
+                clientId={client.id}
+                firstName={firstName}
+                goal={{
+                  id: mainGoal.id as string,
+                  name: str(mainGoal.step_name) ?? str(mainGoal.goal_title) ?? "Their Next Step",
+                  set_at: (mainGoal.set_at as string | null) ?? null,
+                  count_target: (mainGoal.count_target as number | null) ?? null,
+                  count_move_id: (mainGoal.count_move_id as string | null) ?? null,
+                }}
+                moves={goalMoves.map((m) => ({ ...m, goal_id: m.goal_id }))}
+                ticks={p.ticks}
+                since={sinceDay}
+                checkIns={goalCheckIns}
+                olderOpen={olderOpen}
+                updates={coaching.updates as { commitment_id: string; progress: string; created_at: string }[]}
+              />
+            ) : null}
             <section className="admin-card" aria-labelledby="desk-prep-h">
               <h2 id="desk-prep-h">Shared by {firstName}</h2>
               {prep.length ? (
@@ -298,6 +367,29 @@ export default async function SessionDeskPage({
             <NoteEditor clientId={client.id} sessionId={session.id} initial={myNote} label="Your private note for this session" />
           </aside>
         </div>
+        {mainGoal ? (
+          <StepReview
+            clientId={client.id}
+            firstName={firstName}
+            goalId={mainGoal.id as string}
+            current={{
+              title: str(mainGoal.goal_title) ?? "",
+              name: str(mainGoal.step_name),
+              why: str(mainGoal.motivation_text),
+              done: str(mainGoal.success_criteria),
+              countTarget: (mainGoal.count_target as number | null) ?? null,
+              countMoveId: (mainGoal.count_move_id as string | null) ?? null,
+              start: (mainGoal.start_score as number | null) ?? null,
+              aim: (mainGoal.aim_score as number | null) ?? null,
+              inTheWay: str(mainGoal.in_the_way),
+              moves: goalMoves.map((m) => ({ id: m.id, body: m.body, when_text: m.when_text })),
+            }}
+            review={stepReview}
+            worked={workedBefore}
+            aiAvailable={Boolean(process.env.ANTHROPIC_API_KEY)}
+          />
+        ) : null}
+        </>
       ) : null}
 
       {stage === "conversation" ? (

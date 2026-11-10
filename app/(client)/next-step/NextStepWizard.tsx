@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveScreen, takeOnNextStep, type BuildContext, type ScreenInput } from "@/lib/actions/next-step";
 import { CHECKS, SCREENS, looksLikeSeveral, promptsFor, stepsBetween } from "@/lib/next-step";
+import { daysLabel, moveDays } from "@/lib/daily-log";
+import { twoInOne } from "@/lib/next-step-review";
 import { NsMap, NsStepper } from "@/components/next-step/NsMap";
 import { NsFilm, NEXT_STEP_FILMS } from "./NsFilm";
 
@@ -40,6 +42,12 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
     ctx.moves.length ? ctx.moves.map((m) => ({ key: newKey(), id: m.id, body: m.body, when: m.when_text ?? "" })) : [{ key: newKey(), body: "", when: "" }]
   );
   const [done, setDone] = useState(goal?.success_criteria ?? "");
+  // "Done when", counted (optional): this many ticks of one move.
+  const [countTarget, setCountTarget] = useState(goal?.count_target ? String(goal.count_target) : "");
+  const [countKey, setCountKey] = useState<string>(() => {
+    const i = ctx.moves.findIndex((m) => m.id === goal?.count_move_id);
+    return i === -1 ? "" : moves[i]?.key ?? "";
+  });
 
   const stepTitle = name.trim() || title.trim() || "your Next Step";
   const canContinue =
@@ -54,7 +62,17 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
       case 2: return { screen: 2, ten };
       case 3: return { screen: 3, title, name, aim: aim ?? 0, why, feel, checks };
       case 4: return { screen: 4, inTheWay, spill };
-      default: return { screen: 5, moves: moves.map(({ id, body, when }) => ({ id, body, when })), done };
+      default: {
+        const kept = moves.filter((m) => filled(m.body));
+        const countMove = countKey ? kept.findIndex((m) => m.key === countKey) : -1;
+        return {
+          screen: 5,
+          moves: moves.map(({ id, body, when }) => ({ id, body, when })),
+          done,
+          countTarget: countTarget && countMove !== -1 ? Number(countTarget) : null,
+          countMove: countMove === -1 ? null : countMove,
+        };
+      }
     }
   }
 
@@ -245,19 +263,40 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <NsFilm clip={NEXT_STEP_FILMS.moves} caption="Duane on your route" />
             <p className="au-start-q">What are your moves to <b className="ns-white">{stepTitle}</b>, and when will you make them?</p>
             <p className="au-start-help">Some once, some every week. They&rsquo;ll show up in Today on My Space, and you can change them as you learn.</p>
+            {ctx.worked.length ? (
+              <div className="au-sum-card ns-worked">
+                <p className="au-detail-k">What&rsquo;s worked before, from your sessions</p>
+                <ul>{ctx.worked.map((w) => <li key={w}>{w}</li>)}</ul>
+              </div>
+            ) : null}
             <ol className="ns-moves">
-              {moves.map((m, i) => (
-                <li key={m.key}>
-                  <input type="text" aria-label={`Move ${i + 1}`} maxLength={200} value={m.body} onChange={(e) => setMove(m.key, "body", e.target.value)} placeholder={i === 0 ? p.examples.move : "Another move"} />
-                  <input type="text" aria-label={`When, for move ${i + 1}`} maxLength={120} value={m.when} onChange={(e) => setMove(m.key, "when", e.target.value)} placeholder="When? e.g. Every Monday" />
-                  {moves.length > 1 ? (
-                    <button type="button" className="ns-remove" aria-label={`Remove move ${i + 1}`} onClick={() => setMoves((ms) => ms.filter((x) => x.key !== m.key))}>✕</button>
-                  ) : <span />}
-                </li>
-              ))}
+              {moves.map((m, i) => {
+                const days = moveDays(m.when);
+                return (
+                  <li key={m.key}>
+                    <input type="text" aria-label={`Move ${i + 1}`} maxLength={200} value={m.body} onChange={(e) => setMove(m.key, "body", e.target.value)} placeholder={i === 0 ? p.examples.move : "Another move"} />
+                    <input type="text" aria-label={`When, for move ${i + 1}`} maxLength={120} value={m.when} onChange={(e) => setMove(m.key, "when", e.target.value)} placeholder="When? e.g. Monday and Thursday" />
+                    {moves.length > 1 ? (
+                      <button type="button" className="ns-remove" aria-label={`Remove move ${i + 1}`} onClick={() => setMoves((ms) => ms.filter((x) => x.key !== m.key))}>✕</button>
+                    ) : <span />}
+                    {filled(m.body) ? (
+                      <p className="ns-move-hint" aria-live="polite">
+                        {twoInOne(m.body) ? <><b>Two things in one?</b> Give each its own move, so each gets its own tick. </> : null}
+                        {days.length ? `In Today every ${daysLabel(days) === "Every day" ? "day" : daysLabel(days).replace(/^Every /, "")}, with a tick.` : "In Today until you tick it once. For a move that repeats, add the days."}
+                      </p>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ol>
             {moves.length < 20 ? (
               <button type="button" className="ns-add" onClick={() => setMoves((ms) => [...ms, { key: newKey(), body: "", when: "" }])}>+ Add a move</button>
+            ) : null}
+            {filled(inTheWay) ? (
+              <div className="ns-nudge" role="note">
+                <p><b>When that happens…</b> You said what gets in the way: &ldquo;{inTheWay.trim()}&rdquo;</p>
+                <p>Is there a move for that moment? What will you do instead?</p>
+              </div>
             ) : null}
             <div className="au-sum-card ns-coach-note">
               <p><b>With a coach?</b> Steps you agree in a session appear with your moves, linked to this Next Step, so you both work from one list.</p>
@@ -265,6 +304,21 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <label className="au-start-q" htmlFor="ns-done">How will you know you&rsquo;ve arrived?</label>
             <p className="au-start-help">One clear sign. Could someone else tell it had happened?</p>
             <input id="ns-done" type="text" value={done} onChange={(e) => setDone(e.target.value)} placeholder={p.examples.done} />
+            {moves.some((m) => filled(m.body) && moveDays(m.when).length) ? (
+              <div className="ns-count-set">
+                <p className="au-start-help">Can you count it? Then you&rsquo;ll both see how close you are, and know the day it&rsquo;s done. (Optional)</p>
+                <div className="ns-count-row">
+                  <label htmlFor="ns-count-n" className="sr-only">How many times</label>
+                  <input id="ns-count-n" type="number" inputMode="numeric" min={1} max={365} value={countTarget} onChange={(e) => setCountTarget(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))} placeholder="8" />
+                  <span>times</span>
+                  <label htmlFor="ns-count-m" className="sr-only">Which move</label>
+                  <select id="ns-count-m" value={countKey} onChange={(e) => setCountKey(e.target.value)}>
+                    <option value="">Choose the move to count</option>
+                    {moves.filter((m) => filled(m.body) && moveDays(m.when).length).map((m) => <option key={m.key} value={m.key}>{m.body.trim()}</option>)}
+                  </select>
+                </div>
+              </div>
+            ) : null}
           </>
         )}
           </div>

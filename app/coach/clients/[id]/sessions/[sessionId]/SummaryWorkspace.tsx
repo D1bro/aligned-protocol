@@ -17,7 +17,7 @@ import {
   type Transcript,
 } from "@/lib/actions/summaries";
 import { createSession, saveCoachNote } from "@/lib/actions/sessions";
-import { EMPTY_CONTENT } from "@/lib/summary-content";
+import { EMPTY_CONTENT, alreadyInNote } from "@/lib/summary-content";
 import { ReflectionDiscussion } from "@/components/coach/ReflectionDiscussion";
 import type { Basis } from "@/lib/ai-draft";
 
@@ -32,9 +32,13 @@ const fill = (c: Partial<SummaryContent> | undefined): SummaryContent => ({
 
 // Add text to the coach's private note for a session: a new note, or
 // appended to the one already there (one note per session per coach).
+// Adds text to the coach's note for a session, once: text already in the
+// note (a second press after a reload, or a check-in list the booker already
+// added) is left as it is.
 async function appendToNote(clientId: string, sessionId: string, text: string): Promise<string | null> {
   let r = await saveCoachNote({ noteId: null, clientId, sessionId, body: text, expectedVersion: null });
   if (!r.ok && r.conflict) {
+    if (alreadyInNote(r.current.body, text)) return null;
     r = await saveCoachNote({ noteId: r.current.id, clientId, sessionId, body: `${r.current.body.trim()}\n\n${text}`, expectedVersion: r.current.version });
   }
   return r.ok ? null : r.message;

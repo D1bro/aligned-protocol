@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { NextStepCard } from "@/lib/member-view";
 import { nextReview, longDay } from "@/lib/review-schedule";
 import { stepName, whyLine } from "@/lib/next-step";
+import { moveDays } from "@/lib/daily-log";
 import { MainGoalButton } from "./MainGoalButton";
 import { Moves } from "./Moves";
 import { NsTrail } from "./NsMap";
@@ -18,11 +19,14 @@ const DAY = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 // nothing to press.
 export function StepCard({ card, main, several, readOnly = false }: { card: NextStepCard; main: boolean; several: boolean; readOnly?: boolean }) {
   const { goal, moves } = card;
-  const doneCount = moves.filter((m) => m.done_at).length;
+  const oneOffs = moves.filter((m) => !moveDays(m.when_text).length);
+  const doneCount = oneOffs.filter((m) => m.done_at).length;
   const review = card.set ? nextReview({ start: goal.set_at ?? goal.created_at ?? new Date().toISOString(), actionWhen: null, reviews: card.checkIns }) : null;
   const started = goal.set_at ?? goal.created_at ?? null;
   const why = whyLine(goal.motivation_text);
   const daysDone = card.week.filter((d) => d.done).length;
+  // With moves on set days, each move shows its own week; otherwise one row.
+  const perMove = moves.some((m) => moveDays(m.when_text).length);
   return (
     <article className={`au-sum-card ns-card${main ? " ns-card-main" : ""}`}>
       <div className="ns-card-top">
@@ -47,7 +51,19 @@ export function StepCard({ card, main, several, readOnly = false }: { card: Next
         </div>
       ) : null}
 
-      {card.set ? (
+      {card.set && card.count ? (
+        <div className="ns-count">
+          <p className="au-small">
+            <span>Done when: {card.count.target} × {card.count.move}</span>
+            <b>{Math.min(card.count.done, card.count.target)} of {card.count.target}</b>
+          </p>
+          <div className="ns-count-bar" role="progressbar" aria-label="Towards done when" aria-valuemin={0} aria-valuemax={card.count.target} aria-valuenow={Math.min(card.count.done, card.count.target)}>
+            <span style={{ width: `${Math.min(100, (card.count.done / card.count.target) * 100)}%` }} />
+          </div>
+        </div>
+      ) : null}
+
+      {card.set && perMove ? null : card.set ? (
         <div className="ns-week">
           <p className="au-detail-k">This week</p>
           <ol aria-label={`This week: ${daysDone ? `moved it forward on ${card.week.filter((d) => d.done).map((d) => DAY[card.week.indexOf(d)]).join(", ")}` : "not ticked off yet"}`}>
@@ -66,8 +82,8 @@ export function StepCard({ card, main, several, readOnly = false }: { card: Next
 
       {moves.length ? (
         <>
-          <p className="au-detail-k ns-moves-k">Your moves · {doneCount} of {moves.length} done</p>
-          <Moves moves={moves} readOnly={readOnly} />
+          <p className="au-detail-k ns-moves-k">Your moves{oneOffs.length ? ` · ${doneCount} of ${oneOffs.length} one-off${oneOffs.length === 1 ? "" : "s"} done` : ""}</p>
+          <Moves moves={moves} weeks={card.moveWeeks} readOnly={readOnly} />
         </>
       ) : null}
 

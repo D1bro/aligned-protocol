@@ -9,6 +9,7 @@ import type { Goal } from "@/lib/actions/clear";
 import { isSet, weekDays, type WeekDay } from "@/lib/next-step";
 import { weekStartOf } from "@/lib/planning";
 import { localDate } from "@/lib/time";
+import { actionsForToday, countProgress, moveLog, movesForToday, type LogDay, type MoveTick, type TodayAction, type TodayMove } from "@/lib/daily-log";
 
 // What a member sees of their coaching and billing, loaded for one client.
 // Used by the member's own pages and by the console's "See as client"
@@ -158,6 +159,10 @@ export type NextStepCard = {
   // This week, Monday first: the days they ticked off their Next Step's
   // action (in Today on My Space, or on the card).
   week: WeekDay[];
+  // Each move's week (the daily log), by move id.
+  moveWeeks: Record<string, LogDay[]>;
+  // "Done when", counted: "3 of 8 · Spin class".
+  count: { done: number; target: number; move: string } | null;
 };
 
 export async function loadNextSteps(supabase: Db, clientId: string): Promise<{ active: NextStepCard[]; taken: NextStepCard[] }> {
@@ -172,6 +177,8 @@ export async function loadNextSteps(supabase: Db, clientId: string): Promise<{ a
   const planIds = [...new Set(list.map((g) => g.clear_plan_id).filter((x): x is string => !!x))];
   const today = localDate(new Date());
   const weekStart = weekStartOf(today);
+  const sets = list.map((g) => g.set_at).filter((x): x is string => !!x).map((x) => localDate(x));
+  const since = [weekStart, ...sets].sort()[0];
   const [{ data: moves }, { data: plans }, { data: areas }, { data: checkIns }, { data: ticks }] = await Promise.all([
     ids.length ? supabase.from("goal_moves").select("*").in("goal_id", ids).order("position").order("created_at") : Promise.resolve({ data: [] }),
     planIds.length ? supabase.from("clear_plans").select("id, life_area_id, life_vision").in("id", planIds) : Promise.resolve({ data: [] }),
@@ -180,25 +187,41 @@ export async function loadNextSteps(supabase: Db, clientId: string): Promise<{ a
       ? supabase.from("goal_checkins").select("goal_id, closer, created_at").in("goal_id", ids).eq("kind", "weekly").order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
     ids.length
-      ? supabase.from("plan_actions").select("goal_id, action_date").in("goal_id", ids).eq("source", "plan").not("done_at", "is", null).gte("action_date", weekStart)
+      ? supabase.from("plan_actions").select("goal_id, move_id, action_date, source, done_at").in("goal_id", ids).in("source", ["plan", "move"]).not("done_at", "is", null).gte("action_date", since)
       : Promise.resolve({ data: [] }),
   ]);
-  const ticked = (ticks ?? []) as { goal_id: string; action_date: string }[];
+  const ticked = (ticks ?? []) as (MoveTick & { goal_id: string; source: string })[];
+  const allMoves = (moves ?? []) as Move[];
   const areaName = new Map((areas ?? []).map((a) => [a.id as string, a.name as string]));
   const planArea = new Map((plans ?? []).map((p) => [p.id as string, areaName.get(p.life_area_id as string) ?? null]));
   const ten = new Map((plans ?? []).map((p) => [p.id as string, ((p.life_vision as string | null) ?? "").trim() || null]));
   const weekly = (checkIns ?? []) as { goal_id: string; closer: string | null; created_at: string }[];
-  const cards: NextStepCard[] = list.map((g) => ({
-    goal: g,
-    area: (g.clear_plan_id && planArea.get(g.clear_plan_id)) || g.focus_area?.trim() || "Your Next Step",
-    planId: g.clear_plan_id,
-    moves: ((moves ?? []) as Move[]).filter((m) => m.goal_id === g.id),
-    set: isSet(g),
-    ten: (g.clear_plan_id && ten.get(g.clear_plan_id)) || null,
-    lastCloser: weekly.find((c) => c.goal_id === g.id)?.closer ?? null,
-    checkIns: weekly.filter((c) => c.goal_id === g.id),
-    week: weekDays(weekStart, ticked.filter((t) => t.goal_id === g.id).map((t) => t.action_date), today),
-  }));
+  const day = (iso: string) => localDate(iso);
+  const cards: NextStepCard[] = list.map((g) => {
+    const own = allMoves.filter((m) => m.goal_id === g.id);
+    const goalTicks = ticked.filter((t) => t.goal_id === g.id);
+    // A day counts on the week when anything for this Next Step was ticked,
+    // and when a one-off move was done.
+    const weekDates = [
+      ...goalTicks.filter((t) => t.action_date >= weekStart).map((t) => t.action_date),
+      ...own.filter((m) => m.done_at).map((m) => day(m.done_at!)).filter((d) => d >= weekStart),
+    ];
+    const counted = countProgress(g, goalTicks, g.set_at ? day(g.set_at) : null);
+    const countMove = own.find((m) => m.id === g.count_move_id);
+    return {
+      goal: g,
+      area: (g.clear_plan_id && planArea.get(g.clear_plan_id)) || g.focus_area?.trim() || "Your Next Step",
+      planId: g.clear_plan_id,
+      moves: own,
+      set: isSet(g),
+      ten: (g.clear_plan_id && ten.get(g.clear_plan_id)) || null,
+      lastCloser: weekly.find((c) => c.goal_id === g.id)?.closer ?? null,
+      checkIns: weekly.filter((c) => c.goal_id === g.id),
+      week: weekDays(weekStart, weekDates, today),
+      moveWeeks: Object.fromEntries(own.map((m) => [m.id, moveLog(m, goalTicks, weekStart, 7, today, day)])),
+      count: counted && countMove ? { ...counted, move: countMove.body } : null,
+    };
+  });
   return {
     // The main one first, then newest.
     active: cards
@@ -206,4 +229,24 @@ export async function loadNextSteps(supabase: Db, clientId: string): Promise<{ a
       .sort((a, b) => Number(b.goal.goal_type === "primary") - Number(a.goal.goal_type === "primary")),
     taken: cards.filter((c) => !!c.goal.taken_at),
   };
+}
+
+// Today on My Space, the daily log: every move due today from their Next
+// Steps under way, and their session actions linked to one or due.
+export async function loadToday(supabase: Db, clientId: string, coaching: MemberCoaching | null): Promise<{ moves: (TodayMove & { step: string })[]; actions: TodayAction[]; available: boolean; total: number }> {
+  const today = localDate(new Date());
+  const { data: goals } = await supabase.from("goals").select("id, goal_title, step_name, set_at, frequency, success_criteria, status, taken_at").eq("client_id", clientId).eq("status", "active").is("taken_at", null);
+  const active = ((goals ?? []) as Goal[]).filter((g) => isSet(g));
+  const ids = active.map((g) => g.id);
+  const [{ data: moves }, ticks] = await Promise.all([
+    ids.length ? supabase.from("goal_moves").select("*").in("goal_id", ids).order("position").order("created_at") : Promise.resolve({ data: [] }),
+    ids.length
+      ? supabase.from("plan_actions").select("move_id, action_date, done_at").eq("client_id", clientId).eq("source", "move").eq("action_date", today)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const day = (iso: string) => localDate(iso);
+  const stepOf = new Map(active.map((g) => [g.id, (g.step_name?.trim() || g.goal_title?.trim() || "Your Next Step")]));
+  const due = movesForToday((moves ?? []) as Move[], (ticks.data ?? []) as MoveTick[], today, day).map((m) => ({ ...m, step: stepOf.get(m.goalId) ?? "" }));
+  const actions = coaching?.available ? actionsForToday(coaching.commitments, coaching.updates, ids, today, day) : [];
+  return { moves: due, actions, available: !ticks.error, total: (moves ?? []).length };
 }

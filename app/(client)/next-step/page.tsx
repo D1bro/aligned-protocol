@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { getLatestCompletedAudit, getLifeAreas, getAuditWithResponses, getInProgressAudit } from "@/lib/actions/audit";
-import { getMyNextSteps, openNextStep } from "@/lib/actions/next-step";
+import { getMyNextSteps, getMyReviews, openNextStep } from "@/lib/actions/next-step";
+import { getMyCoaching } from "@/lib/actions/member-coaching";
+import { getMyCoach } from "@/lib/actions/staff-profiles";
+import { reviewChanges } from "@/lib/next-step-review";
+import { ReviewCard } from "@/components/next-step/ReviewCard";
+import { YourList } from "@/components/next-step/YourList";
 import { getReminderPreference, remindersConfigured } from "@/lib/actions/preferences";
 import { getCurrentProfile } from "@/lib/session";
 import { ReminderToggle } from "@/components/ui/ReminderToggle";
@@ -20,6 +25,12 @@ export default async function NextStepPage({ searchParams }: { searchParams: Pro
 
   const isGuest = profile?.isAnonymous ?? false;
   const [configured, remindersOn] = isGuest ? [false, null] : await Promise.all([remindersConfigured(), getReminderPreference()]);
+  // With a coach: the sharper version from a session, to keep, and the list
+  // of what was agreed.
+  const coached = !isGuest && !!profile?.coach_id;
+  const [reviews, coaching, coach] = coached ? await Promise.all([getMyReviews(), getMyCoaching(), getMyCoach()]) : [[], null, null];
+  const coachFirst = coach?.name.trim().split(/\s+/)[0] ?? "Your coach";
+  const sentOn = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Europe/London" });
 
   return (
     <div className="page au-page ns-home">
@@ -28,7 +39,35 @@ export default async function NextStepPage({ searchParams }: { searchParams: Pro
       <p className="lead">One change at a time, in the areas that need it most. Each Next Step gets you out of where you&rsquo;re stuck, and you score the area again once it&rsquo;s taken.</p>
       {checked ? <p className="ns-flash" role="status">Check-in saved.</p> : null}
 
+      {reviews.map((r) => {
+        const card = active.find((c) => c.goal.id === r.goalId);
+        if (!card) return null;
+        const changes = reviewChanges(r.content, {
+          title: card.goal.goal_title,
+          name: card.goal.step_name ?? null,
+          why: card.goal.motivation_text ?? null,
+          done: card.goal.success_criteria ?? null,
+          aim: card.goal.aim_score ?? null,
+          countTarget: card.goal.count_target ?? null,
+          countMoveId: card.goal.count_move_id ?? null,
+          moves: card.moves,
+        });
+        return (
+          <ReviewCard
+            key={r.id}
+            reviewId={r.id}
+            coachFirst={coachFirst}
+            sentOn={sentOn(r.sentAt)}
+            note={r.content.note?.trim() || null}
+            changes={changes}
+            planHref={card.planId ? `/next-step/build?plan=${card.planId}&step=3` : null}
+          />
+        );
+      })}
+
       <NextStepOverview active={active} taken={taken} />
+
+      {coaching?.available ? <YourList coaching={coaching} activeGoalIds={active.map((c) => c.goal.id)} /> : null}
 
       {configured && remindersOn !== null && active.some((c) => c.set) ? (
         <div className="ns-section"><ReminderToggle initial={remindersOn} /></div>

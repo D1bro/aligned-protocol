@@ -2581,6 +2581,31 @@ textarea.ns-step-text { font-size: 22px !important; line-height: 1.35; }
 .ns-move-list label { cursor: pointer; }
 .ns-move-list li.done .ns-move-body { color: var(--text2); text-decoration: line-through; }
 .ns-move-when { color: var(--text3); }
+/* The daily log on the card: each repeating move's week, and done when counted. */
+.ns-move-list li { flex-wrap: wrap; }
+.ns-move-list li label { flex: 1 1 12rem; min-width: 0; }
+.ns-move-week { list-style: none; display: flex; gap: 4px; margin: 0 0 0 auto; padding: 0; }
+.ns-move-list .ns-move-week li { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; font: 500 10px var(--font-sora), 'Sora', sans-serif; color: var(--text3); opacity: .5; }
+.ns-move-list .ns-move-week li.p { border-color: var(--bg5); opacity: 1; }
+.ns-move-list .ns-move-week li.d { background: var(--gold); border-color: var(--gold); color: var(--bg); opacity: 1; }
+.ns-move-list .ns-move-week li.t:not(.d) { border-color: var(--gold); color: var(--gold); opacity: 1; }
+.ns-count { margin: 1rem 0 .3rem; }
+.ns-move-list .ns-tick-off { opacity: .35; }
+.ns-count p.au-small { display: flex; justify-content: space-between; gap: 1rem; margin: 0 0 .45rem; }
+.ns-count p.au-small b { color: var(--text); font-weight: 500; }
+.ns-count-bar { height: 8px; border-radius: 4px; background: var(--bg5); overflow: hidden; }
+.ns-count-bar span { display: block; height: 100%; border-radius: 4px; background: var(--gold); }
+.ms-action-when { color: var(--text3); }
+.ms-today-step { margin: 0 0 .2rem; font-size: 13px; color: var(--text3); }
+.ms-today-step b { color: var(--gold2); font-weight: 500; }
+.ns-moves .ns-move-hint { grid-column: 1 / -1; margin: -.15rem 0 .35rem; font-size: 13px; color: var(--text3); }
+.ns-moves .ns-move-hint b { color: var(--gold2); font-weight: 500; }
+.ns-worked { margin: 0 0 1rem; }
+.ns-worked ul { margin: .4rem 0 0; padding-left: 1.1rem; display: grid; gap: .3rem; font-size: 14.5px; color: var(--text2); }
+.ns-count-set { margin-top: 1rem; }
+.ns-count-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.ns-count-row input { width: 5.5rem; }
+.ns-count-row select { flex: 1 1 14rem; min-width: 0; }
 .ns-card-actions { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin-top: .5rem; }
 .ns-another { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 1.1rem; }
 .ns-section { margin-top: 2rem; }
@@ -2663,3 +2688,79 @@ textarea.ns-step-text { font-size: 22px !important; line-height: 1.35; }
 }
 .jr-status { margin-top: .6rem; text-align: right; }
 .journal-page .journal-text { font-family: var(--serif); font-size: 19px; line-height: 1.55; color: var(--text); }
+
+/* ── The daily log and the Next Step review (Duane, 10 Nov 2026) ───────── */
+/* Coach: Since last time */
+.slt-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.slt-head p { margin: 0; }
+.slt-count { font-size: 14px; color: var(--text2); }
+.slt-count b { color: var(--gold2); font-weight: 600; }
+.slt-grid-wrap { overflow-x: auto; }
+.slt-grid { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+.slt-grid th, .slt-grid td { padding: .3rem .25rem; text-align: center; min-width: 22px; }
+.slt-grid thead th { font: 500 11px var(--font-sora), 'Sora', sans-serif; color: var(--text3); }
+.slt-grid thead th.t { color: var(--gold); }
+.slt-grid tbody th { text-align: left; font-weight: 400; color: var(--text); padding-right: .8rem; white-space: nowrap; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
+.slt-grid td.d { color: var(--gold); font-weight: 600; }
+.slt-grid td.m { color: var(--lo); }
+.slt-grid td.p { color: var(--text3); }
+.slt-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .45rem; font-size: 14px; color: var(--text2); }
+.slt-list b { color: var(--text); font-weight: 500; }
+.slt-older li { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; padding: .4rem 0; border-bottom: 1px solid var(--bdr2); }
+.slt-older em { color: var(--text3); font-style: normal; font-size: 13px; }
+.slt-close { display: inline-flex; align-items: center; gap: .7rem; }
+
+/* Coach: the Next Step review */
+.sr { margin-top: 1.25rem; }
+.sr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.sr-head h2 { margin: 0 0 .3rem; }
+.sr-opening { margin: 0; font-family: var(--serif); font-size: 20px; line-height: 1.35; color: var(--text); }
+.sr-opening .au-detail-k { display: block; margin-bottom: .2rem; font-family: inherit; }
+.sr-table { border: 1px solid var(--bdr2); border-radius: 12px; overflow: hidden; }
+.sr-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.25fr); gap: 0; border-top: 1px solid var(--bdr2); }
+.sr-row:first-child { border-top: 0; }
+.sr-row > span { padding: .8rem .9rem; font-size: 14px; line-height: 1.5; }
+.sr-th > span { background: var(--bg3); font: 600 11px var(--font-sora), 'Sora', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); padding-top: .6rem; padding-bottom: .6rem; }
+.sr-part { font-weight: 500; color: var(--text); }
+.sr-wrote { color: var(--text2); }
+.sr-moves { margin: 0; padding-left: 1rem; }
+.sr-moves span { color: var(--text3); }
+.sr-flags { display: grid; gap: .55rem; align-content: start; }
+.sr-flag b { color: #9DBBE3; font-weight: 500; }
+.sr-flag i { color: var(--text); }
+.sr-ai { display: inline-block; font: 600 10px var(--font-sora), 'Sora', sans-serif; letter-spacing: .08em; color: var(--bg); background: #9DBBE3; border-radius: 4px; padding: 1px 5px; margin-right: .35rem; vertical-align: 1px; }
+.sr-ok { color: var(--text3); }
+.sr-agreed textarea, .sr-agreed input, .sr-agreed select, .sr textarea { width: 100%; box-sizing: border-box; }
+.sr-stack { display: grid; gap: .45rem; }
+.sr-count { display: flex; align-items: center; gap: .45rem; }
+.sr-count input { width: 4.5rem; flex: none; }
+.sr-count select { flex: 1; min-width: 0; }
+.sr-move { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 28px; gap: .4rem; align-items: center; }
+.sr-when { grid-column: 1 / -1; font-size: 12px; color: var(--text3); margin-top: -.2rem; }
+.sr-worked ul { margin: .3rem 0 0; padding-left: 1.1rem; font-size: 14px; color: var(--text2); display: grid; gap: .25rem; }
+.sr-actions { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.sr-actions p { margin: 0; }
+@media (max-width: 900px) {
+  .sr-row { grid-template-columns: 1fr; }
+  .sr-th { display: none; }
+  .sr-row > span { padding: .5rem .9rem; }
+  .sr-part { padding-top: .9rem; font-family: var(--font-sora), 'Sora', sans-serif; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+}
+
+/* Member: the review to keep, and Your list */
+.ns-review { border-color: rgba(211,167,88,.45); margin-top: 1.5rem; }
+.ns-review-h { font-family: var(--serif); font-weight: 500; font-size: 28px; line-height: 1.15; margin: .2rem 0 .6rem; }
+.au-sum-card p.ns-review-note { font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--gold2); margin: 0 0 .8rem; }
+.ns-review-list { display: grid; gap: .7rem; margin: 0 0 1rem; }
+.ns-review-list > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .8rem; }
+.ns-review-list dt { font: 600 11px var(--font-sora), 'Sora', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); padding-top: 3px; }
+.ns-review-list dd { margin: 0; display: grid; gap: .2rem; }
+.ns-review-after { color: var(--text); font-size: 15px; white-space: pre-line; }
+.ns-review-before { color: var(--text3); font-size: 13px; white-space: pre-line; }
+@media (max-width: 600px) { .ns-review-list > div { grid-template-columns: 1fr; gap: .2rem; } }
+.ns-list { margin-top: 1.5rem; }
+.ns-list ul { list-style: none; padding: 0; margin: .6rem 0; display: grid; gap: .5rem; }
+.ns-list li { display: flex; gap: .7rem; align-items: baseline; font-size: 14.5px; color: var(--text); }
+.ns-list-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--text3); flex: none; transform: translateY(-1px); }
+.ns-list-dot.on { background: var(--gold); border-color: var(--gold); }
+.ns-list-body .au-small { color: var(--text3); }
