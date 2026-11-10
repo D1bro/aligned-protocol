@@ -57,6 +57,12 @@ export function stepsBetween(from: number, to: number): string {
   return n === 1 ? "one step" : `${n} steps`;
 }
 
+// A move repeats on days only when it says so ("Every Monday", "each
+// Sunday", "daily"); "By Friday" is a deadline, not a weekly repeat.
+export function movesRepeat(whenText: string | null | undefined): boolean {
+  return /\b(every|each|daily)\b/i.test(whenText ?? "");
+}
+
 // A move as one line: "Send three messages · Every Monday".
 export function moveLine(m: { body: string; when_text?: string | null }): string {
   return m.when_text?.trim() ? `${m.body.trim()} · ${m.when_text.trim()}` : m.body.trim();
