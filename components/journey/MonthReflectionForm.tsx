@@ -55,7 +55,7 @@ export function MonthReflectionForm({ month, initialColour, initialReflection, s
           <span className="lm-saved" role="status">&#10003; Saved. Change anything above to update it.</span>
         )}
         {message && !message.ok ? <span className="clear-err" role="alert">{message.text}</span> : null}
-        {saved && !changed ? <Link href="/journey" className="btn btn-o">Back to My Journey</Link> : null}
+        {saved && !changed ? <Link href="/journey/months" className="btn btn-o">Back to 1,000 Months</Link> : null}
       </div>
       <p className="au-small">Private to you. A challenging month can still be a meaningful one, and rest isn&rsquo;t failure.</p>
     </div>
