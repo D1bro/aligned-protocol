@@ -49,7 +49,7 @@ export default async function NextStepSetPage({ searchParams }: { searchParams: 
 
       <div className="ns-set-cards">
         {first ? (
-          <div className="au-sum-card"><p className="au-detail-k">First move</p><p className="ns-strong">{first.body}{first.when_text ? `, ${first.when_text}` : ""}.</p><p className="au-small">It&rsquo;s on The Next Step with the rest of your moves.</p></div>
+          <div className="au-sum-card"><p className="au-detail-k">First move</p><p className="ns-strong">{first.body}{first.when_text ? ` · ${first.when_text}` : ""}</p><p className="au-small">It&rsquo;s on The Next Step with the rest of your moves.</p></div>
         ) : null}
         <div className="au-sum-card"><p className="au-detail-k">Weekly check-in</p><p className="ns-strong">{longDay(review.date)}. One question: is it closer?</p><p className="au-small">About a minute. We&rsquo;ll email you.</p></div>
         <div className="au-sum-card"><p className="au-detail-k">When it&rsquo;s taken</p><p className="ns-strong">{goal.success_criteria?.trim()}</p><p className="au-small">Then you choose what&rsquo;s next.</p></div>

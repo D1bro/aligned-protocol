@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { markTaken } from "@/lib/actions/next-step";
-import { openNextStep } from "@/lib/actions/next-step";
+import { markTaken, openNextStep } from "@/lib/actions/next-step";
 import { stepsBetween } from "@/lib/next-step";
 
 // "You took your Next Step": score the area again, say what changed, then
@@ -52,9 +51,9 @@ export function TakenForm({
         <p className="au-detail-k ns-moves-k">What&rsquo;s next?</p>
         <div className="ns-next">
           {areaId ? (
-            <form action={openNextStep.bind(null, areaId)}>
-              <button type="submit" className="ns-next-opt main"><b>Take the next one here</b><span>A new Next Step for {area}, from {score}.</span></button>
-            </form>
+            <button type="button" className="ns-next-opt ns-next-main" onClick={() => openNextStep(areaId)}>
+              <b>Take the next one here</b><span>A new Next Step for {area}, from {score}.</span>
+            </button>
           ) : null}
           <Link href="/next-step?choose=1" className="ns-next-opt"><b>Choose another area</b><span>See your chart and pick where to go next.</span></Link>
           <Link href="/next-step" className="ns-next-opt"><b>Let it settle for now</b><span>Keep what you&rsquo;ve built. Come back when you&rsquo;re ready.</span></Link>

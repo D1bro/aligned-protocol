@@ -46,6 +46,11 @@ export const CHECKS = [
   { key: "visible", question: () => "Could someone else tell it had happened?" },
 ] as const;
 
+// "a 5", "an 8".
+export function aScore(n: number): string {
+  return `${n === 8 ? "an" : "a"} ${n}`;
+}
+
 // "2 steps", "one step".
 export function stepsBetween(from: number, to: number): string {
   const n = to - from;
