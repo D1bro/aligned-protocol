@@ -2486,12 +2486,6 @@ a.lm-cell:hover { outline: 1.5px solid var(--text2); outline-offset: 1px; }
 .ns-bar button.tgt span { background: rgba(211,167,88,.4); box-shadow: 0 0 0 2px var(--gold2); }
 .ns-bar button:not(:disabled):not(.tgt):hover span { background: #3a4357; }
 .ns-bar button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
-.ns-bar-static { display: grid; margin-top: 1rem; }
-.ns-bar-static span { height: 10px; border-radius: 5px; background: var(--bg5); }
-.ns-bar-static span.now { background: var(--gold); }
-.ns-bar-static span.far { background: rgba(211,167,88,.18); }
-.ns-bar-ends { display: flex; justify-content: space-between; font-size: 13px; color: var(--text3); margin-top: .5rem; }
-.ns-bar-ends b { color: var(--text); }
 .ns-checks { margin-top: 1.75rem; }
 .ns-check { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: .75rem 0; border-top: 1px solid var(--bdr2); font-size: 15px; color: var(--text); }
 .ns-check .au-chips { margin-top: 0; }
