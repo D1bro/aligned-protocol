@@ -53,7 +53,7 @@ export function daysLabel(days: number[]): string {
   return names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }
 
-export type LogMove = { id: string; goal_id: string; body: string; when_text: string | null; done_at: string | null };
+export type LogMove = { id: string; goal_id: string; body: string; when_text: string | null; done_at: string | null; created_at?: string | null };
 export type MoveTick = { move_id: string | null; action_date: string; done_at: string | null };
 
 export type TodayMove = {
@@ -84,18 +84,21 @@ export function movesForToday(moves: LogMove[], ticks: MoveTick[], today: string
   return out;
 }
 
-// One move's days in a stretch of dates: planned (a day it repeats on) and
-// done (ticked). A one-off is planned on no day and done on the day it was.
+// One move's days in a stretch of dates: planned (a day it repeats on, from
+// the day the move was added) and done (ticked). A one-off is planned on no
+// day and done on the day it was.
 export type LogDay = { date: string; letter: string; planned: boolean; done: boolean; today: boolean; future: boolean };
 export function moveLog(move: LogMove, ticks: MoveTick[], from: string, days: number, today: string, doneDay: (iso: string) => string): LogDay[] {
   const planned = moveDays(move.when_text);
   const doneDates = new Set(ticks.filter((t) => t.move_id === move.id && t.done_at).map((t) => t.action_date));
   if (move.done_at && !planned.length) doneDates.add(doneDay(move.done_at));
+  const added = move.created_at ? doneDay(move.created_at) : null;
   const out: LogDay[] = [];
   for (let i = 0; i < days; i++) {
     const date = addDays(from, i);
     const wd = weekdayOf(date);
-    out.push({ date, letter: "MTWTFSS"[wd], planned: planned.includes(wd), done: doneDates.has(date), today: date === today, future: date > today });
+    const planned_ = planned.includes(wd) && (!added || date >= added);
+    out.push({ date, letter: "MTWTFSS"[wd], planned: planned_, done: doneDates.has(date), today: date === today, future: date > today });
   }
   return out;
 }
@@ -154,8 +157,10 @@ export function weekLogProgress(
   for (const m of moves) {
     const days = moveDays(m.when_text);
     if (days.length) {
-      total += days.length;
-      done += Math.min(days.length, inWeek.filter((a) => a.source === "move" && a.move_id === m.id && a.done_at).length);
+      const added = m.created_at ? doneDay(m.created_at) : null;
+      const plannedDays = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(weekStart, i)).filter((d) => days.includes(weekdayOf(d)) && (!added || d >= added)).length;
+      total += plannedDays;
+      done += Math.min(plannedDays, inWeek.filter((a) => a.source === "move" && a.move_id === m.id && a.done_at).length);
     } else if (m.done_at && doneDay(m.done_at) >= weekStart && doneDay(m.done_at) < end) {
       total += 1;
       done += 1;

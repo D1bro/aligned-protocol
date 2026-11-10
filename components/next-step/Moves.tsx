@@ -39,7 +39,7 @@ export function Moves({ moves, weeks = {}, readOnly = false }: { moves: Move[]; 
           return (
             <li key={m.id} className={!days.length && ticked ? "done" : undefined}>
               {readOnly || (days.length && !plannedToday && !ticked) ? (
-                <span className="ns-tick" aria-hidden="true" />
+                <span className={`ns-tick${readOnly ? "" : " ns-tick-off"}`} aria-hidden="true" title={readOnly ? undefined : "Not planned for today"} />
               ) : (
                 <input
                   type="checkbox"

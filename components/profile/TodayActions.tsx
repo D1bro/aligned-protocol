@@ -55,8 +55,12 @@ export function TodayActions({
     }
   }
 
+  // One Next Step: name it once above the list, not on every move.
+  const oneStep = moves.length > 0 && new Set(moves.map((m) => m.step)).size === 1;
+
   return (
     <div className="ms-actions">
+      {oneStep ? <p className="ms-today-step">Your Next Step · <b>{moves[0].step}</b></p> : null}
       {plan || own.length || moves.length || sessionActions.length ? (
         <ul className="ms-action-list">
           {moves.map((m) => (
@@ -70,7 +74,7 @@ export function TodayActions({
                 />
                 <span>{m.body}{m.when ? <span className="ms-action-when"> · {m.when}</span> : null}</span>
               </label>
-              <span className="ms-action-tag">{m.step || "Your Next Step"}</span>
+              {oneStep ? null : <span className="ms-action-tag">{m.step || "Your Next Step"}</span>}
             </li>
           ))}
           {sessionActions.map((a) => (

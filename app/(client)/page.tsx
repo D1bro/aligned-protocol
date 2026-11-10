@@ -39,7 +39,7 @@ import { longDay, nextReview, plannedDays } from "@/lib/review-schedule";
 import { weekStreak } from "@/lib/momentum";
 import { fallbackOf } from "@/lib/plan-action";
 import { isSet, movesRepeat } from "@/lib/next-step";
-import { weekLogProgress } from "@/lib/daily-log";
+import { repeats, weekLogProgress } from "@/lib/daily-log";
 import { getMovesForGoal, getMyReviews, getMyToday } from "@/lib/actions/next-step";
 
 // "Friday 6 Nov" for a review date (YYYY-MM-DD), and today's date in their zone.
@@ -179,6 +179,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   // Today's action: the first move not yet done (an old plan's action is its first move).
   const moves = planned ? await getMovesForGoal(goal!.id) : [];
   const openMove = moves.find((m) => !m.done_at) ?? null;
+  // Moves that happen once (repeating ones are ticked day by day in Today).
+  const oneOffs = moves.filter((m) => !repeats(m.when_text));
   // An old weekly review's commitment counts only for a plan with no moves;
   // with The Next Step, the moves are what this week is about.
   const reviewCommitment = moves.length ? "" : reviews?.weekly.at(-1)?.next_commitment?.trim() || "";
@@ -328,7 +330,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                   </dl>
                 ) : null}
                 <p className="pf-sub">When your Next Step is taken, you&rsquo;ll score {area.name} again.</p>
-                {moves.length ? <p className="ms-note">{moves.filter((m) => m.done_at).length} of {moves.length} moves done</p> : null}
+                {oneOffs.length ? <p className="ms-note">{oneOffs.filter((m) => m.done_at).length} of {oneOffs.length} one-off move{oneOffs.length === 1 ? "" : "s"} done</p> : null}
               </section>
             </Cell>
 

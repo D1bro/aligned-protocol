@@ -2590,11 +2590,14 @@ textarea.ns-step-text { font-size: 22px !important; line-height: 1.35; }
 .ns-move-list .ns-move-week li.d { background: var(--gold); border-color: var(--gold); color: var(--bg); opacity: 1; }
 .ns-move-list .ns-move-week li.t:not(.d) { border-color: var(--gold); color: var(--gold); opacity: 1; }
 .ns-count { margin: 1rem 0 .3rem; }
+.ns-move-list .ns-tick-off { opacity: .35; }
 .ns-count p.au-small { display: flex; justify-content: space-between; gap: 1rem; margin: 0 0 .45rem; }
 .ns-count p.au-small b { color: var(--text); font-weight: 500; }
 .ns-count-bar { height: 8px; border-radius: 4px; background: var(--bg5); overflow: hidden; }
 .ns-count-bar span { display: block; height: 100%; border-radius: 4px; background: var(--gold); }
 .ms-action-when { color: var(--text3); }
+.ms-today-step { margin: 0 0 .2rem; font-size: 13px; color: var(--text3); }
+.ms-today-step b { color: var(--gold2); font-weight: 500; }
 .ns-moves .ns-move-hint { grid-column: 1 / -1; margin: -.15rem 0 .35rem; font-size: 13px; color: var(--text3); }
 .ns-moves .ns-move-hint b { color: var(--gold2); font-weight: 500; }
 .ns-worked { margin: 0 0 1rem; }

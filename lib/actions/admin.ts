@@ -224,7 +224,7 @@ export async function getClientProfile(clientId: string) {
     plans: (plans.data ?? []) as Record<string, unknown>[],
     goals: (goals.data ?? []) as Record<string, unknown>[],
     checkIns: (checkIns.data ?? []) as Record<string, unknown>[],
-    moves: (moves ?? []) as { id: string; goal_id: string; body: string; when_text: string | null; done_at: string | null }[],
+    moves: (moves ?? []) as { id: string; goal_id: string; body: string; when_text: string | null; done_at: string | null; created_at: string }[],
     ticks: (ticks ?? []) as { goal_id: string | null; move_id: string | null; action_date: string; source: string; done_at: string | null }[],
     reviews: (reviews ?? []) as Record<string, unknown>[],
     notes: (notes.data ?? []) as Record<string, unknown>[],

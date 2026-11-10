@@ -49,6 +49,7 @@ export default async function NextStepPage({ searchParams }: { searchParams: Pro
           done: card.goal.success_criteria ?? null,
           aim: card.goal.aim_score ?? null,
           countTarget: card.goal.count_target ?? null,
+          countMoveId: card.goal.count_move_id ?? null,
           moves: card.moves,
         });
         return (

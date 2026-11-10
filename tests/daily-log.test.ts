@@ -63,6 +63,9 @@ test("a move's log over a fortnight, and done when counted", () => {
   assert.equal(log.find((d) => d.date === "2026-12-01")!.today, true);
   assert.equal(log.find((d) => d.date === "2026-12-02")!.future, true);
   assert.deepEqual(countProgress({ count_target: 8, count_move_id: "spin" }, ticks, "2026-11-23"), { done: 3, target: 8 });
+  // A move added part way through is only planned from that day.
+  const late = moveLog({ ...moves[1], created_at: "2026-11-30T09:00:00Z" }, [], "2026-11-23", 14, "2026-12-01", day);
+  assert.equal(late.filter((d) => d.planned)[0].date, "2026-11-30");
   assert.equal(countProgress({ count_target: null, count_move_id: "spin" }, ticks, null), null);
 });
 
@@ -144,4 +147,9 @@ test("keeping a review: what changes, and the AI read stays with the coach", () 
   });
   assert.deepEqual(changes.map((c) => c.label), ["Why", "Done when", "Counted", "How far", "Moves"]);
   assert.equal("ai" in forMember(content), false);
+  // Counting the same move the same number of times isn't a change.
+  const same = reviewChanges({ countTarget: 8, countMove: 0, moves: [{ id: "spin", body: "Spin class", when: "Tuesday" }] }, {
+    title: "x", name: null, why: null, done: null, aim: null, countTarget: 8, countMoveId: "spin", moves: [{ id: "spin", body: "Spin class", when_text: "Tuesday" }],
+  });
+  assert.deepEqual(same, []);
 });

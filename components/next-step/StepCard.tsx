@@ -19,7 +19,8 @@ const DAY = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 // nothing to press.
 export function StepCard({ card, main, several, readOnly = false }: { card: NextStepCard; main: boolean; several: boolean; readOnly?: boolean }) {
   const { goal, moves } = card;
-  const doneCount = moves.filter((m) => m.done_at).length;
+  const oneOffs = moves.filter((m) => !moveDays(m.when_text).length);
+  const doneCount = oneOffs.filter((m) => m.done_at).length;
   const review = card.set ? nextReview({ start: goal.set_at ?? goal.created_at ?? new Date().toISOString(), actionWhen: null, reviews: card.checkIns }) : null;
   const started = goal.set_at ?? goal.created_at ?? null;
   const why = whyLine(goal.motivation_text);
@@ -81,7 +82,7 @@ export function StepCard({ card, main, several, readOnly = false }: { card: Next
 
       {moves.length ? (
         <>
-          <p className="au-detail-k ns-moves-k">Your moves · {doneCount} of {moves.length} done</p>
+          <p className="au-detail-k ns-moves-k">Your moves{oneOffs.length ? ` · ${doneCount} of ${oneOffs.length} one-off${oneOffs.length === 1 ? "" : "s"} done` : ""}</p>
           <Moves moves={moves} weeks={card.moveWeeks} readOnly={readOnly} />
         </>
       ) : null}

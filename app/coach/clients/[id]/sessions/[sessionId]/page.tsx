@@ -23,7 +23,7 @@ import { SinceLastTime } from "@/components/coach/SinceLastTime";
 import { StepReview } from "@/components/coach/StepReview";
 import type { StepReview as StepReviewRow } from "@/lib/actions/step-review";
 import type { ReviewContent } from "@/lib/next-step-review";
-import { addDays } from "@/lib/daily-log";
+import { addDays, daysLabel, moveDays } from "@/lib/daily-log";
 import { localDate } from "@/lib/time";
 
 // AI drafting can take a while; allow up to 5 minutes (Vercel caps this per plan).
@@ -303,8 +303,15 @@ export default async function SessionDeskPage({
                     <>
                       <dt>Moves</dt>
                       <dd>
-                        {goalMoves.filter((m) => m.done_at).length} of {goalMoves.length} done
-                        {goalMoves.filter((m) => !m.done_at).slice(0, 3).map((m) => <span key={m.id} className="desk-move">○ {m.body}</span>)}
+                        {goalMoves.slice(0, 5).map((m) => {
+                          const days = moveDays(m.when_text);
+                          return (
+                            <span key={m.id} className="desk-move">
+                              {days.length ? "↻" : m.done_at ? "✓" : "○"} {m.body}
+                              {days.length ? ` · ${daysLabel(days)}` : m.when_text ? ` · ${m.when_text}` : ""}
+                            </span>
+                          );
+                        })}
                       </dd>
                     </>
                   ) : null}

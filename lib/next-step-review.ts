@@ -112,7 +112,7 @@ export function forMember(c: ReviewContent): Omit<ReviewContent, "ai"> {
 export type ReviewChange = { label: string; before: string; after: string };
 export function reviewChanges(
   c: ReviewContent,
-  now: { title: string; name: string | null; why: string | null; done: string | null; aim: number | null; countTarget: number | null; moves: { id: string; body: string; when_text: string | null }[] }
+  now: { title: string; name: string | null; why: string | null; done: string | null; aim: number | null; countTarget: number | null; countMoveId?: string | null; moves: { id: string; body: string; when_text: string | null }[] }
 ): ReviewChange[] {
   const out: ReviewChange[] = [];
   const diff = (label: string, before: string | null | undefined, after: string | null | undefined) => {
@@ -124,8 +124,10 @@ export function reviewChanges(
   diff("Why", now.why, c.why);
   diff("Done when", now.done, c.done);
   if (c.countTarget && c.countMove != null && c.moves?.[c.countMove]) {
-    const counted = `${c.countTarget} × ${c.moves[c.countMove].body}`;
-    if (counted !== (now.countTarget ? `${now.countTarget}` : "")) out.push({ label: "Counted", before: now.countTarget ? `${now.countTarget}` : "", after: counted });
+    const counted = `${c.countTarget} × ${c.moves[c.countMove].body.trim()}`;
+    const nowMove = now.moves.find((m) => m.id === now.countMoveId);
+    const before = now.countTarget && nowMove ? `${now.countTarget} × ${nowMove.body.trim()}` : "";
+    if (counted !== before) out.push({ label: "Counted", before, after: counted });
   }
   if (c.aim && c.aim !== now.aim) out.push({ label: "How far", before: now.aim ? `${now.aim}` : "", after: `${c.aim}` });
   if (c.moves?.length) {
