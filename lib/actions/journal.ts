@@ -3,12 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { canUseDailyAlignment, isAlignmentDate } from "@/lib/alignment";
+import { canUseJournal, isAlignmentDate } from "@/lib/alignment";
 import { getMyAccess } from "@/lib/actions/membership";
 import { checkVideoUrl, ownImages } from "@/lib/journal";
 
 // The private journal (migration 0022): part of Aligned Practice and
-// Momentum. Only the writer can read it; coaches and admins can't. After a
+// Momentum, open to every member while it's tested (canUseJournal). Only the writer can read it; coaches and admins can't. After a
 // membership ends, entries stay theirs to read and export. Since 0025 an entry
 // can link to one of their goals, carry one video link and up to four images
 // in their own folder of the private 'journal' bucket. Since 0030 an entry
@@ -50,7 +50,7 @@ async function member(writing: boolean) {
   if (!user || user.is_anonymous) redirect("/login");
   if (writing) {
     const [{ data: profile }, access] = await Promise.all([supabase.from("profiles").select("role").eq("id", user.id).single(), getMyAccess()]);
-    if (!canUseDailyAlignment(profile?.role, access.tier)) return null;
+    if (!canUseJournal(profile?.role, access.tier)) return null;
   }
   return { supabase, userId: user.id };
 }

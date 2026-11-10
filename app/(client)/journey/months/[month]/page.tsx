@@ -5,7 +5,7 @@ import { getMonthReflections, getMonthStory } from "@/lib/actions/life";
 import { addMonths, monthName, parseYm, ymOf } from "@/lib/life-months";
 import { localDate } from "@/lib/time";
 import { formatDate } from "@/lib/audit-schedule";
-import { canUseDailyAlignment } from "@/lib/alignment";
+import { canUseJournal } from "@/lib/alignment";
 import { getMyAccess } from "@/lib/actions/membership";
 import { getCurrentProfile } from "@/lib/session";
 import { MonthReflectionForm } from "@/components/journey/MonthReflectionForm";
@@ -26,7 +26,7 @@ export default async function MonthPage({ params }: { params: Promise<{ month: s
   if (!ym || ym > today) notFound();
   const [story, { available, months }, profile, access] = await Promise.all([getMonthStory(ym), getMonthReflections(), getCurrentProfile(), getMyAccess()]);
   const reflection = months[ym] ?? null;
-  const journalOn = canUseDailyAlignment(profile?.role, access.tier);
+  const journalOn = canUseJournal(profile?.role, access.tier);
   const prev = addMonths(ym, -1);
   const next = addMonths(ym, 1);
 

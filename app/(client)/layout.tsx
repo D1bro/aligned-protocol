@@ -5,7 +5,7 @@ import { ClientNav, ClientMobileNav } from "./ClientNav";
 import { getLatestCompletedAudit } from "@/lib/actions/audit";
 import { GuestBar } from "./GuestBar";
 import { getMyAccess } from "@/lib/actions/membership";
-import { canUseDailyAlignment } from "@/lib/alignment";
+import { canUseJournal } from "@/lib/alignment";
 
 // Member pages are personal: keep them out of search results. The audit
 // welcome page opts back in (app/(client)/audit/page.tsx).
@@ -35,9 +35,10 @@ export default async function ClientLayout({ children }: { children: React.React
     return <GuestShell hasResults={!!results}>{children}</GuestShell>;
   }
 
-  // The journal is part of Aligned Practice and Momentum: a lock in the menu otherwise.
+  // The journal shows a lock in the menu for anyone who can't write in it
+  // (lib/alignment.ts: open to everyone while it's tested).
   const access = await getMyAccess().catch(() => null);
-  const journalLocked = !canUseDailyAlignment(profile.role, access?.tier);
+  const journalLocked = !canUseJournal(profile.role, access?.tier);
 
   return (
     <div className="shell has-tabs">

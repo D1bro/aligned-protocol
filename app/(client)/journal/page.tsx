@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getCurrentProfile } from "@/lib/session";
-import { canUseDailyAlignment } from "@/lib/alignment";
+import { canUseJournal } from "@/lib/alignment";
 import { getMyAccess, joiningOpen } from "@/lib/actions/membership";
 import { getJournal } from "@/lib/actions/journal";
 import { getAllGoals, getReviews } from "@/lib/actions/checkins";
@@ -37,7 +37,7 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
     getMonthIntention(),
     getLifeAreas(),
   ]);
-  const canWrite = canUseDailyAlignment(profile.role, access.tier) && journal.available;
+  const canWrite = canUseJournal(profile.role, access.tier) && journal.available;
   const reviews = main?.goal ? await getReviews(main.goal.id) : null;
   const focus = reviews?.weekly.at(-1)?.next_commitment?.trim() || main?.goal?.goal_title?.trim() || null;
 
