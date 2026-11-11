@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { shareToCoach, stopSharing } from "@/lib/actions/coach-share";
 import { deleteJournalEntry, exportJournal, saveJournalEntry, type JournalEntry } from "@/lib/actions/journal";
 import { createClient } from "@/lib/supabase/client";
 import { byMonth, IMAGE_TYPES, MAX_IMAGE_BYTES, MAX_IMAGES, PROMPTS, todaysPrompt, videoSite } from "@/lib/journal";
@@ -51,6 +53,9 @@ export function JournalWorkspace({
   startArea = FREE,
   showEverySection = false,
   startWriting = false,
+  startDate,
+  actions = [],
+  shares = null,
 }: {
   initial: JournalEntry[];
   today: string;
@@ -64,14 +69,23 @@ export function JournalWorkspace({
   // Searching by words or month: show matches from every section.
   showEverySection?: boolean;
   startWriting?: boolean;
+  // A past day to write about (?date=), from the Daily Alignment's week.
+  startDate?: string;
+  // Their daily actions, to say which one an entry is about.
+  actions?: { id: string; name: string }[];
+  // With a coach: the entries they've shared (entry id → share id). Null
+  // with no coach, and the share buttons don't show.
+  shares?: Record<string, string> | null;
 }) {
+  const router = useRouter();
   const prompts = [...planPrompts, todaysPrompt(today), ...PROMPTS.filter((p) => p !== todaysPrompt(today)).slice(0, 3)];
   const [entries, setEntries] = useState(initial);
   const [section, setSection] = useState(areas.some((a) => a.id === startArea) ? startArea : FREE);
   const [showAll, setShowAll] = useState(showEverySection);
   const [extras, setExtras] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(startDate ?? today);
+  const [sharing, setSharing] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string | null>(null);
   const [body, setBody] = useState("");
   const [goalId, setGoalId] = useState("");
@@ -85,8 +99,8 @@ export function JournalWorkspace({
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (startWriting && canWrite) bodyRef.current?.focus();
-  }, [startWriting, canWrite]);
+    if ((startWriting || startDate) && canWrite) bodyRef.current?.focus();
+  }, [startWriting, startDate, canWrite]);
   useEffect(() => setEntries(initial), [initial]);
 
   function choose(id: string) {
@@ -177,6 +191,25 @@ export function JournalWorkspace({
     setStatus({ text: "Entry deleted." });
   }
 
+  async function share(id: string) {
+    setBusy(true);
+    const r = await shareToCoach({ kind: "entry", id });
+    setBusy(false);
+    setSharing(null);
+    if (!r.ok) return setStatus({ text: r.message, error: true });
+    setStatus({ text: "Shared with your coach. Only this entry." });
+    router.refresh();
+  }
+
+  async function unshare(shareId: string) {
+    setBusy(true);
+    const r = await stopSharing(shareId);
+    setBusy(false);
+    if (!r.ok) return setStatus({ text: r.message, error: true });
+    setStatus({ text: "No longer shared. Your coach's copy is deleted." });
+    router.refresh();
+  }
+
   async function download() {
     const r = await exportJournal();
     if (!r.ok) return setStatus({ text: r.message, error: true });
@@ -189,6 +222,7 @@ export function JournalWorkspace({
   }
 
   const goalTitle = new Map(goals.map((g) => [g.id, g.title]));
+  const actionName = new Map(actions.map((a) => [a.id, a.name]));
   const areaOf = new Map(areas.map((a) => [a.id, a]));
   const current = section === FREE ? null : areaOf.get(section) ?? null;
   const sectionName = current?.name ?? "Free writing";
@@ -280,7 +314,7 @@ export function JournalWorkspace({
           ) : null}
 
           <div className="alignment-form-footer">
-            <p className="alignment-small"><b>Only you can see your journal. Your coach can&rsquo;t.</b></p>
+            <p className="alignment-small"><b>{shares ? "Only you can see your journal. Your coach sees an entry only if you share it." : "Only you can see your journal. Your coach can\u2019t."}</b></p>
             <div className="alignment-inline">
               {editing || uploaded.length ? <button type="button" className="btn btn-g" onClick={cancel} disabled={busy}>Cancel</button> : null}
               <button type="button" className="btn btn-p" disabled={busy || !body.trim()} onClick={save}>{busy ? "Saving…" : "Save privately"}</button>
@@ -309,6 +343,8 @@ export function JournalWorkspace({
                       {showAll ? <span className="jr-tag">{e.life_area_id ? areaOf.get(e.life_area_id)?.name ?? "A life area" : "Free writing"}</span> : null}
                     </p>
                     {e.goal_id && goalTitle.has(e.goal_id) ? <p className="journal-goal">About your Next Step: {goalTitle.get(e.goal_id)}</p> : null}
+                    {e.action_id && actionName.has(e.action_id) ? <p className="journal-goal">About your daily action: {actionName.get(e.action_id)}</p> : null}
+                    {shares?.[e.id] ? <p className="jr-shared">Shared with your coach</p> : null}
                     {e.prompt ? <p className="journal-prompt">{e.prompt}</p> : null}
                     <p className="journal-text">{e.body}</p>
                     {e.imageUrls?.length ? (
@@ -347,6 +383,19 @@ export function JournalWorkspace({
                         >
                           Edit
                         </button>
+                      ) : null}
+                      {shares ? (
+                        shares[e.id] ? (
+                          <button type="button" className="alignment-secondary" disabled={busy} onClick={() => unshare(shares[e.id])}>Stop sharing</button>
+                        ) : sharing === e.id ? (
+                          <>
+                            <span className="alignment-small">Your coach will be able to read this entry, and only this one.</span>
+                            <button type="button" className="alignment-secondary" onClick={() => setSharing(null)}>Not now</button>
+                            <button type="button" className="alignment-secondary" disabled={busy} onClick={() => share(e.id)}>Share it</button>
+                          </>
+                        ) : (
+                          <button type="button" className="alignment-secondary" onClick={() => setSharing(e.id)}>Share with my coach</button>
+                        )
                       ) : null}
                       {confirm === e.id ? (
                         <>

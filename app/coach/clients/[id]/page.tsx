@@ -28,6 +28,7 @@ import { getAdminNotes, getClientRecord, getMyCoachBasics } from "@/lib/actions/
 import { canBill } from "@/lib/actions/billing";
 import { DetailsTab } from "./DetailsTab";
 import { whenLabel } from "@/lib/daily-log";
+import { getSharedDaily } from "@/lib/actions/daily";
 
 const TABS = [
   ["overview", "Overview"],
@@ -65,6 +66,7 @@ export default async function ClientProfilePage({
   const billing = tab === "billing" || tab === "sessions" ? await getClientBilling(id) : null;
   const jobs = tab === "billing" || tab === "sessions" ? await getMessageJobs(id) : [];
   const record = await getClientRecord(id);
+  const sharedDaily = tab === "overview" ? await getSharedDaily(id) : null;
   const mine = tab === "sessions" ? await getMyCoachBasics() : null;
   const [adminNotes, billingAccess] = tab === "details" ? await Promise.all([isAdmin ? getAdminNotes(id) : Promise.resolve(null), canBill()]) : [null, false];
 
@@ -158,7 +160,7 @@ export default async function ClientProfilePage({
       </nav>
 
       {tab === "overview" ? (
-        <OverviewTab p={p} firstName={firstName} mainGoal={mainGoal} focusNote={focusNote} nextSession={nextAny} />
+        <OverviewTab p={p} firstName={firstName} mainGoal={mainGoal} focusNote={focusNote} nextSession={nextAny} daily={sharedDaily} />
       ) : null}
 
       {tab === "details" ? (

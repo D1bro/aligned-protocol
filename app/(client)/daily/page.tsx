@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDaily } from "@/lib/actions/daily";
+import { getReviewDue } from "@/lib/actions/daily-review";
+import { getMyShares } from "@/lib/actions/coach-share";
 import { getMainGoal } from "@/lib/actions/goals";
 import { getLifeAreas } from "@/lib/actions/audit";
 import { getMyDetails } from "@/lib/actions/details";
@@ -22,12 +24,14 @@ export default async function DailyPage({ searchParams }: { searchParams: Promis
   const { view } = await searchParams;
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  const [daily, main, areas, details, today] = await Promise.all([
+  const [daily, main, areas, details, today, review, shares] = await Promise.all([
     getDaily(),
     getMainGoal(),
     getLifeAreas(),
     getMyDetails(),
     getMyToday(null),
+    getReviewDue(),
+    getMyShares(),
   ]);
   const goals = main ? [main.goal, ...main.otherActive] : [];
   const firstName = greetingName({ preferred_name: details.preferred_name, full_name: profile.full_name });
@@ -72,6 +76,8 @@ export default async function DailyPage({ searchParams }: { searchParams: Promis
           areas={areas.map((a) => ({ id: a.id, name: a.name }))}
           steps={steps}
           focusAreaId={focusGoal?.area?.id ?? null}
+          review={review}
+          hasCoach={shares.hasCoach}
           nextStep={
             today.moves.length ? (
               <TodayActions plan={null} moves={today.moves} own={[]} goals={[]} defaultGoalId={null} canAdd={false} />

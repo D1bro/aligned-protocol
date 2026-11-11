@@ -9,16 +9,18 @@ import {
 } from "@/lib/actions/daily";
 import {
   ACTION_ADVICE_LIMIT, MEASURES, clock, dueOn, looksMindful, mindfulOf, minutesOf, progressOf, scheduleLabel, timerState, weekStrip,
-  welcomeBack, type DailyAction, type Measure, type Period,
+  unitWord, welcomeBack, type DailyAction, type Measure, type Period,
 } from "@/lib/daily-alignment";
 import { DAY_NAMES } from "@/lib/daily-log";
+import { QuestionForCoach } from "./WeeklyReview";
 
 type Area = { id: string; name: string };
 type Step = { id: string; title: string };
 type Res = { ok: boolean; message?: string };
+export type ReviewDue = { date: string; due: boolean; done: boolean; week: string } | null;
 
 export function DailyView({
-  data, view: initialView, areas, steps, focusAreaId, nextStep,
+  data, view: initialView, areas, steps, focusAreaId, nextStep, review = null, hasCoach = false,
 }: {
   data: DailyData;
   view: "today" | "week";
@@ -26,6 +28,8 @@ export function DailyView({
   steps: Step[];
   focusAreaId: string | null;
   nextStep: React.ReactNode;
+  review?: ReviewDue;
+  hasCoach?: boolean;
 }) {
   const [view, setView] = useState(initialView);
   const go = (v: "today" | "week") => {
@@ -40,10 +44,10 @@ export function DailyView({
         <Link href="/journal" className="da-tab-link">Journal →</Link>
       </div>
       <div role="tabpanel" id="da-today" aria-labelledby="da-tab-today" hidden={view !== "today"}>
-        <TodayView data={data} areas={areas} steps={steps} focusAreaId={focusAreaId} nextStep={nextStep} />
+        <TodayView data={data} areas={areas} steps={steps} focusAreaId={focusAreaId} nextStep={nextStep} review={review} />
       </div>
       <div role="tabpanel" id="da-week" aria-labelledby="da-tab-week" hidden={view !== "week"}>
-        <WeekView data={data} areas={areas} />
+        <WeekView data={data} areas={areas} review={review} hasCoach={hasCoach} />
       </div>
     </>
   );
@@ -68,7 +72,7 @@ function useRun() {
   return { busy, error, run };
 }
 
-function TodayView({ data, areas, steps, focusAreaId, nextStep }: { data: DailyData; areas: Area[]; steps: Step[]; focusAreaId: string | null; nextStep: React.ReactNode }) {
+function TodayView({ data, areas, steps, focusAreaId, nextStep, review }: { data: DailyData; areas: Area[]; steps: Step[]; focusAreaId: string | null; nextStep: React.ReactNode; review: ReviewDue }) {
   const [adding, setAdding] = useState(false);
   // What the last timer session logged: shown (with a note box) after the
   // page refreshes and the timer itself has gone.
@@ -132,6 +136,7 @@ function TodayView({ data, areas, steps, focusAreaId, nextStep }: { data: DailyD
 
       <aside className="da-side">
         <CheckInCard initial={data.checkIn} />
+        {review ? <ReviewCard review={review} today={today} /> : null}
         {mindful.weekSeconds > 0 ? (
           <section className="da-card" aria-labelledby="da-mindful-h">
             <h2 id="da-mindful-h">Mindful minutes</h2>
@@ -544,8 +549,9 @@ function CheckInCard({ initial }: { initial: { rating: number; note: string } | 
 }
 
 // The week, as evidence: no score, no red days.
-function WeekView({ data, areas }: { data: DailyData; areas: Area[] }) {
+function WeekView({ data, areas, review, hasCoach }: { data: DailyData; areas: Area[]; review: ReviewDue; hasCoach: boolean }) {
   const today = data.today;
+  const [day, setDay] = useState<string | null>(null);
   const strip = useMemo(() => weekStrip(data.actions, data.logs, today), [data, today]);
   const mindful = mindfulOf(data.actions, data.logs, today);
   const shown = data.actions.filter((a) => a.status !== "archived");
@@ -565,15 +571,37 @@ function WeekView({ data, areas }: { data: DailyData; areas: Area[] }) {
         </div>
         <ol className="da-strip">
           {strip.map((d) => (
-            <li key={d.date} className={`${d.today ? "is-today" : ""}${d.done ? " has-done" : ""}`}>
-              <span className="da-strip-l">{d.letter}</span>
-              <span aria-hidden="true">{d.future && !d.done ? "–" : d.done || "–"}</span>
-              {d.planned ? <span className="da-strip-set" aria-hidden="true">{d.planned} set</span> : null}
-              <span className="sr-only">{d.date}: {d.done} logged{d.planned ? `, ${d.planned} set for the day` : ""}</span>
+            <li key={d.date} className={`${d.today ? "is-today" : ""}${d.done ? " has-done" : ""}${day === d.date ? " is-open" : ""}`}>
+              {d.future ? (
+                <span className="da-strip-day">
+                  <span className="da-strip-l">{d.letter}</span>
+                  <span aria-hidden="true">–</span>
+                  {d.planned ? <span className="da-strip-set" aria-hidden="true">{d.planned} set</span> : null}
+                  <span className="sr-only">{longDay(d.date)}: still to come</span>
+                </span>
+              ) : (
+                <button type="button" className="da-strip-day" aria-expanded={day === d.date} aria-controls="da-day" onClick={() => setDay(day === d.date ? null : d.date)}>
+                  <span className="da-strip-l">{d.letter}</span>
+                  <span aria-hidden="true">{d.done || "–"}</span>
+                  {d.planned ? <span className="da-strip-set" aria-hidden="true">{d.planned} set</span> : null}
+                  <span className="sr-only">{longDay(d.date)}: {d.done} logged{d.planned ? `, ${d.planned} set for the day` : ""}. Open the day</span>
+                </button>
+              )}
             </li>
           ))}
         </ol>
+        {day ? <DayPanel key={day} data={data} day={day} onClose={() => setDay(null)} /> : <p className="da-small da-strip-hint">Tap a day to see it, log something you missed, or add a note. There&rsquo;s nothing to catch up on.</p>}
       </section>
+
+      {review ? (
+        <section className="da-card da-review-cta" aria-labelledby="da-wreview-h">
+          <div>
+            <h2 id="da-wreview-h">Weekly review</h2>
+            <p className="da-small">{review.done ? "Done for this week. You can look back or change it." : "Prepared from what you logged. About three minutes."}</p>
+          </div>
+          <Link href="/daily/review" className={review.done ? "au-text-link" : "btn btn-p"}>{review.done ? "Open it →" : "Review the week"}</Link>
+        </section>
+      ) : null}
 
       {others.length ? (
         <section className="da-card" aria-labelledby="da-evidence-h">
@@ -621,11 +649,95 @@ function WeekView({ data, areas }: { data: DailyData; areas: Area[] }) {
         ) : (
           <p className="da-small">No journal notes yet this week.</p>
         )}
-        <p><Link href="/journal" className="au-text-link">Open your journal →</Link> · <Link href="/next-step" className="au-text-link">Your Next Step and weekly check-in →</Link></p>
+        <p><Link href="/journal" className="au-text-link">Open your journal →</Link> · <Link href="/next-step" className="au-text-link">Your Next Step →</Link></p>
       </section>
+      {hasCoach ? <QuestionForCoach /> : null}
     </div>
   );
 }
 
+// When the weekly review is, on Today.
+function ReviewCard({ review, today }: { review: NonNullable<ReviewDue>; today: string }) {
+  const label = review.done ? "Done for this week" : review.due ? "Ready now · about three minutes" : `Next: ${review.date === today ? "today" : longDay(review.date)}`;
+  return (
+    <section className="da-card" aria-labelledby="da-review-h">
+      <h2 id="da-review-h">Weekly review</h2>
+      <p className="da-small">{label}</p>
+      {review.done ? (
+        <Link href="/daily/review" className="au-text-link">Look back on it →</Link>
+      ) : review.due ? (
+        <Link href="/daily/review" className="btn btn-p da-wide">Review the week</Link>
+      ) : (
+        <Link href="/daily/review" className="au-text-link">Start it early →</Link>
+      )}
+    </section>
+  );
+}
+
+// One earlier day this week: what was logged, the chance to log something
+// they forgot, and a note for that day in the journal. Optional, always.
+function DayPanel({ data, day, onClose }: { data: DailyData; day: string; onClose: () => void }) {
+  const { busy, error, run } = useRun();
+  const [minutes, setMinutes] = useState<Record<string, string>>({});
+  const onDay = data.logs.filter((l) => l.log_date === day);
+  const loggedIds = new Set(onDay.map((l) => l.action_id));
+  const shown = data.actions.filter((a) => a.measure !== "run" && a.start_date <= day && (loggedIds.has(a.id) || a.status === "active"));
+  const isToday = day === data.today;
+  return (
+    <div className="da-day" id="da-day" role="region" aria-label={longDay(day)}>
+      <div className="da-card-head">
+        <h3>{isToday ? "Today" : longDay(day)}</h3>
+        <button type="button" className="au-text-link as-btn" onClick={onClose}>Close</button>
+      </div>
+      {shown.length ? (
+        <ul className="da-list">
+          {shown.map((a) => {
+            const logs = onDay.filter((l) => l.action_id === a.id);
+            const ticked = logs.some((l) => l.tick);
+            const count = logs.reduce((s, l) => s + (l.source === "manual" ? l.amount : 0), 0);
+            const secs = logs.reduce((s, l) => s + l.seconds, 0);
+            const id = `da-day-${a.id}`;
+            return (
+              <li key={a.id} className="da-row">
+                <div className="da-row-main">
+                  {a.measure === "done" ? (
+                    <input type="checkbox" id={id} className="da-check" checked={ticked} disabled={busy} onChange={(e) => run(() => tickDailyAction(a.id, e.target.checked, day))} />
+                  ) : null}
+                  <div className="da-row-text">
+                    <label htmlFor={a.measure === "done" ? id : undefined} className="da-name">{a.name}</label>
+                    <p className="da-line">
+                      {a.measure === "done" ? (ticked ? "Done" : "Not ticked") : a.measure === "count" ? `${count} ${unitWord(a, count)}` : `${minutesOf(secs)} minutes`}
+                    </p>
+                  </div>
+                  <div className="da-row-ctl">
+                    {a.measure === "count" ? (
+                      <>
+                        {count > 0 ? <button type="button" className="da-btn da-btn-sm" disabled={busy} aria-label={`Take one off ${a.name} on ${longDay(day)}`} onClick={() => run(() => countDailyAction(a.id, -1, day))}>−</button> : null}
+                        <button type="button" className="da-btn" disabled={busy} aria-label={`Add one to ${a.name} on ${longDay(day)}`} onClick={() => run(() => countDailyAction(a.id, 1, day))}>+1</button>
+                      </>
+                    ) : a.measure === "minutes" ? (
+                      <span className="da-inline">
+                        <label className="sr-only" htmlFor={`${id}-m`}>Minutes to add for {a.name}</label>
+                        <input id={`${id}-m`} type="number" min={1} max={600} inputMode="numeric" className="da-num" placeholder="Min" value={minutes[a.id] ?? ""} onChange={(e) => setMinutes((x) => ({ ...x, [a.id]: e.target.value.replace(/[^0-9]/g, "").slice(0, 3) }))} />
+                        <button type="button" className="da-btn" disabled={busy || !minutes[a.id]} onClick={async () => { if (await run(() => addDailyMinutes(a.id, Number(minutes[a.id]), undefined, day))) setMinutes((x) => ({ ...x, [a.id]: "" })); }}>Add</button>
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="da-small">No daily actions on this day.</p>
+      )}
+      <p><Link href={`/journal?new=1&date=${day}`} className="au-text-link">Write a note for {isToday ? "today" : longDay(day)} →</Link></p>
+      {error ? <p className="clear-err" role="alert">{error}</p> : null}
+    </div>
+  );
+}
+
+const longDay = (ymd: string) =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(`${ymd}T12:00:00Z`));
 const shortDay = (ymd: string) =>
   new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short" }).format(new Date(`${ymd}T12:00:00Z`));

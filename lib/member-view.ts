@@ -29,7 +29,9 @@ export async function loadCoaching(supabase: Db, clientId: string, opts: { draft
     supabase.from("commitment_updates").select("id, commitment_id, progress, note, support_requested, created_at").eq("client_id", clientId).order("created_at", { ascending: false }),
     // Unshared preparation is private to the member, so only they load it.
     opts.drafts ? supabase.from("prep_drafts").select("id, session_id, content, updated_at").eq("client_id", clientId) : Promise.resolve({ data: [] }),
-    supabase.from("prep_shares").select("id, session_id, content, shared_at").eq("client_id", clientId).order("shared_at", { ascending: false }),
+    // Session preparation only: a shared journal entry, review or question
+    // (migration 0035) is its own thing.
+    supabase.from("prep_shares").select("*").eq("client_id", clientId).order("shared_at", { ascending: false }),
   ]);
   if (sessions.error) return empty;
   return {
@@ -39,7 +41,7 @@ export async function loadCoaching(supabase: Db, clientId: string, opts: { draft
     commitments: (commitments.data ?? []) as MemberCoaching["commitments"],
     updates: (updates.data ?? []) as MemberCoaching["updates"],
     drafts: (drafts.data ?? []) as MemberCoaching["drafts"],
-    shares: (shares.data ?? []) as MemberCoaching["shares"],
+    shares: ((shares.data ?? []) as (MemberCoaching["shares"][number] & { kind?: string })[]).filter((x) => (x.kind ?? "prep") === "prep"),
   };
 }
 
