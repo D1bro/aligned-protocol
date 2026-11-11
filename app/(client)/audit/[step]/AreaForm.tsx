@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveResponse, completeAudit } from "@/lib/actions/audit";
 import type { LifeArea } from "@/lib/actions/audit";
@@ -42,13 +42,59 @@ export function AreaForm({
   const dirty = score !== saved.score || note !== saved.note;
   const isLast = step === totalSteps;
 
+  // Guest safety (Duane, 11 Nov 2026): what's on screen is kept in this
+  // browser until it's saved, so a refresh, a closed tab or a dropped
+  // connection doesn't lose a score or a note.
+  const draftKey = `aligned:audit-draft:${auditId}:${area.id}`;
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    let draft: { score: number | null; note: string } | null = null;
+    try {
+      draft = JSON.parse(window.localStorage.getItem(draftKey) ?? "null");
+    } catch {}
+    if (!draft || (draft.score === initialSatisfaction && draft.note === initialNote)) return;
+    const nextScore = draft.score ?? initialSatisfaction;
+    const nextNote = typeof draft.note === "string" ? draft.note : initialNote;
+    setScore(nextScore);
+    setNote(nextNote);
+    void save(nextScore, nextNote);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      if (dirty) window.localStorage.setItem(draftKey, JSON.stringify({ score, note }));
+      else window.localStorage.removeItem(draftKey);
+    } catch {}
+  }, [dirty, score, note, draftKey]);
+
+  // Save the note a moment after they stop typing, not only when they leave the box.
+  useEffect(() => {
+    if (!dirty || score === null || note === saved.note) return;
+    const t = window.setTimeout(() => void save(score, note), 1500);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note]);
+
+  // Leaving with something unsaved: the browser asks first.
+  useEffect(() => {
+    if (!dirty && status.kind !== "saving") return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, status.kind]);
+
   function save(nextScore: number | null, nextNote: string): Promise<boolean> {
     if (nextScore === null) return Promise.resolve(true); // nothing to save until there's a score
     const run = queue.current.then(async () => {
       setStatus({ kind: "saving" });
       const result = await saveResponse({ auditId, lifeAreaId: area.id, satisfaction: nextScore, note: nextNote });
       if (!result.ok) {
-        setStatus({ kind: "error", message: result.message });
+        setStatus({ kind: "error", message: "Save failed. Your answer is kept on this device." });
         return false;
       }
       setSaved({ score: nextScore, note: nextNote });
@@ -57,7 +103,7 @@ export function AreaForm({
     });
     queue.current = run.catch(() => false);
     return run.catch(() => {
-      setStatus({ kind: "error", message: "Couldn’t save — check your connection and try again." });
+      setStatus({ kind: "error", message: "Save failed. Check your connection: your answer is kept on this device." });
       return false;
     });
   }
@@ -164,6 +210,9 @@ export function AreaForm({
             <div className="au-actions">
               <span className={`au-status${status.kind === "error" ? " err" : ""}`} aria-live="polite">
                 {statusText}
+                {status.kind === "error" && score !== null ? (
+                  <button type="button" className="au-text-link as-btn au-retry" onClick={() => void save(score, note)}>Try again</button>
+                ) : null}
               </span>
               <button type="button" className="btn btn-p" disabled={score === null || navigating} onClick={() => (isLast ? finish() : go(`/audit/${step + 1}`))}>
                 {navigating ? "Saving…" : isLast ? "See my snapshot →" : "Continue →"}

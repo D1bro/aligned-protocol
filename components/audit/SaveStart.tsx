@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { planSaved, resendSaveEmail, saveGuestPlan } from "@/lib/actions/auth";
+import { ReminderOptIn } from "@/components/ui/ReminderOptIn";
 
 type Stage = { kind: "offer" } | { kind: "form" } | { kind: "check"; email: string } | { kind: "saved" };
 
@@ -113,6 +114,7 @@ export function SaveStart({ skipHref = "#step-up", film }: { skipHref?: string; 
                 Password
                 <input name="password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" required />
               </label>
+              <ReminderOptIn />
               <button type="submit" className="btn btn-p ss-btn" disabled={pending}>{pending ? "Saving…" : "Save my Alignment Map"}</button>
             </form>
             {error ? (

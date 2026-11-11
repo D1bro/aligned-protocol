@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn, signUp, requestPasswordReset } from "@/lib/actions/auth";
+import { ReminderOptIn } from "@/components/ui/ReminderOptIn";
 import { Notice } from "@/components/ui/Notice";
 import { PasswordStrength } from "@/components/ui/PasswordStrength";
 import { BrandMark } from "@/components/ui/BrandMark";
@@ -144,6 +145,7 @@ export function LoginForms({ hasSnapshot = false, startingPointSaved = false }: 
               />
               <PasswordStrength password={signupPassword} />
             </div>
+            <ReminderOptIn />
             <button className="btn btn-p btn-block auth-submit" disabled={pending}>
               {pending ? "Creating your profile…" : "Create my free profile"}
             </button>

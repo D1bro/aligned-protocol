@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Sora, DM_Sans, Cormorant_Garamond } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SITE } from "@/lib/site-copy";
+import { getFilmLinks } from "@/lib/film-links";
+import { FilmLinksProvider } from "@/components/films/FilmLinks";
 import "./globals.css";
 
 const sora = Sora({
@@ -42,11 +44,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const filmLinks = await getFilmLinks();
   return (
     <html lang="en" className={`${sora.variable} ${dmSans.variable} ${serif.variable}`}>
       <body>
-        {children}
+        <FilmLinksProvider links={filmLinks}>{children}</FilmLinksProvider>
         {/* Cookieless visit counts (Vercel Web Analytics); only reports once enabled in Vercel. */}
         <Analytics />
       </body>

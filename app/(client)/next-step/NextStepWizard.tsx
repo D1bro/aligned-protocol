@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveScreen, takeOnNextStep, type BuildContext, type ScreenInput } from "@/lib/actions/next-step";
 import { CHECKS, SCREENS, looksLikeSeveral, promptsFor, stepsBetween } from "@/lib/next-step";
-import { daysLabel, moveDays } from "@/lib/daily-log";
+import { moveDays, todayHint } from "@/lib/daily-log";
+import { WhenPicker } from "@/components/next-step/WhenPicker";
 import { twoInOne } from "@/lib/next-step-review";
 import { NsMap, NsStepper } from "@/components/next-step/NsMap";
 import { NsFilm, NEXT_STEP_FILMS } from "./NsFilm";
@@ -27,6 +28,8 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
   const p = promptsFor(area.name);
   const [screen, setScreen] = useState(Math.min(5, Math.max(1, startScreen)));
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  // Continue on the destination screen with nothing written (Duane, 11 Nov 2026).
+  const [tenMissing, setTenMissing] = useState(false);
 
   const [now, setNow] = useState(plan.current_reality ?? "");
   const [ten, setTen] = useState(plan.life_vision ?? "");
@@ -83,6 +86,11 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
   }
 
   async function next() {
+    if (screen === 2 && !filled(ten)) {
+      setTenMissing(true);
+      document.getElementById("ns-ten")?.focus();
+      return;
+    }
     setStatus({ kind: "saving" });
     const res = await saveScreen(plan.id, input(screen));
     if (!res.ok) return setStatus({ kind: "error", message: res.message });
@@ -153,7 +161,17 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <label className="au-start-q" htmlFor="ns-ten">It&rsquo;s a 10. What does an ordinary Tuesday look like?</label>
             <p className="au-start-help">You may not know yet, and that&rsquo;s fine. Roughly is enough. If it helps:</p>
             <Prompts list={p.ten} />
-            <textarea id="ns-ten" rows={4} value={ten} onChange={(e) => setTen(e.target.value)} placeholder={p.examples.ten} />
+            <textarea
+              id="ns-ten"
+              rows={4}
+              value={ten}
+              onChange={(e) => { setTen(e.target.value); if (filled(e.target.value)) setTenMissing(false); }}
+              placeholder={p.examples.ten}
+              required
+              aria-invalid={tenMissing || undefined}
+              aria-describedby={tenMissing ? "ns-ten-err" : undefined}
+            />
+            {tenMissing ? <p id="ns-ten-err" className="ns-field-err" role="alert">Describe what this area would look like at a ten before continuing. Roughly is enough.</p> : null}
           </>
         )}
 
@@ -262,7 +280,7 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             <p className="lead">Big steps are made of small moves. Make the first one so clear you could do it tomorrow.</p>
             <NsFilm clip={NEXT_STEP_FILMS.moves} caption="Duane on your route" />
             <p className="au-start-q">What are your moves to <b className="ns-white">{stepTitle}</b>, and when will you make them?</p>
-            <p className="au-start-help">Some once, some every week. They&rsquo;ll show up in Today on My Space, and you can change them as you learn.</p>
+            <p className="au-start-help">Some once, some on set days. Pick when, and they&rsquo;ll show up in Today on My Space. You can change them as you learn.</p>
             {ctx.worked.length ? (
               <div className="au-sum-card ns-worked">
                 <p className="au-detail-k">What&rsquo;s worked before, from your sessions</p>
@@ -271,18 +289,17 @@ export function NextStepWizard({ ctx, startScreen }: { ctx: BuildContext; startS
             ) : null}
             <ol className="ns-moves">
               {moves.map((m, i) => {
-                const days = moveDays(m.when);
                 return (
                   <li key={m.key}>
                     <input type="text" aria-label={`Move ${i + 1}`} maxLength={200} value={m.body} onChange={(e) => setMove(m.key, "body", e.target.value)} placeholder={i === 0 ? p.examples.move : "Another move"} />
-                    <input type="text" aria-label={`When, for move ${i + 1}`} maxLength={120} value={m.when} onChange={(e) => setMove(m.key, "when", e.target.value)} placeholder="When? e.g. Monday and Thursday" />
                     {moves.length > 1 ? (
                       <button type="button" className="ns-remove" aria-label={`Remove move ${i + 1}`} onClick={() => setMoves((ms) => ms.filter((x) => x.key !== m.key))}>✕</button>
                     ) : <span />}
+                    <WhenPicker value={m.when} onChange={(v) => setMove(m.key, "when", v)} label={`move ${i + 1}`} />
                     {filled(m.body) ? (
                       <p className="ns-move-hint" aria-live="polite">
                         {twoInOne(m.body) ? <><b>Two things in one?</b> Give each its own move, so each gets its own tick. </> : null}
-                        {days.length ? `In Today every ${daysLabel(days) === "Every day" ? "day" : daysLabel(days).replace(/^Every /, "")}, with a tick.` : "In Today until you tick it once. For a move that repeats, add the days."}
+                        {todayHint(m.when)}
                       </p>
                     ) : null}
                   </li>

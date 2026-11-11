@@ -44,13 +44,90 @@ export const weekdayOf = (ymd: string) => (new Date(dayNumber(ymd) * 86_400_000)
 export const addDays = (ymd: string, n: number) => ymdOf(dayNumber(ymd) + n);
 
 // "Monday and Thursday", "Every day", "Weekdays"
-const NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+export const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 export function daysLabel(days: number[]): string {
   if (days.length === 7) return "Every day";
   if (days.length === 5 && days.every((d, i) => d === i)) return "Weekdays";
   if (days.length === 2 && days[0] === 5 && days[1] === 6) return "Weekends";
-  const names = days.map((d) => NAMES[d]);
+  const names = days.map((d) => DAY_NAMES[d]);
   return names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+// A move's time, read from what they wrote: "8:55am", "7pm", "19:30".
+// As "HH:MM" (24-hour), or null.
+const pad = (n: number) => String(n).padStart(2, "0");
+export function moveTime(whenText: string | null | undefined): string | null {
+  const w = (whenText ?? "").toLowerCase();
+  const ampm = w.match(/\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b/);
+  if (ampm) {
+    const h = Number(ampm[1]);
+    const m = Number(ampm[2] ?? "0");
+    if (h < 1 || h > 12 || m > 59) return null;
+    return `${pad((h % 12) + (ampm[3] === "pm" ? 12 : 0))}:${pad(m)}`;
+  }
+  const h24 = w.match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\b/);
+  return h24 ? `${pad(Number(h24[1]))}:${h24[2]}` : null;
+}
+
+// "08:55" → "8:55am", "19:00" → "7pm"
+export function timeLabel(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  return `${h % 12 || 12}${m ? `:${pad(m)}` : ""}${h < 12 ? "am" : "pm"}`;
+}
+
+// A one-off's date, read from what they wrote ("By Fri 14 Nov", "14th
+// November", "2026-11-14"). The year is the next one that makes sense.
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+export function moveDate(whenText: string | null | undefined, today: string): string | null {
+  const w = (whenText ?? "").toLowerCase();
+  const iso = w.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (iso) return iso[0];
+  const dm = w.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+  if (!dm) return null;
+  const day = Number(dm[1]);
+  const month = MONTHS.indexOf(dm[2]) + 1;
+  if (day < 1 || day > 31) return null;
+  let year = Number(today.slice(0, 4));
+  const ymd = (y: number) => `${y}-${pad(month)}-${pad(day)}`;
+  if (ymd(year) < addDays(today, -180)) year += 1;
+  return ymd(year);
+}
+
+// "2026-11-14" → "Fri 14 Nov"
+export function dateLabel(ymd: string): string {
+  const [, m, d] = ymd.split("-").map(Number);
+  return `${DAY_NAMES[weekdayOf(ymd)].slice(0, 3)} ${d} ${MONTHS[m - 1][0].toUpperCase()}${MONTHS[m - 1].slice(1)}`;
+}
+
+// When a move happens, as picked (Duane, 11 Nov 2026): the days it repeats
+// on, or a date for a one-off, with an optional time. Written out the same
+// way everywhere: "Weekdays · 8:55am", "Monday and Thursday", "By Fri 14 Nov".
+export type WhenParts = { days: number[]; time: string | null; date: string | null };
+export function formatWhen(p: WhenParts): string {
+  const t = p.time ? ` · ${timeLabel(p.time)}` : "";
+  if (p.days.length) return `${daysLabel([...p.days].sort((a, b) => a - b))}${t}`;
+  if (p.date) return `By ${dateLabel(p.date)}${t}`;
+  return p.time ? `Once · ${timeLabel(p.time)}` : "";
+}
+
+// How a move's "when" reads anywhere it's shown: the days and time for a
+// repeating move, or what they wrote for a one-off.
+export function whenLabel(whenText: string | null | undefined): string {
+  const days = moveDays(whenText);
+  if (!days.length) return (whenText ?? "").trim();
+  const time = moveTime(whenText);
+  return `${daysLabel(days)}${time ? ` · ${timeLabel(time)}` : ""}`;
+}
+
+// The line under a move as it's set: where it will show up.
+export function todayHint(whenText: string | null | undefined): string {
+  const days = moveDays(whenText);
+  if (!days.length) return "This will appear in Today until you tick it off.";
+  const every =
+    days.length === 7 ? "every day"
+    : days.length === 5 && days.every((d, i) => d === i) ? "every weekday"
+    : `every ${days.map((d) => DAY_NAMES[d]).join(", ").replace(/, ([^,]+)$/, " and $1")}`;
+  return `This will appear in Today ${every}, ready to tick off.`;
 }
 
 export type LogMove = { id: string; goal_id: string; body: string; when_text: string | null; done_at: string | null; created_at?: string | null };
@@ -76,7 +153,7 @@ export function movesForToday(moves: LogMove[], ticks: MoveTick[], today: string
     if (days.length) {
       if (!days.includes(todayWeekday)) continue;
       const done = ticks.some((t) => t.move_id === m.id && t.action_date === today && t.done_at);
-      out.push({ moveId: m.id, goalId: m.goal_id, body: m.body, when: daysLabel(days), kind: "repeat", done });
+      out.push({ moveId: m.id, goalId: m.goal_id, body: m.body, when: whenLabel(m.when_text), kind: "repeat", done });
     } else if (!m.done_at || doneDay(m.done_at) === today) {
       out.push({ moveId: m.id, goalId: m.goal_id, body: m.body, when: m.when_text?.trim() || "", kind: "once", done: !!m.done_at });
     }

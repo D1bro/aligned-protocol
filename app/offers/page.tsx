@@ -32,11 +32,7 @@ export default async function OffersPage() {
             </p>
           </div>
 
-          {FILMS.O01 ? (
-            <div className="of-film">
-              <GuideVideo clip={FILMS.O01} caption="Duane on Momentum and Focus" />
-            </div>
-          ) : null}
+          {FILMS.O01 ? <GuideVideo clip={FILMS.O01} caption="Duane on Momentum and Focus" className="of-film" /> : null}
 
           <div className="of-grid">
             {OFFERS.map((o) => (

@@ -1,7 +1,7 @@
 // The daily log and the Next Step review checks (Duane, 10 Nov 2026).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { actionsForToday, countProgress, daysLabel, moveDays, moveLog, movesForToday, type LogMove } from "../lib/daily-log.ts";
+import { actionsForToday, countProgress, dateLabel, daysLabel, formatWhen, moveDate, moveDays, moveLog, movesForToday, moveTime, timeLabel, todayHint, whenLabel, type LogMove } from "../lib/daily-log.ts";
 import { reviewChanges, reviewFlags, twoInOne, forMember } from "../lib/next-step-review.ts";
 
 const day = (iso: string) => iso.slice(0, 10);
@@ -152,4 +152,47 @@ test("keeping a review: what changes, and the AI read stays with the coach", () 
     title: "x", name: null, why: null, done: null, aim: null, countTarget: 8, countMoveId: "spin", moves: [{ id: "spin", body: "Spin class", when_text: "Tuesday" }],
   });
   assert.deepEqual(same, []);
+});
+
+test("when a move happens, picked: one form everywhere", () => {
+  assert.equal(moveTime("Weekdays · 8:55am"), "08:55");
+  assert.equal(moveTime("Thursday 7pm"), "19:00");
+  assert.equal(moveTime("12pm"), "12:00");
+  assert.equal(moveTime("12am"), "00:00");
+  assert.equal(moveTime("Mondays at 19:30"), "19:30");
+  assert.equal(moveTime("Friday 14th"), null);
+  assert.equal(timeLabel("08:55"), "8:55am");
+  assert.equal(timeLabel("19:00"), "7pm");
+  assert.equal(timeLabel("00:00"), "12am");
+
+  const weekdays = formatWhen({ days: [4, 0, 1, 2, 3], time: "08:55", date: null });
+  assert.equal(weekdays, "Weekdays · 8:55am");
+  assert.deepEqual(moveDays(weekdays), [0, 1, 2, 3, 4]);
+  assert.equal(moveTime(weekdays), "08:55");
+  assert.equal(formatWhen({ days: [0, 3], time: null, date: null }), "Monday and Thursday");
+  assert.equal(formatWhen({ days: [6], time: "18:00", date: null }), "Sunday · 6pm");
+  assert.deepEqual(moveDays("Sunday · 6pm"), [6]);
+
+  // A one-off by a date reads back as a one-off, with its date.
+  const once = formatWhen({ days: [], time: null, date: "2026-11-14" });
+  assert.equal(once, "By Sat 14 Nov");
+  assert.deepEqual(moveDays(once), []);
+  assert.equal(moveDate(once, "2026-11-11"), "2026-11-14");
+  assert.equal(moveDate("By 3 Jan", "2026-12-20"), "2027-01-03");
+  assert.equal(dateLabel("2026-11-13"), "Fri 13 Nov");
+  assert.equal(formatWhen({ days: [], time: null, date: null }), "");
+
+  // Shown the same way, whatever was written before.
+  assert.equal(whenLabel("Mon & Thu 7pm"), "Monday and Thursday · 7pm");
+  assert.equal(whenLabel("weekdays"), "Weekdays");
+  assert.equal(whenLabel("When I'm paid"), "When I'm paid");
+  assert.equal(whenLabel(null), "");
+});
+
+test("the line under a move as it's set", () => {
+  assert.equal(todayHint("Weekdays · 8:55am"), "This will appear in Today every weekday, ready to tick off.");
+  assert.equal(todayHint("Every day"), "This will appear in Today every day, ready to tick off.");
+  assert.equal(todayHint("Monday and Thursday"), "This will appear in Today every Monday and Thursday, ready to tick off.");
+  assert.equal(todayHint("Weekends"), "This will appear in Today every Saturday and Sunday, ready to tick off.");
+  assert.equal(todayHint("By Sat 14 Nov"), "This will appear in Today until you tick it off.");
 });

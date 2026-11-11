@@ -27,7 +27,7 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
             <audio src={episode.audio} controls preload="none" aria-label={`${episode.title} — podcast episode`} />
           </figure>
         ) : (
-          <GuideVideo clip={clipFor(episode.slug, episode.title, episode.video)} soon="Episode coming soon" />
+          <GuideVideo clip={clipFor(episode.slug, episode.title, episode.video)} />
         )}
 
         <h2 className="sec-head">In this episode</h2>

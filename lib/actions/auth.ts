@@ -50,6 +50,10 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
 // Client self-signup. Always creates role: 'client' — becoming a coach is a
 // deliberate manual step in the Supabase table editor, not something anyone
 // can grant themselves through the app.
+// The weekly check-in email is opt-in (Duane, 11 Nov 2026): a box on each
+// sign-up form, unticked until they tick it. Changeable later on The Next Step.
+const wantsReminders = (formData: FormData) => formData.get("reminders_email") === "on";
+
 export async function signUp(formData: FormData): Promise<ActionResult> {
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim();
@@ -78,7 +82,7 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     // account was made) but has no email/name yet — fill those in now rather
     // than waiting on email confirmation, so the account looks right
     // immediately even before they click the confirmation link.
-    await supabase.from("profiles").update({ email, full_name: name }).eq("id", current.id);
+    await supabase.from("profiles").update({ email, full_name: name, reminders_email: wantsReminders(formData) }).eq("id", current.id);
 
     // Where email confirmation is switched off, the profile is ready now:
     // carry straight on into their first plan.
@@ -93,7 +97,8 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const { data: created, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: name, role: "client" } },
+    // The new profile takes reminders_email from here (handle_new_user, 0033).
+    options: { data: { full_name: name, role: "client", reminders_email: wantsReminders(formData) } },
   });
   if (error) return { ok: false, message: error.message };
   if (created.session) redirect("/");
@@ -148,7 +153,7 @@ export async function saveGuestPlan(formData: FormData): Promise<SavePlanResult>
       message: exists ? "There’s already an account with this email. Sign in instead and your work comes with you." : error.message,
     };
   }
-  await supabase.from("profiles").update({ email, full_name: name }).eq("id", current.id);
+  await supabase.from("profiles").update({ email, full_name: name, reminders_email: wantsReminders(formData) }).eq("id", current.id);
   return { ok: true, confirmed: !!updated.user?.email && !updated.user.new_email, email };
 }
 

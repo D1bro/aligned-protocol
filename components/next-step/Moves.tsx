@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { setMoveDone, setMoveTick, type Move } from "@/lib/actions/next-step";
-import { daysLabel, moveDays, type LogDay } from "@/lib/daily-log";
+import { moveDays, whenLabel, type LogDay } from "@/lib/daily-log";
 
 const DAY = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -51,7 +51,7 @@ export function Moves({ moves, weeks = {}, readOnly = false }: { moves: Move[]; 
               )}
               <label htmlFor={readOnly ? undefined : `mv-${m.id}`}>
                 <span className="ns-move-body">{m.body}</span>
-                {days.length ? <span className="ns-move-when"> · {daysLabel(days)}</span> : m.when_text ? <span className="ns-move-when"> · {m.when_text}</span> : null}
+                {m.when_text?.trim() ? <span className="ns-move-when"> · {whenLabel(m.when_text)}</span> : null}
               </label>
               {days.length && week.length ? (
                 <ol className="ns-move-week" aria-label={`This week: ${week.filter((d) => d.done).length} of ${week.filter((d) => d.planned).length} planned days done`}>

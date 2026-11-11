@@ -57,6 +57,9 @@ test("a step that reads like several gets the gentle nudge; one clear step doesn
   assert.equal(looksLikeSeveral("Sign one client at £2,000 a month"), false);
   assert.equal(looksLikeSeveral("Decide whether to stay in the job"), false);
   assert.equal(looksLikeSeveral(""), false);
+  // "each" on its own is one step done regularly, not several (11 Nov 2026).
+  assert.equal(looksLikeSeveral("Protect 45 minutes each morning for the book"), false);
+  assert.equal(looksLikeSeveral("Call each of my three biggest clients"), true);
 });
 
 test("a Next Step goes by its short name when it has one", () => {
