@@ -271,7 +271,7 @@ export const EPISODES: Episode[] = [
     notes: [
       "Why the plan focuses on one area and the next point up, not a perfect 10.",
       "What makes a step small enough to do on a bad week.",
-      "How weekly and monthly reviews keep the step honest.",
+      "How the weekly check-in keeps the step honest.",
     ],
     question: "What’s the smallest step that would still feel like progress this month?",
     audio: null,

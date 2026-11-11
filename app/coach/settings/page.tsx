@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTeam } from "@/lib/actions/team";
 import { getAllMemberships, getMomentumDetails } from "@/lib/actions/membership";
 import { createClient } from "@/lib/supabase/server";
-import { offerFor } from "@/lib/offers";
+import { tierName } from "@/lib/offers";
 import { statusWords } from "@/lib/membership";
 import { formatDate } from "@/lib/audit-schedule";
 import { TeamEditor } from "./TeamEditor";
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
             <li key={m.id}>
               <Link href={`/coach/clients/${m.client_id}`}>{nameOf.get(m.client_id) ?? "A member"}</Link>
               <span className="admin-card-sub">
-                {" "}· {offerFor(m.tier).name} · £{(m.price_pence / 100).toFixed(m.price_pence % 100 ? 2 : 0)} a month · {statusWords(m.status, m.cancel_at_period_end)} · since {formatDate(m.started_at)}
+                {" "}· {tierName(m.tier)} · £{(m.price_pence / 100).toFixed(m.price_pence % 100 ? 2 : 0)} a month · {statusWords(m.status, m.cancel_at_period_end)} · since {formatDate(m.started_at)}
               </span>
             </li>
           ))}

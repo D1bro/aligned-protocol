@@ -67,8 +67,8 @@ export function BuySessions({
                 {p.description ? <p className="sw-p">{p.description}</p> : null}
                 <p className="admin-card-sub">
                   {p.sessions} session{p.sessions === 1 ? "" : "s"}
-                  {p.sessions > 1 ? ` · ${formatPence(Math.round(p.price_pence / p.sessions))} each` : ""}
-                  {p.valid_days ? ` · use within ${p.valid_days} days of paying` : ""}
+                  {p.includes_membership === "momentum" ? ` · Aligned Momentum included for ${Math.round((p.valid_days ?? 42) / 7)} weeks` : ""}
+                  {p.valid_days ? ` · use within ${p.valid_days % 7 === 0 ? `${p.valid_days / 7} weeks` : `${p.valid_days} days`} of paying` : ""}
                   {p.available_until ? ` · on offer until ${ukDate(p.available_until)}` : ""}
                 </p>
               </div>

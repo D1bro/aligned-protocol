@@ -91,7 +91,7 @@ export const AFTER_REGISTERING = [
 // database rules (coaches: audits, plans and reviews of their own clients;
 // nobody else: Daily Alignment, the journal, and anything marked private).
 export const WHO_SEES = {
-  coach: ["Your audit scores and notes", "Your plan: your goal, your action and how you’ll know", "Your weekly and monthly reviews", "Anything you choose to share before a session"],
+  coach: ["Your audit scores and notes", "Your Next Step: the step, your moves and how you’ll know", "Your weekly check-ins and what you tick off", "Anything you choose to share before a session"],
   you: ["Your daily practice and weekly reflections", "Your journal", "Any reflection or preparation you mark private"],
 };
 

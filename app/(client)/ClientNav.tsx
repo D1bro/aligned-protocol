@@ -14,7 +14,7 @@ const DESTINATIONS: MobileNavLink[] = [
   { group: "You", href: "/next-step", label: "The Next Step", icon: "map", match: (p) => p.startsWith("/next-step") || p.startsWith("/plan") },
 ];
 // The journal has its own place under You (Duane, 10 Nov 2026). It's part of
-// Aligned Practice and Momentum, so it shows a lock for everyone else.
+// Aligned Clarity (free since 11 Nov 2026); the lock follows canUseJournal.
 const JOURNAL: MobileNavLink = { group: "You", href: "/journal", label: "Journal", icon: "pen", match: (p) => p.startsWith("/journal") };
 const MORE_LINKS: MobileNavLink[] = [
   { group: "More", href: "/learn", label: "Academy", icon: "book", match: (p) => p.startsWith("/learn") },

@@ -1899,6 +1899,8 @@ a.nav-user-who:hover b { color: var(--gold); }
 .of-card li { display: flex; gap: .55rem; font-size: 14px; line-height: 1.5; color: var(--text2); }
 .of-card li::before { content: "✓"; color: var(--hi); flex: none; }
 .of-hour { display: grid; gap: .45rem; padding: .7rem; border-radius: 10px; background: var(--bg3); }
+.of-sessions { margin: 0; padding-left: 1.2rem; display: grid; gap: .45rem; font-size: 14px; color: var(--text2); }
+.of-sessions b { color: var(--text); font-weight: 500; }
 .of-hour-bar { display: flex; gap: 3px; height: 8px; }
 .of-hour-bar span { border-radius: 2px; background: var(--bg5); }
 .of-hour-bar span:nth-child(3) { background: var(--gold); }
