@@ -233,12 +233,12 @@ const BY_AREA: Record<string, AreaPrompts> = {
     examples: {
       now: "Money is always tight and I dread the first of the month…",
       ten: "No money stress, and the freedom to say yes when it matters…",
-      step: "Sign one client at £[X] a month",
-      why: "It would cover the bills. The dread would go…",
+      step: "Clear my overdraft by the end of March",
+      why: "The dread would go. I’d stop living a month behind…",
       feel: "Relief. I can open my banking app without my stomach dropping…",
-      way: "I don’t know who would pay for this, and I put off asking…",
-      move: "Write my offer on one page",
-      done: "A client has signed and paid the first month",
+      way: "I avoid looking, so I never know where I stand…",
+      move: "Move £50 into the overdraft every payday",
+      done: "My balance is above zero and stays there",
     },
   },
   "Purpose & Direction": {
