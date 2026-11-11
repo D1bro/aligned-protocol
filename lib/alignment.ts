@@ -228,11 +228,10 @@ export function canUseDailyAlignment(role: string | null | undefined, tier: Tier
   return hasPractice(tier, role);
 }
 
-// The journal is open to every member with an account while Duane tests it
-// (10 Nov 2026). Set this back to false to make it part of Aligned Practice
-// and Momentum again: the menu's lock, the journal page and saving all
-// follow it. (The database already lets any signed-in member keep their own
-// private journal; the membership check has only ever been in the app.)
+// The journal is free for every member, part of Aligned Clarity (Duane,
+// 11 Nov 2026): a daily reason to come back. The menu, the journal page and
+// saving all follow this. (The database lets any signed-in member keep their
+// own private journal; the membership check has only ever been in the app.)
 export const JOURNAL_OPEN_TO_ALL = true;
 
 export function canUseJournal(role: string | null | undefined, tier: Tier = "clarity"): boolean {

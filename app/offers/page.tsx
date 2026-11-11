@@ -2,19 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { MOMENTUM_HOUR, OFFERS, joinHref } from "@/lib/offers";
+import { FOCUS_SESSIONS, MOMENTUM_HOUR, OFFERS, joinHref } from "@/lib/offers";
 import { joiningOpen } from "@/lib/actions/membership";
 import { JoinButton } from "@/components/membership/JoinButton";
 import { GuideVideo } from "@/components/audit/GuideVideo";
-import { FILMS, filmOrSoon } from "@/lib/audit-guides";
+import { FILMS } from "@/lib/audit-guides";
 
 export const metadata: Metadata = {
   title: "Support options",
-  description: "Aligned Clarity is free. Add a daily practice, a live weekly hour with a small group, or six weeks with an Aligned Coach.",
+  description: "Aligned Clarity is free. Add a live weekly hour with a small group and the daily practice, or twelve weeks with an Aligned Coach.",
 };
 
-// The four offers, at founding prices. Public: linked from Your plan is set
-// and My Space, and readable before anyone has an account.
+// The three offers (Duane, 11 Nov 2026): Clarity free, Momentum £99 a month,
+// Focus £995 for 12 weeks. Public: linked from Your plan is set and My Space,
+// and readable before anyone has an account.
 export default async function OffersPage() {
   const open = await joiningOpen();
   return (
@@ -26,19 +27,16 @@ export default async function OffersPage() {
             <div className="eyebrow"><span className="eydot" /> Support options</div>
             <h1>Your plan works on its own. Choose how much support you&rsquo;d like with it.</h1>
             <p>
-              Add a daily practice, a weekly appointment with others, or six weeks with a coach. Everything you&rsquo;ve
-              built stays with you, whichever you choose.
+              Clarity is free and complete. Add a weekly appointment with others and the daily practice, or twelve
+              weeks with a coach. Everything you&rsquo;ve built stays with you, whichever you choose.
             </p>
           </div>
 
-          <div className="of-film">
-            <GuideVideo clip={filmOrSoon(FILMS.O01, "offers", "Support options")} caption="Duane on Practice, Momentum and Focus" />
-          </div>
-
-          <p className="of-banner">
-            <span className="of-pill">Founding prices</span>
-            For our first members. Keep your founding monthly price for as long as your membership stays active.
-          </p>
+          {FILMS.O01 ? (
+            <div className="of-film">
+              <GuideVideo clip={FILMS.O01} caption="Duane on Momentum and Focus" />
+            </div>
+          ) : null}
 
           <div className="of-grid">
             {OFFERS.map((o) => (
@@ -46,7 +44,6 @@ export default async function OffersPage() {
                 <div>
                   <h2 id={`of-${o.key}`}>
                     {o.name}
-                    {o.pilot ? <span className="of-pill">Pilot</span> : null}
                   </h2>
                   <p className="of-tag">{o.tagline}</p>
                 </div>
@@ -64,6 +61,11 @@ export default async function OffersPage() {
                     </div>
                     <p className="of-note">{MOMENTUM_HOUR.map(([label, mins]) => `${label} ${mins}`).join(" · ")}</p>
                   </div>
+                ) : null}
+                {o.key === "focus" ? (
+                  <ol className="of-sessions">
+                    {FOCUS_SESSIONS.map(([title, text]) => <li key={title}><b>{title}.</b> {text}</li>)}
+                  </ol>
                 ) : null}
                 {o.key === "clarity" ? (
                   <Link href="/audit" className="btn btn-g">Start free</Link>
@@ -91,7 +93,7 @@ export default async function OffersPage() {
             </div>
             <div>
               <h3>Focus doesn&rsquo;t roll over</h3>
-              <p>After six weeks there&rsquo;s no automatic membership. Already a member? You keep your founding rate, with credit for the weeks Focus covers.</p>
+              <p>Focus is one payment of £995 for the twelve weeks, with Momentum included. Afterwards there&rsquo;s no automatic membership: you choose what comes next.</p>
             </div>
           </div>
 

@@ -3,7 +3,7 @@ import { getTodayAlignment } from "@/lib/actions/alignment";
 import { firstActionDate, longDay, plannedDays } from "@/lib/review-schedule";
 import type { PlanAction } from "@/lib/planning";
 import { Icon } from "@/components/ui/Icon";
-import { Mark, WINS } from "@/components/profile/DailyAlignmentCard";
+import { Mark, WINS } from "@/components/profile/PracticeWins";
 import { TodayActions } from "@/components/profile/TodayActions";
 import type { TodayAction, TodayMove } from "@/lib/daily-log";
 

@@ -84,16 +84,17 @@ async function origin() {
 
 const back = (message: string): never => redirect(`/membership?error=${encodeURIComponent(message)}`);
 
-// Join Practice or Momentum: Stripe Checkout, or a switch if they already
-// have the other one.
+// Join Momentum: Stripe Checkout, or a switch if they already have an older
+// Practice membership. Practice isn't sold on its own (11 Nov 2026).
 export async function joinMembership(tier: PaidTier) {
+  if (tier !== "momentum") redirect("/offers");
   const user = await signedInMember();
   if (!user) redirect("/login?signup=1");
-  if (!(await joiningOpen())) back("Joining on the site isn’t open yet. Use “Join the founding list” on the offers page.");
+  if (!(await joiningOpen())) back("Joining on the site isn’t open yet. Use “Ask to join” on the support options page.");
   const { current } = await getMyMembership();
   if (current?.tier === tier) redirect("/membership");
   if (current) return changeMembership(tier);
-  const offer = offerFor(tier);
+  const offer = offerFor("momentum");
   const subs = await mySubscriptions();
   const res = await createMembershipCheckout({
     clientId: user.id,
@@ -127,7 +128,9 @@ async function refresh(subscriptionId: string) {
   revalidatePath("/", "layout");
 }
 
+// Move an older Practice membership up to Momentum (the only way now).
 export async function changeMembership(tier: PaidTier) {
+  if (tier !== "momentum") redirect("/membership");
   const user = await signedInMember();
   if (!user) redirect("/login");
   const { current } = await getMyMembership();
@@ -135,7 +138,7 @@ export async function changeMembership(tier: PaidTier) {
   if (current.tier === tier) redirect("/membership");
   const sub = await getSubscription(current.stripe_subscription_id);
   if (!sub.ok) back(sub.message);
-  const offer = offerFor(tier);
+  const offer = offerFor("momentum");
   const res = sub.ok ? await changeSubscriptionTier(sub.data, tier, offer.name, offer.pricePence!) : null;
   if (!res?.ok) back(res?.message ?? "Couldn’t change your membership — try again.");
   await refresh(current.stripe_subscription_id);

@@ -40,7 +40,7 @@ export function hasMomentum(tier: Tier, role?: string | null) {
 // Joining on the site: always on previews and locally (Stripe test mode);
 // on the live site only once MEMBERSHIPS_OPEN=true is set (after the terms
 // and privacy pages are approved). Until then the buttons ask to join the
-// founding list by email.
+// support options page by email.
 export function membershipsOpen(env: { open?: string; production: boolean }) {
   return env.open === "true" || !env.production;
 }

@@ -64,9 +64,9 @@ export async function createCheckout(input: {
 }
 
 // Memberships ---------------------------------------------------------------
-// Monthly subscriptions for Aligned Practice and Aligned Momentum. The price
-// comes from lib/offers.ts at the moment someone joins and stays with their
-// subscription, so founding members keep their founding price.
+// The monthly subscription for Aligned Momentum (older Aligned Practice
+// subscriptions are still handled). The price comes from lib/offers.ts at the
+// moment someone joins and stays with their subscription.
 
 type StripeResult<T> = { ok: true; data: T } | { ok: false; message: string };
 

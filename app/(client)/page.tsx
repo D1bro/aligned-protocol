@@ -13,7 +13,6 @@ import { DetailsPrompt } from "@/components/profile/DetailsPrompt";
 import { CoachingCard } from "@/components/profile/CoachingCard";
 import { getMyCoaching } from "@/lib/actions/member-coaching";
 import { getMyCredits } from "@/lib/actions/packages";
-import { DailyAlignmentCard } from "@/components/profile/DailyAlignmentCard";
 import { TodayCard } from "@/components/profile/TodayCard";
 import { JournalCard } from "@/components/profile/JournalCard";
 import { GettingStarted } from "@/components/profile/GettingStarted";
@@ -26,7 +25,7 @@ import { localDate } from "@/lib/time";
 import { YearStrip } from "@/components/journey/YearStrip";
 import { DuskHero } from "@/components/ui/DuskHero";
 import { canUseDailyAlignment } from "@/lib/alignment";
-import { getMomentumDetails, getMyAccess, joiningOpen } from "@/lib/actions/membership";
+import { getMomentumDetails, getMyAccess } from "@/lib/actions/membership";
 import { hasMomentum } from "@/lib/membership";
 import { MomentumCard } from "@/components/membership/MomentumCard";
 import { LifeMap } from "@/components/audit/LifeMap";
@@ -250,9 +249,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const lastYm = addMonths(thisYm, -1);
   const askLastMonth = reflections.available && Number(todayYmd.slice(8, 10)) <= 10 && !reflections.months[lastYm];
   const showJourney = MY_JOURNEY_SHOWN && (planned || audits.length > 1);
-  const lockedPractice = !practice && planned;
-  // The small cards after the first row share a row with the Alignment Map.
-  const beforeMap = (planned ? 0 : (practice ? 2 : 0) + (showJourney ? 1 : 0)) + (planned && practice ? 1 : 0);
+  // The small cards after the first row share a row with the Alignment Map:
+  // the journal (free for everyone), and before a plan, today's practice.
+  const beforeMap = planned ? 1 : (practice ? 1 : 0) + 1 + (showJourney ? 1 : 0);
   const mapSpan = beforeMap === 1 ? 4 : 6;
   const smallSpan = !planned && beforeMap === 2 ? 3 : 2;
 
@@ -458,8 +457,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           </Cell>
         ) : null}
 
-        {/* 6. The journal (members), or the daily practice offered once the plan is set. */}
-        {practice ? <Cell span={smallSpan}><JournalCard /></Cell> : lockedPractice ? <DailyAlignmentCard joinOpen={await joiningOpen()} /> : null}
+        {/* 6. The journal: free for every member (11 Nov 2026). */}
+        <Cell span={smallSpan}><JournalCard /></Cell>
 
         {/* 7. The Alignment Map, in brief. */}
         <Cell span={mapSpan}>

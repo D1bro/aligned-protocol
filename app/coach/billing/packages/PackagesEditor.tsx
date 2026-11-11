@@ -117,10 +117,10 @@ export function PackagesEditor({ packages, clients }: { packages: AdminPackage[]
             <span>Includes a membership (for Aligned Focus)</span>
             <select value={d.includesMembership} onChange={(e) => set({ includesMembership: e.target.value as Draft["includesMembership"] })}>
               <option value="">No</option>
-              <option value="practice">Aligned Practice</option>
-              <option value="momentum">Aligned Momentum (includes Practice)</option>
+              {d.includesMembership === "practice" ? <option value="practice">Aligned Practice (no longer sold)</option> : null}
+              <option value="momentum">Aligned Momentum (includes the daily practice)</option>
             </select>
-            <em className="admin-card-sub">Unlocked once it&rsquo;s fully paid, for its &ldquo;use within&rdquo; days (six weeks if blank). No automatic membership afterwards.</em>
+            <em className="admin-card-sub">Unlocked once it&rsquo;s fully paid, for its &ldquo;use within&rdquo; days (Aligned Focus: 84 days, so set that). No automatic membership afterwards.</em>
           </label>
           <div className="cs-grid">
             <label className="sw-field">

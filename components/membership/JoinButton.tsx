@@ -2,11 +2,12 @@ import { joinMembership } from "@/lib/actions/membership";
 import { joinHref, offerFor } from "@/lib/offers";
 import type { PaidTier } from "@/lib/membership";
 
-// Join Practice or Momentum: Stripe Checkout when joining is open, otherwise
-// the founding-list email (lib/membership.ts).
-export function JoinButton({ tier, open, label, className = "btn btn-p" }: { tier: PaidTier; open: boolean; label?: string; className?: string }) {
+// Join Momentum: Stripe Checkout when joining is open, otherwise an email to
+// ask (lib/membership.ts). Practice isn't sold on its own.
+export function JoinButton({ open, label, className = "btn btn-p" }: { tier?: PaidTier; open: boolean; label?: string; className?: string }) {
+  const tier = "momentum" as const;
   const offer = offerFor(tier);
-  if (!open) return <a href={joinHref(offer)} className={className}>Join the founding list</a>;
+  if (!open) return <a href={joinHref(offer)} className={className}>Ask to join Momentum</a>;
   return (
     <form action={joinMembership.bind(null, tier)}>
       <button type="submit" className={className}>{label ?? `Join ${offer.name.replace("Aligned ", "")} · ${offer.price} ${offer.per}`}</button>

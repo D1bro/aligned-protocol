@@ -10,7 +10,7 @@ import {
   openBillingPage,
   setMembershipCancelled,
 } from "@/lib/actions/membership";
-import { offerFor } from "@/lib/offers";
+import { PRACTICE, offerFor, tierName } from "@/lib/offers";
 import { statusWords } from "@/lib/membership";
 import { formatDate } from "@/lib/audit-schedule";
 import { JoinButton } from "@/components/membership/JoinButton";
@@ -33,14 +33,15 @@ export default async function MembershipPage({
   const joined = q.session_id ? await confirmCheckout(q.session_id) : null;
   const { access, current, past, open } = await getMyMembership();
   const momentum = access.tier === "momentum" ? await getMomentumDetails() : null;
-  const offer = access.tier === "clarity" ? null : offerFor(access.tier);
-  const other = current ? offerFor(current.tier === "practice" ? "momentum" : "practice") : null;
+  const offer = access.tier === "clarity" ? null : { name: tierName(access.tier), tagline: access.tier === "momentum" ? offerFor("momentum").tagline : PRACTICE.tagline };
+  // An older Practice membership can move up to Momentum; nothing moves down.
+  const other = current?.tier === "practice" ? offerFor("momentum") : null;
 
   return (
     <div className="page au-page ms-page">
       <div className="eyebrow"><span className="eydot" /> My membership</div>
       <h1 className="au-latest-h">{offer ? offer.name : "Aligned Clarity"}</h1>
-      <p className="lead">{offer ? offer.tagline : "Free, always: your plan, your weekly and monthly reviews, and your dashboard."}</p>
+      <p className="lead">{offer ? offer.tagline : "Free, always: your Next Step, Today, your journal, your weekly check-in and your history."}</p>
 
       {joined?.ok ? <p className="clear-welcome" role="status"><b>Welcome to {offer?.name ?? "your membership"}.</b> Everything it includes is open now.</p> : null}
       {joined && !joined.ok && joined.message ? <p className="clear-err" role="alert">{joined.message}</p> : null}
@@ -55,7 +56,7 @@ export default async function MembershipPage({
             <dt>Status</dt>
             <dd>{statusWords(current.status, current.cancel_at_period_end)}</dd>
             <dt>Price</dt>
-            <dd>{pounds(current.price_pence)} a month{current.price_pence <= (offerFor(current.tier).pricePence ?? 0) ? " · founding price, kept while you stay a member" : ""}</dd>
+            <dd>{pounds(current.price_pence)} a month</dd>
             {current.current_period_end ? (
               <>
                 <dt>{current.cancel_at_period_end ? "Ends" : "Next payment"}</dt>
@@ -70,10 +71,8 @@ export default async function MembershipPage({
           ) : null}
           <div className="ms-actions">
             {other && !current.cancel_at_period_end ? (
-              <form action={changeMembership.bind(null, other.key as "practice" | "momentum")}>
-                <button type="submit" className="btn btn-p">
-                  {other.key === "momentum" ? `Move up to Momentum · ${other.price} ${other.per}` : `Move to Practice · ${other.price} ${other.per}`}
-                </button>
+              <form action={changeMembership.bind(null, "momentum")}>
+                <button type="submit" className="btn btn-p">Move up to Momentum · {other.price} {other.per}</button>
               </form>
             ) : null}
             <form action={openBillingPage}>
@@ -96,9 +95,8 @@ export default async function MembershipPage({
         </section>
       ) : (
         <section className="ms-join" aria-label="Join">
-          <p>Add a daily practice, or a live weekly hour with a small group. Cancel any time; your work always stays yours.</p>
+          <p>Aligned Momentum: a live weekly hour with a small group, and the full daily practice. {offerFor("momentum").price} {offerFor("momentum").per}; cancel any time, and your work always stays yours.</p>
           <div className="ms-actions">
-            <JoinButton tier="practice" open={open} className="btn btn-g" />
             <JoinButton tier="momentum" open={open} />
           </div>
           <Link href="/offers" className="au-text-link">Compare the options, including Aligned Focus</Link>
@@ -124,7 +122,7 @@ export default async function MembershipPage({
           <h2 id="ms-past-h" className="pl-k">Earlier memberships</h2>
           <ul>
             {past.map((m) => (
-              <li key={m.id}>{offerFor(m.tier).name} · {pounds(m.price_pence)} a month · {formatDate(m.started_at)}{m.ended_at ? ` to ${formatDate(m.ended_at)}` : ""}</li>
+              <li key={m.id}>{tierName(m.tier)} · {pounds(m.price_pence)} a month · {formatDate(m.started_at)}{m.ended_at ? ` to ${formatDate(m.ended_at)}` : ""}</li>
             ))}
           </ul>
         </section>

@@ -27,7 +27,7 @@ export function ReminderToggle({ initial }: { initial: boolean }) {
       </button>
       <div>
         <p>Email me when a review is due</p>
-        <span>{error ? "Couldn’t save — try again." : on ? "On — one email when each weekly or monthly review is due." : "Off"}</span>
+        <span>{error ? "Couldn’t save — try again." : on ? "On — one email when each weekly check-in is due." : "Off"}</span>
       </div>
     </div>
   );

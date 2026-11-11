@@ -1,8 +1,8 @@
 import { getMyEnquiries } from "@/lib/actions/learn";
 import { formatDate } from "@/lib/audit-schedule";
 import { GuideVideo } from "@/components/audit/GuideVideo";
-import { FILMS, filmOrSoon } from "@/lib/audit-guides";
-import { offerFor } from "@/lib/offers";
+import { FILMS } from "@/lib/audit-guides";
+import { FOCUS_SESSIONS, offerFor } from "@/lib/offers";
 import { EnquiryForm } from "@/components/learn/EnquiryForm";
 import { getMyCoaching, getMyGoalCards } from "@/lib/actions/member-coaching";
 import { getMyCalibratedChart } from "@/lib/actions/calibration";
@@ -16,11 +16,8 @@ import { CoachingTabs, coachingTab } from "@/components/coaching/CoachingTabs";
 import { getMyCoach } from "@/lib/actions/staff-profiles";
 import { YourCoach } from "@/components/coaching/YourCoach";
 
-const SESSIONS = [
-  { title: "Check and sharpen your plan", text: "We start from the plan you’ve built: what matters most right now, and the one action that will move it." },
-  { title: "Work through what gets in the way", text: "Halfway through the six weeks: what’s worked, what hasn’t, and adjusting so it fits your life." },
-  { title: "Review and continue", text: "What’s moved, what you’ve learned, and what comes next — with or without more coaching." },
-];
+// Aligned Focus, session by session (lib/offers.ts).
+const SESSIONS = FOCUS_SESSIONS.map(([title, text]) => ({ title, text }));
 const FOCUS = offerFor("focus");
 
 const STATUS: Record<string, string> = {
@@ -96,24 +93,24 @@ function CoachingAbout({
   return (
     <>
       <h1 className="au-latest-h">Work on it <em>together.</em></h1>
-      <p className="draft-tag">Draft</p>
       <p className="lead">
         Coaching here is led by you. You bring what matters; we work out the next step together. It builds on your
         audit and your plan, so we start from where you already are — not from scratch.
       </p>
 
-      <GuideVideo clip={filmOrSoon(FILMS.C01, "coaching-intro", "Coaching with an Aligned Coach")} />
+      {FILMS.C01 ? <GuideVideo clip={FILMS.C01} /> : null}
 
       <section className="coach-offer" aria-labelledby="focus-h">
         <div className="coach-offer-head">
           <div>
             <div className="eyebrow"><span className="eydot" /> {FOCUS.tagline}</div>
             <h2 id="focus-h">{FOCUS.name}</h2>
-            <p>Six weeks with an Aligned Coach: three 60-minute sessions, agreed actions and a summary after each, with Practice and Momentum included throughout.</p>
+            <p>Twelve weeks with an Aligned Coach: four 60-minute sessions, agreed actions and a written summary after each, with Momentum and the daily practice included throughout.</p>
           </div>
           <div className="coach-price">
-            <span>Six weeks</span>
+            <span>12 weeks</span>
             <b>{FOCUS.price}</b>
+            <span>one payment</span>
           </div>
         </div>
         <ol className="coach-sessions">
