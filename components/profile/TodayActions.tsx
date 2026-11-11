@@ -19,6 +19,7 @@ export function TodayActions({
   own,
   goals,
   defaultGoalId,
+  canAdd = true,
 }: {
   // moveId: a one-off move, ticked off as the move itself.
   plan: { goalId: string; body: string; done: boolean; moveId?: string } | null;
@@ -27,6 +28,8 @@ export function TodayActions({
   own: PlanAction[];
   goals: { id: string; title: string }[];
   defaultGoalId: string | null;
+  // The Daily page lists the Next Step's moves without the one-off "add".
+  canAdd?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -126,9 +129,9 @@ export function TodayActions({
             <button type="button" className="au-text-link as-btn" disabled={busy} onClick={() => { setAdding(false); setBody(""); }}>Cancel</button>
           </div>
         </div>
-      ) : (
+      ) : canAdd ? (
         <button type="button" className="au-text-link as-btn" onClick={() => setAdding(true)}>+ Add an action</button>
-      )}
+      ) : null}
       {error ? <p className="clear-err" role="alert">{error}</p> : null}
     </div>
   );

@@ -59,6 +59,8 @@ export async function TodayCard({
       <div className="ms-head">
         <Icon name="sunrise" size={18} />
         <h2 id="ms-today-h">Today</h2>
+        {/* The Daily Alignment: their own daily actions, the mindful timer and the check-in. */}
+        <Link href="/daily" className="ms-head-end au-text-link">Daily Alignment →</Link>
       </div>
       {week.available ? (
         <TodayActions
