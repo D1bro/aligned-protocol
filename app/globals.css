@@ -2890,3 +2890,36 @@ form label.opt-in small { display: block; font-size: 12.5px; font-weight: 400; c
 .da-evidence li span { color: var(--text2); }
 .da-notes { margin: .4rem 0 .8rem; padding-left: 1rem; display: grid; gap: .3rem; font-size: 14px; }
 .da-strip-set { font-size: 10.5px; color: var(--text3); }
+
+/* Journal filters and sharing (Daily Alignment release 2) */
+.journal-search select { flex: 0 1 12rem; min-width: 0; max-width: 100%; }
+.jr-shared { font-size: .8rem; color: var(--gold2); margin: .2rem 0; }
+
+/* Daily Alignment release 2: the weekly review, past days, sharing */
+.da-weeknav { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin: 0 0 1rem; font-size: 14px; }
+.da-review { display: grid; gap: 1rem; }
+@media (min-width: 960px) { .da-review { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .da-review > .da-card:last-child:nth-child(3) { grid-column: 2; } }
+.da-review-evidence { display: grid; gap: 1rem; min-width: 0; }
+.da-review-form { display: grid; gap: .9rem; }
+.da-review-form h2 { margin: 0; }
+.da-review-form .ns-choices, .da-choices .ns-choices { margin-top: .35rem; gap: .45rem; max-width: none; }
+.da-review-form .ns-choices button { min-height: 44px; font-size: 14px; padding: .3rem .4rem; border-radius: 10px; }
+.da-choices { border: 0; padding: 0; margin: 0; display: grid; gap: .8rem; }
+.da-choices legend { font-weight: 600; margin-bottom: .4rem; }
+.da-choice { display: grid; gap: .3rem; }
+.da-choice .da-inline { flex-wrap: wrap; align-items: center; gap: .4rem; }
+.da-evidence-plan li { display: grid; gap: .15rem; }
+.da-share { border-top: 1px solid var(--bdr2); padding-top: .8rem; }
+.da-review-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1rem; }
+.da-review-cta h2 { margin: 0 0 .2rem; }
+.da-strip-day { display: grid; place-items: center; gap: .15rem; width: 100%; padding: .5rem 0; background: none; border: 0; color: inherit; font: inherit; border-radius: 10px; }
+button.da-strip-day { cursor: pointer; }
+button.da-strip-day:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.da-strip li { padding: 0; }
+.da-strip li.is-open { outline: 2px solid var(--gold2); }
+.da-strip-hint { margin: .6rem 0 0; }
+.da-day { margin-top: .8rem; border-top: 1px solid var(--bdr2); padding-top: .8rem; }
+.da-day h3 { margin: 0; font-size: 16px; }
+.da-day .da-num { width: 4.5rem; }
+.ov-shared-text { white-space: pre-wrap; }
+.ov-daily { margin: .3rem 0 0; padding-left: 1rem; display: grid; gap: .25rem; }

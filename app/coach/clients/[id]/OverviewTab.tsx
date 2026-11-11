@@ -6,6 +6,7 @@ import { CLOSER_LABELS } from "@/lib/checkin-labels";
 
 type Profile = Awaited<ReturnType<typeof getClientProfile>>;
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+const SHARE_KIND: Record<string, string> = { entry: "A journal entry", review: "A weekly review", question: "A question for coaching" };
 const PROGRESS: Record<string, string> = { tried: "Tried it", partly: "Partly", done: "Done", not_yet: "Not yet" };
 
 // Overview: the person first. Their own words, their focus, what was agreed
@@ -16,12 +17,15 @@ export function OverviewTab({
   mainGoal,
   focusNote,
   nextSession,
+  daily = null,
 }: {
   p: Profile;
   firstName: string;
   mainGoal: Record<string, unknown> | null;
   focusNote: string | null;
   nextSession: Profile["coaching"]["sessions"][number] | null;
+  // Their daily actions not marked private, as this week's evidence.
+  daily?: { id: string; name: string; happened: string; plan: string | null; area: string | null }[] | null;
 }) {
   const { coaching } = p;
   const published = coaching.summaries.filter((s) => s.status === "published");
@@ -30,8 +34,11 @@ export function OverviewTab({
   const content = (lastShared?.content ?? {}) as { focus?: string; summary?: string };
   const agreed = lastShared ? coaching.commitments.filter((c) => c.summary_id === lastShared.id) : [];
   const latestUpdate = (id: unknown) => coaching.updates.find((u) => u.commitment_id === id) ?? null;
+  const isPrep = (s: Record<string, unknown>) => ((s.kind as string | undefined) ?? "prep") === "prep";
+  // What they chose to share from the Daily Alignment and journal (0035).
+  const sharedItems = coaching.prepShares.filter((s) => !isPrep(s)).slice(0, 8);
   const sharedSince = coaching.prepShares.filter(
-    (s) => !lastShared?.published_at || new Date(s.shared_at as string) > new Date(lastShared.published_at as string)
+    (s) => isPrep(s) && (!lastShared?.published_at || new Date(s.shared_at as string) > new Date(lastShared.published_at as string))
   );
   const latestAudit = p.audits[0] ?? null;
   const moves = mainGoal ? p.moves.filter((m) => m.goal_id === mainGoal.id) : [];
@@ -136,6 +143,29 @@ export function OverviewTab({
           </div>
         ) : null}
       </section>
+
+      {sharedItems.length || daily?.length ? (
+        <section className="admin-card" aria-labelledby="ov-shared-h">
+          <h2 id="ov-shared-h">Shared with you</h2>
+          <p className="admin-card-sub">{firstName} chose to share these. Their journal and everything else in their Daily Alignment stay private.</p>
+          {sharedItems.map((x) => (
+            <div key={x.id as string} className="ov-prep">
+              <p className="au-detail-k">{str(x.title) ?? SHARE_KIND[x.kind as string] ?? "Shared"} · shared {formatDate(x.shared_at as string)}</p>
+              <p className="ov-shared-text">{str(x.content)}</p>
+            </div>
+          ))}
+          {daily?.length ? (
+            <div className="ov-prep">
+              <p className="au-detail-k">Daily actions they share · this week</p>
+              <ul className="ov-daily">
+                {daily.map((d) => (
+                  <li key={d.id}><b>{d.name}</b> {d.happened}{d.plan ? <span className="admin-card-sub"> · planned {d.plan}</span> : null}{d.area ? <span className="admin-card-sub"> · {d.area}</span> : null}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="admin-card" aria-labelledby="ov-last-h">
         <h2 id="ov-last-h">Last shared summary</h2>

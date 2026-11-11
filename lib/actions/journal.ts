@@ -22,6 +22,8 @@ export type JournalEntry = {
   goal_id: string | null;
   // The life area it's written in; null is free writing (migration 0030).
   life_area_id: string | null;
+  // The daily action it's about (a note after a session), migration 0034.
+  action_id?: string | null;
   video_url: string | null;
   images: string[];
   created_at: string;
@@ -29,7 +31,7 @@ export type JournalEntry = {
   // Short-lived links to show their images (not stored).
   imageUrls?: string[];
 };
-const COLUMNS = "id, entry_date, prompt, body, goal_id, life_area_id, video_url, images, created_at, updated_at";
+const COLUMNS = "id, entry_date, prompt, body, goal_id, life_area_id, action_id, video_url, images, created_at, updated_at";
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 // Signed links (an hour) for every image on these entries.
@@ -56,9 +58,10 @@ async function member(writing: boolean) {
 }
 
 // Newest first, optionally only entries with these words, in one month
-// ("YYYY-MM") or in one section ("free", or a life area's id). `available`
-// is false before migration 0030 has run.
-export async function getJournal(options: { limit?: number; q?: string; month?: string; area?: string } = {}): Promise<{ available: boolean; entries: JournalEntry[] }> {
+// ("YYYY-MM"), in one section ("free", or a life area's id), about one Next
+// Step or about one daily action. `available` is false before migration
+// 0030 has run.
+export async function getJournal(options: { limit?: number; q?: string; month?: string; area?: string; step?: string; action?: string } = {}): Promise<{ available: boolean; entries: JournalEntry[] }> {
   const m = await member(false);
   if (!m) return { available: false, entries: [] };
   let query = m.supabase.from("journal_entries").select(COLUMNS);
@@ -66,6 +69,8 @@ export async function getJournal(options: { limit?: number; q?: string; month?: 
   if (words) query = query.or(`body.ilike.%${words}%,prompt.ilike.%${words}%`);
   if (options.area === "free") query = query.is("life_area_id", null);
   else if (options.area && /^[0-9a-f-]{36}$/i.test(options.area)) query = query.eq("life_area_id", options.area);
+  if (options.step && /^[0-9a-f-]{36}$/i.test(options.step)) query = query.eq("goal_id", options.step);
+  if (options.action && /^[0-9a-f-]{36}$/i.test(options.action)) query = query.eq("action_id", options.action);
   if (options.month && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.month)) {
     const [y, mo] = options.month.split("-").map(Number);
     const next = mo === 12 ? `${y + 1}-01-01` : `${y}-${String(mo + 1).padStart(2, "0")}-01`;

@@ -353,7 +353,7 @@ export default async function SessionDeskPage({
               {prep.length ? (
                 prep.map((x) => (
                   <div key={x.id as string} className="ov-prep">
-                    <p className="au-detail-k">Shared {formatDate(x.shared_at as string)}</p>
+                    <p className="au-detail-k">{str(x.title) ? `${str(x.title)} · shared` : "Shared"} {formatDate(x.shared_at as string)}</p>
                     <p>{str(x.content)}</p>
                   </div>
                 ))

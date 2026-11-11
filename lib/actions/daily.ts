@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { localDate } from "@/lib/time";
 import { addDays } from "@/lib/daily-log";
-import { type ActionLog, type DailyAction, type Measure, type Period, type TimerRow, periodStart, weekStartOf } from "@/lib/daily-alignment";
+import { type ActionLog, type DailyAction, type Measure, type Period, type TimerRow, periodStart, weekEvidence, weekStartOf } from "@/lib/daily-alignment";
 
 type Result = { ok: true } | { ok: false; message: string };
 const FAILED = "Couldn’t save. Check your connection and try again.";
@@ -342,4 +342,32 @@ export async function saveCheckIn(rating: number, note: string): Promise<Result>
   revalidate();
   revalidatePath("/journal");
   return { ok: true };
+}
+
+// For the coach's view of a client: the daily actions they've chosen to
+// share (not private), with this week's evidence. The database only returns
+// shared ones to a coach (migration 0034); empty before it's run.
+export async function getSharedDaily(clientId: string): Promise<{ id: string; name: string; happened: string; plan: string | null; area: string | null }[]> {
+  const { supabase } = await me();
+  const today = localDate(new Date());
+  const week = weekStartOf(today);
+  const [{ data: actions, error }, { data: logs }, { data: areas }] = await Promise.all([
+    supabase.from("daily_actions").select("*").eq("client_id", clientId).eq("private", false).in("status", ["active", "paused"]).order("position"),
+    supabase.from("daily_action_logs").select("id, action_id, log_date, tick, amount, seconds, source, note").eq("client_id", clientId).gte("log_date", week).lte("log_date", today),
+    supabase.from("life_areas").select("id, name"),
+  ]);
+  if (error) return [];
+  const areaName = new Map((areas ?? []).map((a) => [a.id as string, a.name as string]));
+  return ((actions ?? []) as DailyAction[]).map((a) => {
+    const e = weekEvidence({ ...a, days: a.days ?? [] }, (logs ?? []) as ActionLog[], week, today);
+    return { id: a.id, name: a.name, happened: e.happened, plan: e.plan, area: a.life_area_id ? areaName.get(a.life_area_id) ?? null : null };
+  });
+}
+
+// Their daily actions by name, for the journal's filter and labels (archived
+// ones too, since old notes can be about them). Empty before 0034.
+export async function getMyActionNames(): Promise<{ id: string; name: string }[]> {
+  const { supabase, userId } = await me();
+  const { data, error } = await supabase.from("daily_actions").select("id, name").eq("client_id", userId).order("name");
+  return error ? [] : ((data ?? []) as { id: string; name: string }[]);
 }
