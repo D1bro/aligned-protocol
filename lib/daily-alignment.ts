@@ -216,11 +216,12 @@ export const looksMindful = (name: string) => /\b(meditat\w*|breath\w*|mindful\w
 // ── The weekly review (release 2) ─────────────────────────────────────────
 
 // Which week to review: early in the week (Monday to Wednesday), last week
-// if it hasn't been reviewed yet; otherwise this week. Weeks start Monday.
+// if neither it nor this week has been reviewed yet; otherwise this week.
+// Weeks start Monday.
 export function reviewWeek(today: string, reviewed: string[]): string {
   const thisWeek = weekStartOf(today);
   const lastWeek = addDays(thisWeek, -7);
-  return weekdayOf(today) <= 2 && !reviewed.includes(lastWeek) ? lastWeek : thisWeek;
+  return weekdayOf(today) <= 2 && !reviewed.includes(lastWeek) && !reviewed.includes(thisWeek) ? lastWeek : thisWeek;
 }
 
 // A week given as any day of it, back to its Monday; never a future week.

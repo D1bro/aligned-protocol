@@ -16,6 +16,9 @@ test("early in the week it reviews last week, unless that's done; later, this we
   assert.equal(reviewWeek("2026-11-16", []), "2026-11-09");
   assert.equal(reviewWeek("2026-11-18", []), "2026-11-09");
   assert.equal(reviewWeek("2026-11-16", ["2026-11-09"]), "2026-11-16");
+  // Already reviewed this week early on: that's the one, not last week.
+  assert.equal(reviewWeek("2026-11-11", ["2026-11-09"]), "2026-11-09");
+  assert.equal(reviewWeek("2026-11-17", ["2026-11-16"]), "2026-11-16");
   // Thursday onwards: this week.
   assert.equal(reviewWeek("2026-11-19", []), "2026-11-16");
   assert.equal(reviewWeek("2026-11-15", []), "2026-11-09");
