@@ -41,7 +41,9 @@ const tabsFor = (coached: boolean, journalLocked: boolean): MobileNavLink[] => [
 
 // Coaches and admins can use the member pages too, with a way back to the console.
 const STAFF_LINK: MobileNavLink = { group: "Staff", href: "/coach", label: "Coach console", icon: "console", match: () => false };
-const linksFor = (staff: boolean, coached: boolean, journalLocked: boolean) => [
+// `hide`: sections with nothing in them yet on the live site (Academy,
+// Musings, Podcast until Duane approves their content; lib/learn-content.ts).
+const linksFor = (staff: boolean, coached: boolean, journalLocked: boolean, hide: string[] = []) => [
   DESTINATIONS[0],
   ...(coached ? [COACHING] : []),
   ...DESTINATIONS.slice(1),
@@ -50,14 +52,14 @@ const linksFor = (staff: boolean, coached: boolean, journalLocked: boolean) => [
   ...(coached ? [] : [MORE_COACHING]),
   ...MORE_LINKS.slice(5),
   ...(staff ? [STAFF_LINK] : []),
-];
+].filter((l) => !hide.includes(l.href));
 
-export function ClientNav({ fullName, staff = false, coached = false, journalLocked = false }: { fullName: string | null; staff?: boolean; coached?: boolean; journalLocked?: boolean }) {
+export function ClientNav({ fullName, staff = false, coached = false, journalLocked = false, hide = [] }: { fullName: string | null; staff?: boolean; coached?: boolean; journalLocked?: boolean; hide?: string[] }) {
   const pathname = usePathname();
 
   return (
     <nav className="sb-nav">
-      <NavLinks links={linksFor(staff, coached, journalLocked)} pathname={pathname} />
+      <NavLinks links={linksFor(staff, coached, journalLocked, hide)} pathname={pathname} />
       <div className="sb-q">
         <div className="sb-qm">&ldquo;</div>
         <div className="sb-qt">Alignment is the foundation. Action is the transformation.</div>
@@ -67,6 +69,6 @@ export function ClientNav({ fullName, staff = false, coached = false, journalLoc
   );
 }
 
-export function ClientMobileNav({ fullName, staff = false, coached = false, journalLocked = false }: { fullName: string | null; staff?: boolean; coached?: boolean; journalLocked?: boolean }) {
-  return <MobileNav links={linksFor(staff, coached, journalLocked)} fullName={fullName} sub="Your details" userHref="/details" tabs={tabsFor(coached, journalLocked)} />;
+export function ClientMobileNav({ fullName, staff = false, coached = false, journalLocked = false, hide = [] }: { fullName: string | null; staff?: boolean; coached?: boolean; journalLocked?: boolean; hide?: string[] }) {
+  return <MobileNav links={linksFor(staff, coached, journalLocked, hide)} fullName={fullName} sub="Your details" userHref="/details" tabs={tabsFor(coached, journalLocked)} />;
 }

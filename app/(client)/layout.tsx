@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getCurrentProfile } from "@/lib/session";
 import { Logo } from "@/components/ui/Logo";
 import { ClientNav, ClientMobileNav } from "./ClientNav";
+import { EMPTY_SECTIONS } from "@/lib/learn-content";
 import { getLatestCompletedAudit } from "@/lib/actions/audit";
 import { GuestBar } from "./GuestBar";
 import { getMyAccess } from "@/lib/actions/membership";
@@ -44,9 +45,9 @@ export default async function ClientLayout({ children }: { children: React.React
     <div className="shell has-tabs">
       <aside className="sidebar">
         <Logo subtitle="Protocol" />
-        <ClientNav fullName={profile.full_name} staff={staff} coached={coached} journalLocked={journalLocked} />
+        <ClientNav fullName={profile.full_name} staff={staff} coached={coached} journalLocked={journalLocked} hide={EMPTY_SECTIONS} />
       </aside>
-      <ClientMobileNav fullName={profile.full_name} staff={staff} coached={coached} journalLocked={journalLocked} />
+      <ClientMobileNav fullName={profile.full_name} staff={staff} coached={coached} journalLocked={journalLocked} hide={EMPTY_SECTIONS} />
       <div className="main">{children}</div>
     </div>
   );

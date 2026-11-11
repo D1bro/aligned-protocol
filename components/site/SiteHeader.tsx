@@ -4,7 +4,7 @@ import { SiteMenu } from "./SiteMenu";
 
 // Public header: How it works · About Duane · Explore · Sign in, and the
 // audit as the main action. On small screens the links fold into a menu
-// (details/summary: works without JavaScript and from the keyboard).
+// behind an accessible button (SiteMenu).
 export function SiteHeader({ cta }: { cta: { href: string; label: string } }) {
   const links = (
     <>

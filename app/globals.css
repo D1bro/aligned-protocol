@@ -1286,8 +1286,10 @@ a.admin-row:hover { background: var(--bg3); }
 .site-head-actions { display: flex; align-items: center; gap: .6rem; }
 .site-cta { padding: .55rem 1.1rem; font-size: 13px; }
 .site-menu { display: none; position: relative; }
-.site-menu summary { list-style: none; cursor: pointer; border: 1px solid var(--bdr2); border-radius: 10px; width: 40px; height: 40px; display: grid; place-items: center; color: var(--text); }
-.site-menu summary::-webkit-details-marker { display: none; }
+.site-menu-btn { cursor: pointer; border: 1px solid var(--bdr2); border-radius: 10px; width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); background: none; padding: 0; }
+.site-menu-btn:hover, .site-menu-btn[aria-expanded=true] { border-color: var(--bdr); background: var(--bg2); }
+.site-menu-btn:focus-visible, .site-menu nav a:focus-visible { outline: 2px solid var(--gold2); outline-offset: 2px; }
+.site-menu nav[hidden] { display: none; }
 .site-menu nav { position: absolute; right: 0; top: calc(100% + .5rem); background: var(--bg2); border: 1px solid var(--bdr2); border-radius: 12px; padding: .5rem; display: grid; min-width: 190px; box-shadow: var(--shadow-md); }
 .site-menu nav a { padding: .65rem .8rem; border-radius: 8px; }
 .site-menu nav a:hover { background: var(--bg3); }
@@ -2179,12 +2181,12 @@ a.nav-user-who:hover b { color: var(--gold); }
 .ms-chips button:hover { border-color: var(--bdr); color: var(--text); }
 .ms-actions { display: grid; gap: .5rem; width: 100%; justify-items: start; }
 .ms-action-list { list-style: none; display: grid; gap: .15rem; width: 100%; padding: 0; margin: 0; }
-.ms-action-list li { display: flex; align-items: flex-start; gap: .6rem; padding: .45rem 0; border-bottom: 1px solid var(--bdr2); }
-.ms-action-list label { display: flex; align-items: flex-start; gap: .65rem; flex: 1; min-width: 0; cursor: pointer; font-size: 14.5px; line-height: 1.45; color: var(--text); }
+.ms-action-list li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .3rem .6rem; padding: .45rem 0; border-bottom: 1px solid var(--bdr2); }
+.ms-action-list label { display: flex; align-items: flex-start; gap: .65rem; flex: 1 1 11rem; min-width: 0; cursor: pointer; font-size: 14.5px; line-height: 1.45; color: var(--text); }
 .ms-action-list label span { overflow-wrap: anywhere; }
 .ms-action-list input[type=checkbox] { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--gold); cursor: pointer; }
 .ms-action-list input:checked + span { color: var(--text2); text-decoration: line-through; text-decoration-color: var(--text3); }
-.ms-action-tag { flex-shrink: 0; font-size: 11px; color: var(--gold2); background: var(--gd); border-radius: 100px; padding: .15rem .55rem; margin-top: 2px; }
+.ms-action-tag { flex-shrink: 0; max-width: 100%; font-size: 11px; color: var(--gold2); background: var(--gd); border-radius: 100px; padding: .15rem .55rem; margin-top: 2px; }
 .ms-action-remove { flex-shrink: 0; background: none; border: 0; color: var(--text3); font-size: 18px; line-height: 1; width: 32px; height: 32px; margin: -6px -6px 0 0; cursor: pointer; border-radius: 8px; }
 .ms-action-remove:hover { color: var(--text); background: rgba(255,255,255,.05); }
 .ms-action-add { display: grid; gap: .5rem; width: 100%; }

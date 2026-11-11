@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { ACADEMY_INTRO, PATHS } from "@/lib/learn-content";
+import { notFound } from "next/navigation";
+import { ACADEMY_INTRO, SHOWN_PATHS, TEN_AREAS_SHOWN } from "@/lib/learn-content";
 import { getLessonProgress } from "@/lib/actions/learn";
 
 // Academy: short guided paths. Each lesson is a short read (or video), one
 // private reflection and one thing to try.
 export default async function AcademyPage() {
+  if (!SHOWN_PATHS.length) notFound();
   const progress = await getLessonProgress();
   const done = new Set(progress.filter((p) => p.completed_at).map((p) => p.lesson_slug));
 
@@ -14,7 +16,7 @@ export default async function AcademyPage() {
       <h1 className="au-latest-h">Learn at <em>your own pace.</em></h1>
       <p className="lead">{ACADEMY_INTRO}</p>
 
-      {PATHS.map((path) => {
+      {SHOWN_PATHS.map((path) => {
         const count = path.lessons.filter((l) => done.has(l.slug)).length;
         const next = path.lessons.find((l) => !done.has(l.slug)) ?? null;
         return (
@@ -24,10 +26,12 @@ export default async function AcademyPage() {
                 <div className="eyebrow"><span className="eydot" /> Path · {path.lessons.length} lessons</div>
                 <h2 id={`path-${path.slug}`}>{path.title}</h2>
                 <p>{path.promise}</p>
-                <p className="learn-guide-link">
-                  New to the ten areas? <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link>{" "}
-                  <span>· optional guide</span>
-                </p>
+                {TEN_AREAS_SHOWN ? (
+                  <p className="learn-guide-link">
+                    New to the ten areas? <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link>{" "}
+                    <span>· optional guide</span>
+                  </p>
+                ) : null}
               </div>
               <Link href={`/learn/${path.slug}/${(next ?? path.lessons[0]).slug}`} className="btn btn-p">
                 {count === 0 ? "Start the path →" : next ? "Continue →" : "Review the path"}
