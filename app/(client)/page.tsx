@@ -38,7 +38,7 @@ import { longDay, nextReview, plannedDays } from "@/lib/review-schedule";
 import { weekStreak } from "@/lib/momentum";
 import { fallbackOf } from "@/lib/plan-action";
 import { isSet, movesRepeat } from "@/lib/next-step";
-import { repeats, weekLogProgress } from "@/lib/daily-log";
+import { repeats, weekLogProgress, whenLabel } from "@/lib/daily-log";
 import { getMovesForGoal, getMyReviews, getMyToday } from "@/lib/actions/next-step";
 
 // "Friday 6 Nov" for a review date (YYYY-MM-DD), and today's date in their zone.
@@ -189,7 +189,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   // Today's action is their next open move. Once a Next Step has moves, the
   // old plan's action (still stored on the goal) is never shown again.
   const commitment = reviewCommitment || openMove?.body.trim() || (moves.length ? "" : goal?.action_text?.trim() || "");
-  const commitmentWhen = reviewCommitment ? null : openMove ? (movesRepeat(openMove.when_text) ? openMove.when_text : null) : goal?.action_when ?? null;
+  const commitmentWhen = reviewCommitment ? null : openMove ? (movesRepeat(openMove.when_text) ? whenLabel(openMove.when_text) : null) : goal?.action_when ?? null;
   // A one-off move (no days to repeat on) shows every day until it's done,
   // and ticking it ticks the move itself.
   const todayMoveId = !reviewCommitment && openMove && !movesRepeat(openMove.when_text) ? openMove.id : null;

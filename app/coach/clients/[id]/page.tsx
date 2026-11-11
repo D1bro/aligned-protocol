@@ -27,6 +27,7 @@ import { getMessageJobs } from "@/lib/actions/messages";
 import { getAdminNotes, getClientRecord, getMyCoachBasics } from "@/lib/actions/staff-profiles";
 import { canBill } from "@/lib/actions/billing";
 import { DetailsTab } from "./DetailsTab";
+import { whenLabel } from "@/lib/daily-log";
 
 const TABS = [
   ["overview", "Overview"],
@@ -298,7 +299,7 @@ export default async function ClientProfilePage({
                           <li key={m.id} className={m.done_at ? "done" : undefined}>
                             <span aria-hidden="true">{m.done_at ? "✓" : "○"}</span>
                             {m.body}
-                            {m.when_text ? <em> · {m.when_text}</em> : null}
+                            {m.when_text?.trim() ? <em> · {whenLabel(m.when_text)}</em> : null}
                             {m.done_at ? <em> · done {formatDate(m.done_at)}</em> : null}
                           </li>
                         ))}

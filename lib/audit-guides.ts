@@ -84,10 +84,12 @@ export const AREA_GUIDES: Record<number, AreaGuide> = {
 // <file>-<version>.jpg in public/media/audit/posters/ and <file>-<version>.vtt
 // in public/media/audit/captions/, then set `file` (and `version`) here.
 // docs/FILMS.md has the step-by-step.
-type FilmSpec = { file: string | null; version?: string; title: string; label: string; durationSeconds?: number };
+// `slot` is its id in Console → Films (lib/films.ts): a slot with no file
+// still plays the link pasted there, and shows nothing until there is one.
+type FilmSpec = { file: string | null; slot?: string; version?: string; title: string; label: string; durationSeconds?: number };
 
 function film(s: FilmSpec): GuideClip | null {
-  if (!s.file) return null;
+  if (!s.file) return s.slot ? { id: s.slot, title: s.title, label: s.label, src: null, poster: null, captions: null, durationSeconds: 0 } : null;
   const slug = `${s.file}-${s.version ?? "v1"}`;
   return {
     id: s.file,
@@ -101,7 +103,7 @@ function film(s: FilmSpec): GuideClip | null {
 }
 
 export const FILMS = {
-  F01: film({ file: null, title: "Welcome from Duane", label: "A welcome from Duane" }),
+  F01: film({ file: null, slot: "F01", title: "Welcome from Duane", label: "A welcome from Duane" }),
   F02: CLOSING_GUIDE,
   F03: film({ file: null, title: "A worked example", label: "Worked example · from snapshot to action" }),
   F04: film({ file: null, title: "Your profile", label: "Getting started with your profile" }),
@@ -114,12 +116,11 @@ export const FILMS = {
   L04: film({ file: null, title: "From clarity to one step", label: "Academy · lesson 4" }),
   M01: film({ file: null, title: "Musing 1", label: "Duane’s Musings" }),
   M02: film({ file: null, title: "Musing 2", label: "Duane’s Musings" }),
-  C01: film({ file: null, title: "Coaching with an Aligned Coach", label: "Coaching · what to expect" }),
-  O01: film({ file: null, title: "Support options", label: "Practice, Momentum and Focus · Duane explains" }),
+  C01: film({ file: null, slot: "C01", title: "Coaching with an Aligned Coach", label: "Coaching · what to expect" }),
+  O01: film({ file: null, slot: "O01", title: "Support options", label: "Practice, Momentum and Focus · Duane explains" }),
 } satisfies Record<string, GuideClip | null>;
 
-// Build your plan and Your plan is set (P01–P06). Until a film is recorded
-// the page shows "Video coming soon" in its place.
+// Build your plan and Your plan is set (P01–P06), from before The Next Step.
 export const PLAN_FILMS = {
   P01: film({ file: null, title: "Your starting point", label: "Build your plan · your starting point" }),
   P02: film({ file: null, title: "What better looks like", label: "Build your plan · what better looks like" }),
@@ -129,22 +130,22 @@ export const PLAN_FILMS = {
   P06: film({ file: null, title: "Your plan is set", label: "Your plan is set · what happens next" }),
 } satisfies Record<string, GuideClip | null>;
 
-// A film slot that isn't recorded yet, shown as "Video coming soon".
+// A film slot that isn't recorded yet: shown once a link is pasted for it.
 export function filmOrSoon(f: GuideClip | null, id: string, title: string): GuideClip {
   return f ?? { id, title, label: title, src: null, poster: null, captions: null, durationSeconds: 0 };
 }
 
 // Duane's audio guidance (D01–D02): MP3s in the same folder as the films,
 // named <file>-<version>.mp3. `file` is null until recorded; the page then
-// shows "Audio coming soon".
+// plays the link pasted for its slot in Console → Films, or isn't shown.
 export type GuideAudioClip = { id: string; title: string; label: string; src: string | null };
-function audio(s: { file: string | null; version?: string; title: string; label: string }): GuideAudioClip {
+function audio(s: { file: string | null; slot: string; version?: string; title: string; label: string }): GuideAudioClip {
   const src = s.file && VIDEO_BASE ? `${VIDEO_BASE}/${s.file}-${s.version ?? "v1"}.mp3` : null;
-  return { id: s.file ?? s.title, title: s.title, label: s.label, src };
+  return { id: s.slot, title: s.title, label: s.label, src };
 }
 export const AUDIO = {
-  D01: audio({ file: null, title: "Your daily intention", label: "Daily intention · a few minutes with Duane" }),
-  D02: audio({ file: null, title: "Evening reflection", label: "Evening reflection · a few minutes with Duane" }),
+  D01: audio({ file: null, slot: "D01", title: "Your daily intention", label: "Daily intention · a few minutes with Duane" }),
+  D02: audio({ file: null, slot: "D02", title: "Evening reflection", label: "Evening reflection · a few minutes with Duane" }),
 } satisfies Record<string, GuideAudioClip>;
 
 // Short labels for the Alignment Map, where full area names don't fit.

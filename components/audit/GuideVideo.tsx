@@ -1,39 +1,41 @@
-import type { GuideClip } from "@/lib/audit-guides";
+"use client";
 
-// A video slot for Duane's guidance (media comes from lib/audit-guides.ts).
-// Never autoplays; controls stay visible so people can pause or replay.
-// preload="none" means nothing downloads until someone presses play.
-// Captions are a separate English track, switchable with the CC control.
-export function GuideVideo({ clip, caption, soon = "Video coming soon" }: { clip: GuideClip; caption?: React.ReactNode; soon?: string }) {
+import type { GuideClip } from "@/lib/audit-guides";
+import { useFilmSource } from "@/components/films/FilmLinks";
+
+// A video slot for Duane's guidance (media comes from lib/audit-guides.ts,
+// or a link pasted in Console → Films). Never autoplays; controls stay
+// visible so people can pause or replay. preload="none" means nothing
+// downloads until someone presses play. Captions are a separate English
+// track, switchable with the CC control. A film that isn't there yet shows
+// nothing at all (Duane, 11 Nov 2026: no "coming soon" on the site).
+export function GuideVideo({ clip, caption, className }: { clip: GuideClip; caption?: React.ReactNode; className?: string }) {
+  const source = useFilmSource(clip);
+  if (!source) return null;
   return (
-    <figure className="au-video">
+    <figure className={className ? `au-video ${className}` : "au-video"}>
       <div className="au-video-frame">
-        {clip.src ? (
+        {source.kind === "embed" ? (
+          <iframe
+            src={source.src}
+            title={`${clip.title}: video from Duane`}
+            loading="lazy"
+            allow="encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="au-video-embed"
+          />
+        ) : (
           <video
-            src={clip.src}
+            src={source.src}
             poster={clip.poster ?? undefined}
             controls
             preload="none"
             playsInline
             aria-label={`${clip.title} — video from Duane`}
           >
-            {clip.captions ? <track kind="captions" src={clip.captions} srcLang="en" label="English" /> : null}
+            {clip.src && clip.captions ? <track kind="captions" src={clip.captions} srcLang="en" label="English" /> : null}
           </video>
-        ) : (
-          <>
-            {clip.poster ? (
-              // Decorative still; the label below names the video.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={clip.poster} alt="" className="au-video-poster" />
-            ) : null}
-            <div className="au-video-soon">
-              <span className="au-play" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M5 3.5v9l7.5-4.5z" fill="currentColor" /></svg>
-              </span>
-              <span>{soon}</span>
-            </div>
-            <div className="au-video-label">{clip.label}</div>
-          </>
         )}
       </div>
       {caption ? <figcaption className="au-video-caption">{caption}</figcaption> : null}

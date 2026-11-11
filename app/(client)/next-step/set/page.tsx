@@ -10,6 +10,7 @@ import { NsTrail } from "@/components/next-step/NsMap";
 import { SavePlan } from "../SavePlan";
 import { NsFilm, NEXT_STEP_FILMS } from "../NsFilm";
 import { ShareWithCoach } from "./ShareWithCoach";
+import { whenLabel } from "@/lib/daily-log";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const short = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Europe/London" });
@@ -66,7 +67,7 @@ export default async function NextStepSetPage({ searchParams }: { searchParams: 
             <IconBadge name="target" />
             <p className="au-detail-k">First move</p>
             <p className="ns-strong">{cap(first.body)}</p>
-            <p className="au-small">{first.when_text ? `${first.when_text} · ` : ""}it&rsquo;s in Today on My Space</p>
+            <p className="au-small">{first.when_text?.trim() ? `${whenLabel(first.when_text)} · ` : ""}it&rsquo;s in Today on My Space</p>
           </div>
         ) : null}
         <div className="au-sum-card ns-set-card">

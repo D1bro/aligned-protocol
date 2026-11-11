@@ -9,6 +9,7 @@ import {
 } from "@/lib/alignment";
 import { AUDIO } from "@/lib/audit-guides";
 import { PracticeAudio } from "./PracticeAudio";
+import { useFilmSource } from "@/components/films/FilmLinks";
 
 // Daily Alignment: Today, Weekly review, Privacy & history. Nothing is sent
 // to the server until "Save privately" (or "Save review privately"); drafts
@@ -83,6 +84,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
   const id = useId();
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const [view, setView] = useState<View>(initialView);
+  const morningAudio = useFilmSource(AUDIO.D01);
   const [date, setDate] = useState("");
   const [today, setToday] = useState("");
   const [timezone, setTimezone] = useState("UTC");
@@ -357,7 +359,7 @@ export function AlignmentWorkspace({ service, initialDate, initialTimezone, init
                   <input type="checkbox" checked={daily.presence_done === true} disabled={disabled} onChange={(e) => updateDay({ presence_done: e.target.checked ? true : null })} />
                   <span>
                     <b>Done. I took a moment to arrive.</b>
-                    <span className="alignment-small">{AUDIO.D01.src ? "Ticks itself when the audio finishes, or tick it yourself." : "Tick it when you have."}</span>
+                    <span className="alignment-small">{morningAudio ? "Ticks itself when the audio finishes, or tick it yourself." : "Tick it when you have."}</span>
                   </span>
                 </label>
               </section>

@@ -315,6 +315,7 @@ function countFields(target: unknown, moveIndex: unknown, ids: string[]) {
 export async function takeOnNextStep(planId: string): Promise<Result> {
   const ctx = await getBuildContext(planId);
   if (!ctx?.goal || !ctx.moves.length || !ctx.goal.success_criteria?.trim()) return { ok: false, message: "Finish the five screens first." };
+  if (!ctx.plan.life_vision?.trim()) return { ok: false, message: "Describe your destination first: what this area would look like at a ten." };
   const { supabase } = await me();
   // Set again before its first check-in (a rewrite, or an old My Plan goal
   // made into a Next Step): it starts today, so the first check-in is a week

@@ -78,7 +78,7 @@ export function looksLikeSeveral(step: string): boolean {
   const s = step.trim();
   if (!s) return false;
   if (s.split(/\s+/).length > 22) return true;
-  return /\b(and|each|every one of|all of|as well as)\b/i.test(s) || /;/.test(s);
+  return /\b(and|each of|every one of|all of|as well as)\b/i.test(s) || /;/.test(s);
 }
 
 // Their "why", as one line to keep in view: the first sentence, kept short.

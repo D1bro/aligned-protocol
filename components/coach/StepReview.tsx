@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { runStepReviewRead, saveStepReview, sendStepReview, unsendStepReview, type StepReview as Review } from "@/lib/actions/step-review";
 import { PART_LABEL, reviewFlags, type ReviewContent, type ReviewFlag, type ReviewPart } from "@/lib/next-step-review";
-import { daysLabel, moveDays } from "@/lib/daily-log";
+import { moveDays, whenLabel } from "@/lib/daily-log";
+import { WhenPicker } from "@/components/next-step/WhenPicker";
 
 type Current = {
   title: string;
@@ -113,7 +114,7 @@ export function StepReview({
     done: current.done?.trim() ? <>&ldquo;{current.done.trim()}&rdquo;{current.countTarget ? ` (counted: ${current.countTarget})` : ""}</> : <em>Not written</em>,
     aim: current.start && current.aim ? `${current.start} → ${current.aim}` : current.aim ? `Aiming for ${current.aim}` : <em>Not set</em>,
     moves: current.moves.length ? (
-      <ul className="sr-moves">{current.moves.map((m) => <li key={m.id}>{m.body}{m.when_text ? <span> · {m.when_text}</span> : null}</li>)}</ul>
+      <ul className="sr-moves">{current.moves.map((m) => <li key={m.id}>{m.body}{m.when_text?.trim() ? <span> · {whenLabel(m.when_text)}</span> : null}</li>)}</ul>
     ) : <em>None yet</em>,
     way: current.inTheWay?.trim() ? <>&ldquo;{current.inTheWay.trim()}&rdquo;</> : <em>Not written</em>,
   };
@@ -144,13 +145,12 @@ export function StepReview({
     moves: (
       <div className="sr-stack">
         {moves.map((m, i) => {
-          const days = moveDays(m.when);
           return (
             <div key={m.key} className="sr-move">
               <input type="text" aria-label={`Move ${i + 1}`} value={m.body} maxLength={200} disabled={disabled} onChange={(e) => setMove(m.key, "body", e.target.value)} placeholder="One thing" />
-              <input type="text" aria-label={`When, move ${i + 1}`} value={m.when} maxLength={120} disabled={disabled} onChange={(e) => setMove(m.key, "when", e.target.value)} placeholder="Monday and Thursday" />
               <button type="button" className="ns-remove" aria-label={`Remove move ${i + 1}`} disabled={disabled} onClick={() => setMoves((ms) => ms.filter((x) => x.key !== m.key))}>✕</button>
-              {m.body.trim() ? <span className="sr-when">{days.length ? `In Today: ${daysLabel(days)}` : "Once"}</span> : null}
+              <WhenPicker value={m.when} onChange={(v) => setMove(m.key, "when", v)} label={`move ${i + 1}`} disabled={disabled} />
+              {m.body.trim() ? <span className="sr-when">{moveDays(m.when).length ? `In Today: ${whenLabel(m.when)}` : m.when.trim() ? `Once: ${m.when.trim()}` : "Once"}</span> : null}
             </div>
           );
         })}
