@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MUSINGS, TOOLS, clipFor } from "@/lib/learn-content";
+import { SHOWN_MUSINGS, TOOLS, clipFor } from "@/lib/learn-content";
 import { GuideVideo } from "@/components/audit/GuideVideo";
 
 export default async function MusingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const musing = MUSINGS.find((m) => m.slug === slug);
+  const musing = SHOWN_MUSINGS.find((m) => m.slug === slug);
   if (!musing) notFound();
   const tool = musing.tool ? TOOLS.find((t) => t.slug === musing.tool) : null;
 

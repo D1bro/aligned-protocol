@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { TEN_AREAS, TEN_AREAS_INTRO, TEN_AREAS_OVERLAPS } from "@/lib/learn-content";
+import { notFound } from "next/navigation";
+import { TEN_AREAS, TEN_AREAS_APPROVED, TEN_AREAS_INTRO, TEN_AREAS_OVERLAPS, TEN_AREAS_SHOWN } from "@/lib/learn-content";
 
 // Optional orientation: what the ten areas are, and how they overlap.
 export default function TenAreasPage() {
+  if (!TEN_AREAS_SHOWN) notFound();
   return (
     <>
       <div className="topbar">
@@ -12,7 +14,7 @@ export default function TenAreasPage() {
       <article className="page au-page learn-lesson">
         <div className="eyebrow"><span className="eydot" /> Optional guide</div>
         <h1 className="au-latest-h">Understanding your ten areas</h1>
-        <p className="draft-tag">Draft</p>
+        {TEN_AREAS_APPROVED ? null : <p className="draft-tag">Draft</p>}
         <div className="learn-body">
           {TEN_AREAS_INTRO.map((p, i) => <p key={i}>{p}</p>)}
         </div>

@@ -100,7 +100,7 @@ export async function TodayCard({
               </li>
             ))}
           </ul>
-          <Link href="/alignment" className="btn btn-p">{today?.saved ? "Continue today →" : "Open today →"}</Link>
+          <Link href="/alignment" className="btn btn-g">{today?.saved ? "Continue today →" : "Open today →"}</Link>
         </div>
       ) : null}
     </section>

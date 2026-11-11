@@ -5,7 +5,7 @@ import { getMainGoal } from "@/lib/actions/goals";
 import { getAllGoals, getReviews } from "@/lib/actions/checkins";
 import { getIdentityStatement } from "@/lib/actions/preferences";
 import { getLessonProgress } from "@/lib/actions/learn";
-import { PATHS } from "@/lib/learn-content";
+import { SHOWN_PATHS } from "@/lib/learn-content";
 import { getCurrentProfile } from "@/lib/session";
 import { getMyDetails } from "@/lib/actions/details";
 import { greetingName } from "@/lib/details";
@@ -227,10 +227,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           ? { href: "/next-step?choose=1", label: "Set my next Next Step →" }
           : { href: "/next-step", label: "Set my Next Step →" };
 
-  const path = PATHS[0];
+  // The Academy card, once there are lessons Duane has approved.
+  const path = SHOWN_PATHS[0] ?? null;
   const doneSlugs = new Set(lessons.filter((l) => l.completed_at).map((l) => l.lesson_slug));
-  const lessonsDone = path.lessons.filter((l) => doneSlugs.has(l.slug)).length;
-  const nextLesson = path.lessons.find((l) => !doneSlugs.has(l.slug)) ?? null;
+  const lessonsDone = path ? path.lessons.filter((l) => doneSlugs.has(l.slug)).length : 0;
+  const nextLesson = path?.lessons.find((l) => !doneSlugs.has(l.slug)) ?? null;
 
   // The suggestion when no area is chosen yet: the lowest score (first on a tie).
   const lowestScore = scores.length ? Math.min(...scores) : null;
@@ -249,11 +250,58 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const lastYm = addMonths(thisYm, -1);
   const askLastMonth = reflections.available && Number(todayYmd.slice(8, 10)) <= 10 && !reflections.months[lastYm];
   const showJourney = MY_JOURNEY_SHOWN && (planned || audits.length > 1);
-  // The small cards after the first row share a row with the Alignment Map:
-  // the journal (free for everyone), and before a plan, today's practice.
-  const beforeMap = planned ? 1 : (practice ? 1 : 0) + 1 + (showJourney ? 1 : 0);
+  // Before a plan, the small cards (today's practice, the journal) share a
+  // row with the Alignment Map. Once it's set, the map sits beside the next
+  // check-in and the optional cards (this month, the journal) share the last row.
+  const beforeMap = (practice ? 1 : 0) + 1 + (showJourney ? 1 : 0);
   const mapSpan = beforeMap === 1 ? 4 : 6;
-  const smallSpan = !planned && beforeMap === 2 ? 3 : 2;
+  const smallSpan = planned ? (showJourney ? 2 : 3) : beforeMap === 2 ? 3 : 2;
+
+  // The Alignment Map, in brief: fifth on My Space once the plan is set
+  // (Duane's brief, 11 Nov 2026), last before it.
+  // "Welcome back" only once they've been back: a check-in done, a Next Step
+  // taken, a second audit or a coaching session. Never on the first visit.
+  const returning = !welcome && ((reviews?.all.length ?? 0) > 0 || goalsDone > 0 || audits.length > 1 || coaching.sessions.length > 0);
+
+  const alignmentMap = (span: 2 | 3 | 4 | 6) => (
+      <Cell span={span}>
+        <section className="pf-tile ms-tile ms-map" aria-labelledby="pf-map-h">
+          <div className="ms-map-text">
+            <div className="ms-head">
+              <Icon name="compass" size={18} />
+              <h2 id="pf-map-h">Your Alignment Map</h2>
+            </div>
+            <div className="profile-score">
+              <ScoreRing score={audit.total_score ?? 0} size={96} strokeWidth={8} labelSize={26} denomLabel="/100" />
+              <dl className="profile-score-facts">
+                <dt className="eyebrow">Whole-life score</dt>
+                <dd>Latest audit <b>{formatDate(audit.completed_at)}</b></dd>
+                <dd>Strongest <b>{strongest.map((s) => s.name).join(" · ")}</b></dd>
+                <dd>Next audit <b>{auditDays <= 0 ? "now" : `around ${formatDate(auditDue)}`}</b></dd>
+              </dl>
+            </div>
+            {identity.available ? <IdentityStatement initial={identity.text} /> : null}
+            <div className="profile-links">
+              <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
+              <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
+            </div>
+          </div>
+          <figure className="profile-top-map">
+            <div className="au-chart">
+              <LifeMap
+                scores={scores}
+                names={areas.map((a) => a.name)}
+                labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+                highlightIndex={areaIdx === -1 ? null : areaIdx}
+              />
+            </div>
+            <figcaption>
+              Self-reported.{area ? ` Highlighted: ${area.name}, the area you’re working on.` : ""}
+            </figcaption>
+          </figure>
+        </section>
+      </Cell>
+  );
 
   return (
     <div className="page au-page profile-v2">
@@ -272,7 +320,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <div className="eyebrow"><span className="eydot" /> {todayLabel(details.timezone)}</div>
           {editDetails}
         </div>
-        <h1 id="profile-top-h" className="au-latest-h pf-h">{welcome === "saved" ? (firstName ? <>Welcome, <em>{firstName}.</em></> : <><em>Welcome.</em></>) : firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>}</h1>
+        <h1 id="profile-top-h" className="au-latest-h pf-h">{returning ? (firstName ? <>Welcome back, <em>{firstName}.</em></> : <>Welcome <em>back.</em></>) : firstName ? <>Welcome, <em>{firstName}.</em></> : <><em>Welcome.</em></>}</h1>
         <p className="dusk-sub">A space to reflect, plan and take meaningful action towards the life you want.</p>
       </DuskHero>
 
@@ -292,7 +340,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 </div>
                 {why ? <p className="next-action-sub">Why it matters: <em className="pf-why">&ldquo;{why}&rdquo;</em></p> : null}
                 <div className="next-action-cta">
-                  <Link href="/next-step" className="btn btn-g">See my Next Step →</Link>
+                  {/* The one primary action: the Next Step, unless a check-in is due. */}
+                  <Link href="/next-step" className={next.due ? "btn btn-g" : "btn btn-p"}>See my Next Step →</Link>
                 </div>
                 {pendingReviews.length ? (
                   <p className="next-action-note">From your session: your Next Step, sharpened. <Link href="/next-step">Have a look and keep it</Link>.</p>
@@ -306,39 +355,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
               </section>
             </Cell>
 
-            {/* 2. This month: the goal's measured progress and the monthly review. */}
-            <Cell span={2}>
-              <section className="pf-tile ms-tile" aria-labelledby="ms-month-h">
-                <div className="ms-head">
-                  <Icon name="calendar" size={18} />
-                  <h2 id="ms-month-h">This Month</h2>
-                  <span className="ms-head-end">{monthLabel(details.timezone)}</span>
-                </div>
-                {intention.available ? (
-                  <MonthIntention
-                    initial={intention.intention?.intention ?? null}
-                    suggestions={intentionSuggestions([{ area: area.name, title: goal?.goal_title ?? null }])}
-                    goalId={goal?.id ?? null}
-                  />
-                ) : null}
-                {baseline !== null && latestScore !== null && target !== null ? (
-                  <dl className="ms-facts">
-                    <div><dt>Started</dt><dd>{baseline}/10</dd></div>
-                    <div><dt>Now</dt><dd>{latestScore}/10</dd></div>
-                    <div><dt>Aiming for</dt><dd>{target}/10</dd></div>
-                  </dl>
-                ) : null}
-                <p className="pf-sub">When your Next Step is taken, you&rsquo;ll score {area.name} again.</p>
-                {oneOffs.length ? <p className="ms-note">{oneOffs.filter((m) => m.done_at).length} of {oneOffs.length} one-off move{oneOffs.length === 1 ? "" : "s"} done</p> : null}
-              </section>
-            </Cell>
 
-            {/* 3. Today: the plan's action (and the daily practice for members). */}
+            {/* 2–3. Today: the Next Step's moves due today (and the daily practice for members). */}
             <Cell span={2}>
               <TodayCard action={commitment} actionWhen={commitmentWhen} moveId={todayMoveId} movesDone={allMovesDone} fallback={fallback} coachSteps={goalSteps} practice={practice} goalId={goal?.id ?? null} goals={activeGoals} week={week} log={todayLog} />
             </Cell>
 
-            {/* 4. This week: the weekly review and the run of reviews. */}
+            {/* 4. The next check-in, and the run of them. */}
             <Cell span={2}>
               <section className="pf-tile ms-tile" aria-labelledby="ms-week-h">
                 <div className="ms-head">
@@ -377,6 +400,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 )}
               </section>
             </Cell>
+
+            {/* 5. The Alignment Map. */}
+            {alignmentMap(4)}
           </>
         ) : (
           <Cell span={6}>
@@ -427,6 +453,35 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         />
         {hasMomentum(access.tier) ? <MomentumCard details={await getMomentumDetails()} /> : null}
 
+        {/* Optional: this month's intention and the measured progress. */}
+        {planned && area ? (
+            <Cell span={smallSpan}>
+              <section className="pf-tile ms-tile" aria-labelledby="ms-month-h">
+                <div className="ms-head">
+                  <Icon name="calendar" size={18} />
+                  <h2 id="ms-month-h">This Month</h2>
+                  <span className="ms-head-end">{monthLabel(details.timezone)}</span>
+                </div>
+                {intention.available ? (
+                  <MonthIntention
+                    initial={intention.intention?.intention ?? null}
+                    suggestions={intentionSuggestions([{ area: area.name, title: goal?.goal_title ?? null }])}
+                    goalId={goal?.id ?? null}
+                  />
+                ) : null}
+                {baseline !== null && latestScore !== null && target !== null ? (
+                  <dl className="ms-facts">
+                    <div><dt>Started</dt><dd>{baseline}/10</dd></div>
+                    <div><dt>Now</dt><dd>{latestScore}/10</dd></div>
+                    <div><dt>Aiming for</dt><dd>{target}/10</dd></div>
+                  </dl>
+                ) : null}
+                <p className="pf-sub">When your Next Step is taken, you&rsquo;ll score {area.name} again.</p>
+                {oneOffs.length ? <p className="ms-note">{oneOffs.filter((m) => m.done_at).length} of {oneOffs.length} one-off move{oneOffs.length === 1 ? "" : "s"} done</p> : null}
+              </section>
+            </Cell>
+        ) : null}
+
         {/* Members before their plan is set still have today's practice. */}
         {!planned && practice ? (
           <Cell span={smallSpan}><TodayCard action="" actionWhen={null} fallback={null} coachSteps={[]} practice goalId={null} goals={activeGoals} week={week} /></Cell>
@@ -460,71 +515,38 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         {/* 6. The journal: free for every member (11 Nov 2026). */}
         <Cell span={smallSpan}><JournalCard /></Cell>
 
-        {/* 7. The Alignment Map, in brief. */}
-        <Cell span={mapSpan}>
-          <section className="pf-tile ms-tile ms-map" aria-labelledby="pf-map-h">
-            <div className="ms-map-text">
-              <div className="ms-head">
-                <Icon name="compass" size={18} />
-                <h2 id="pf-map-h">Your Alignment Map</h2>
-              </div>
-              <div className="profile-score">
-                <ScoreRing score={audit.total_score ?? 0} size={96} strokeWidth={8} labelSize={26} denomLabel="/100" />
-                <dl className="profile-score-facts">
-                  <dt className="eyebrow">Whole-life score</dt>
-                  <dd>Latest audit <b>{formatDate(audit.completed_at)}</b></dd>
-                  <dd>Strongest <b>{strongest.map((s) => s.name).join(" · ")}</b></dd>
-                  <dd>Next audit <b>{auditDays <= 0 ? "now" : `around ${formatDate(auditDue)}`}</b></dd>
-                </dl>
-              </div>
-              {identity.available ? <IdentityStatement initial={identity.text} /> : null}
-              <div className="profile-links">
-                <Link href="/audit/results" className="btn btn-g">View my full snapshot</Link>
-                <Link href="/audit" className="au-text-link">{auditDays <= 0 ? "Retake the audit" : "Revisit the audit"}</Link>
-              </div>
-            </div>
-            <figure className="profile-top-map">
-              <div className="au-chart">
-                <LifeMap
-                  scores={scores}
-                  names={areas.map((a) => a.name)}
-                  labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-                  highlightIndex={areaIdx === -1 ? null : areaIdx}
-                />
-              </div>
-              <figcaption>
-                Self-reported.{area ? ` Highlighted: ${area.name}, the area you’re working on.` : ""}
-              </figcaption>
-            </figure>
-          </section>
-        </Cell>
+        {/* Before the plan: the Alignment Map last. */}
+        {planned ? null : alignmentMap(mapSpan)}
+
       </div>
 
       {offerDetails ? <DetailsPrompt /> : null}
 
       {/* Further down: learning, and the support on offer. */}
       <div className="pf-more">
-        <section className="profile-card" aria-labelledby="learning-h">
-          <h2 id="learning-h"><IconBadge name="book" size={15} /> {nextLesson ? "Continue learning" : "Academy"}</h2>
-          <p className="profile-card-k">{path.title}</p>
-          {nextLesson ? (
-            <Link href={`/learn/${path.slug}/${nextLesson.slug}`} className="profile-lesson">
-              <b>{nextLesson.title}</b>
-              <span>Lesson {path.lessons.indexOf(nextLesson) + 1} · about {nextLesson.minutes} min</span>
-            </Link>
-          ) : (
-            <p className="profile-lesson-done"><span aria-hidden="true">✓</span> Path complete</p>
-          )}
-          <div className="learn-bar" role="img" aria-label={`${lessonsDone} of ${path.lessons.length} lessons complete`}>
-            <span style={{ width: `${(lessonsDone / path.lessons.length) * 100}%` }} />
-          </div>
-          <p className="profile-card-foot">
-            {lessonsDone} of {path.lessons.length} lessons complete · <Link href="/learn" className="au-text-link">Academy</Link>
-          </p>
-        </section>
+        {path ? (
+          <section className="profile-card" aria-labelledby="learning-h">
+            <h2 id="learning-h"><IconBadge name="book" size={15} /> {nextLesson ? "Continue learning" : "Academy"}</h2>
+            <p className="profile-card-k">{path.title}</p>
+            {nextLesson ? (
+              <Link href={`/learn/${path.slug}/${nextLesson.slug}`} className="profile-lesson">
+                <b>{nextLesson.title}</b>
+                <span>Lesson {path.lessons.indexOf(nextLesson) + 1} · about {nextLesson.minutes} min</span>
+              </Link>
+            ) : (
+              <p className="profile-lesson-done"><span aria-hidden="true">✓</span> Path complete</p>
+            )}
+            <div className="learn-bar" role="img" aria-label={`${lessonsDone} of ${path.lessons.length} lessons complete`}>
+              <span style={{ width: `${(lessonsDone / path.lessons.length) * 100}%` }} />
+            </div>
+            <p className="profile-card-foot">
+              {lessonsDone} of {path.lessons.length} lessons complete · <Link href="/learn" className="au-text-link">Academy</Link>
+            </p>
+          </section>
+        ) : null}
         <section className="profile-card" aria-labelledby="support-h">
           <h2 id="support-h"><IconBadge name="chat" size={15} /> Support with your plan</h2>
-          <p className="admin-card-sub">Optional: a daily practice, a live weekly hour with a small group, or six weeks with an Aligned Coach.</p>
+          <p className="admin-card-sub">Optional: a live weekly hour with a small group and the daily practice, or twelve weeks with an Aligned Coach.</p>
           <p className="profile-card-foot"><Link href="/offers" className="au-text-link">Compare the options →</Link></p>
         </section>
       </div>

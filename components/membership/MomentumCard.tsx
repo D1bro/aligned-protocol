@@ -10,7 +10,7 @@ export function MomentumCard({ details }: { details: MomentumDetails | null }) {
       {details?.momentum_note ? <p className="admin-card-sub">{details.momentum_note}</p> : null}
       <p className="admin-card-sub">One hour: arrive, review your week, reflect, adjust, and set your next commitment. Speak, use the chat, or keep it as quiet time.</p>
       {details?.momentum_join_url ? (
-        <a href={details.momentum_join_url} className="btn btn-p" target="_blank" rel="noopener noreferrer">Join the session →</a>
+        <a href={details.momentum_join_url} className="btn btn-g" target="_blank" rel="noopener noreferrer">Join the session →</a>
       ) : null}
     </section>
   );

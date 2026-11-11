@@ -443,14 +443,35 @@ export const TEN_AREAS_OVERLAPS = [
 ];
 
 export function findLesson(pathSlug: string, lessonSlug: string) {
-  const path = PATHS.find((p) => p.slug === pathSlug);
+  const path = SHOWN_PATHS.find((p) => p.slug === pathSlug);
   if (!path) return null;
   const i = path.lessons.findIndex((l) => l.slug === lessonSlug);
   if (i === -1) return null;
   return { path, lesson: path.lessons[i], index: i, next: path.lessons[i + 1] ?? null };
 }
 
-// A video slot for the GuideVideo player; shows "Video coming soon" until a clip is set.
+// What members see (Duane's brief, 11 Nov 2026: no draft labels on the live
+// site). On the live site, anything still marked draft is left out, and so
+// is a podcast episode with nothing to play yet; a section with nothing left
+// drops out of the menu. Previews and local show everything, marked Draft,
+// so Duane can read it there before approving it (draft: false). Server
+// only: VERCEL_ENV isn't available in the browser.
+export const SHOW_DRAFTS = process.env.VERCEL_ENV !== "production";
+const shown = (item: { draft: boolean }) => SHOW_DRAFTS || !item.draft;
+export const SHOWN_PATHS = PATHS.map((p) => ({ ...p, lessons: p.lessons.filter(shown) })).filter((p) => p.lessons.length > 0);
+export const SHOWN_MUSINGS = MUSINGS.filter(shown);
+export const SHOWN_EPISODES = EPISODES.filter((e) => SHOW_DRAFTS || (!e.draft && (e.audio || e.video)));
+// "Understanding your ten areas" is still Duane's to approve.
+export const TEN_AREAS_APPROVED = false;
+export const TEN_AREAS_SHOWN = TEN_AREAS_APPROVED || SHOW_DRAFTS;
+// Menu links to leave out because there's nothing in them yet.
+export const EMPTY_SECTIONS: string[] = [
+  ...(SHOWN_PATHS.length ? [] : ["/learn"]),
+  ...(SHOWN_MUSINGS.length ? [] : ["/musings"]),
+  ...(SHOWN_EPISODES.length ? [] : ["/podcast"]),
+];
+
+// A video slot for the GuideVideo player; shows nothing until a clip is set.
 export function clipFor(id: string, title: string, video: Video): GuideClip {
   return {
     id,

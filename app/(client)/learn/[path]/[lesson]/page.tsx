@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { isSet } from "@/lib/next-step";
 import { notFound } from "next/navigation";
-import { findLesson, clipFor, TOOLS } from "@/lib/learn-content";
+import { findLesson, clipFor, TOOLS, TEN_AREAS_SHOWN } from "@/lib/learn-content";
 import { getLessonProgress } from "@/lib/actions/learn";
 import { getMainGoal } from "@/lib/actions/goals";
 import { getCurrentProfile } from "@/lib/session";
@@ -71,9 +71,9 @@ export default async function LessonPage({ params }: { params: Promise<{ path: s
               <Link href="/next-step" className="au-text-link">Go to The Next Step</Link>
             </p>
           )}
-          {tool || lesson.guide ? (
+          {tool || (lesson.guide && TEN_AREAS_SHOWN) ? (
             <p className="learn-plan-more">
-              {lesson.guide ? (
+              {lesson.guide && TEN_AREAS_SHOWN ? (
                 <>Optional: <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link>. </>
               ) : null}
               {tool ? (

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EPISODES, clipFor } from "@/lib/learn-content";
+import { SHOWN_EPISODES, clipFor } from "@/lib/learn-content";
 import { GuideVideo } from "@/components/audit/GuideVideo";
 
 export default async function EpisodePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const episode = EPISODES.find((e) => e.slug === slug);
+  const episode = SHOWN_EPISODES.find((e) => e.slug === slug);
   if (!episode) notFound();
 
   return (

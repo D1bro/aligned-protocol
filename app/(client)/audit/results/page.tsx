@@ -12,6 +12,7 @@ import { ResultsBody } from "@/components/audit/ResultsBody";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { GuideVideo } from "@/components/audit/GuideVideo";
 import { SaveStart } from "@/components/audit/SaveStart";
+import { TEN_AREAS_SHOWN } from "@/lib/learn-content";
 
 export default async function ResultsPage() {
   const audit = await getLatestCompletedAudit();
@@ -102,8 +103,8 @@ export default async function ResultsPage() {
           </div>
           {isGuest ? null : (
             <p className="au-small">
-              Scores are self-reported.{" "}
-              <Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link> (optional guide)
+              Scores are self-reported.
+              {TEN_AREAS_SHOWN ? <>{" "}<Link href="/learn/ten-areas" className="au-text-link">Understanding your ten areas</Link> (optional guide)</> : null}
             </p>
           )}
         </div>
