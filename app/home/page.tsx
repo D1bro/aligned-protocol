@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { getLifeAreas, getInProgressAudit, getLatestCompletedAudit } from "@/lib/actions/audit";
-import { AREA_SHORT_NAMES, FILMS } from "@/lib/audit-guides";
+import { AREA_SHORT_NAMES, FILMS, INTRO_GUIDE } from "@/lib/audit-guides";
 import { MUSINGS, PATHS } from "@/lib/learn-content";
 import { ABOUT_DUANE, AFTER_REGISTERING, EXAMPLE, FAQS, HERO, HOW, SITE, WHO_SEES } from "@/lib/site-copy";
 import { LifeMap } from "@/components/audit/LifeMap";
@@ -56,6 +56,19 @@ export default async function HomePage() {
     musings: MUSINGS.filter((m) => !m.draft),
   };
 
+  const exampleMap = (
+    <figure className="home-hero-map">
+      <LifeMap
+        scores={EXAMPLE.scores}
+        names={areas.map((a) => a.name)}
+        labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
+        highlightIndex={EXAMPLE.focusIndex}
+        title="Fictional example Alignment Map"
+      />
+      <figcaption>Fictional example</figcaption>
+    </figure>
+  );
+
   return (
     <div className="site">
       <a href="#main" className="skip-link">Skip to content</a>
@@ -78,16 +91,13 @@ export default async function HomePage() {
               <p className="home-support">{HERO.support}</p>
               <p className="home-small">{HERO.small}</p>
             </div>
-            <figure className="home-hero-map">
-              <LifeMap
-                scores={EXAMPLE.scores}
-                names={areas.map((a) => a.name)}
-                labels={areas.map((a) => AREA_SHORT_NAMES[a.sort_order] ?? a.name)}
-                highlightIndex={EXAMPLE.focusIndex}
-                title="Fictional example Alignment Map"
-              />
-              <figcaption>Fictional example</figcaption>
-            </figure>
+            {/* Duane's intro to the audit (the same film as /audit). The
+                example map stands in only if the film can't be shown. */}
+            <div className="home-hero-film">
+              <Film clip={INTRO_GUIDE} caption="Duane explains the audit: what you’re answering, how to score it, and what you get at the end.">
+                {exampleMap}
+              </Film>
+            </div>
           </div>
         </section>
 
@@ -95,10 +105,15 @@ export default async function HomePage() {
         <section id="example" className="home-sec" aria-labelledby="example-h">
           <div className="home-in">
             <span className="home-tag">Fictional example</span>
-            <h2 id="example-h">From a snapshot to one practical action</h2>
-            <p className="home-lead">
-              An invented example to show how it works. It isn&rsquo;t a real person&rsquo;s result, and it isn&rsquo;t yours.
-            </p>
+            <div className="home-example-top">
+              <div>
+                <h2 id="example-h">From a snapshot to one practical action</h2>
+                <p className="home-lead">
+                  An invented example to show how it works. It isn&rsquo;t a real person&rsquo;s result, and it isn&rsquo;t yours.
+                </p>
+              </div>
+              {exampleMap}
+            </div>
             <ol className="home-flow">
               <li>
                 <span className="home-flow-k">The snapshot</span>
