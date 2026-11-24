@@ -40,3 +40,20 @@ test("each follow-up is logged once", async () => {
   assert.match((await errorOf(db, insert, [sam, `followup:${sam}:1`])) ?? "", /duplicate|unique/);
   assert.ok(await val(db, insert, [sam, `followup:${sam}:3`]));
 });
+
+// Migration 0038: Duane's wording and the pause switch, admins only.
+test("only admins can change the follow-up wording or pause them", async () => {
+  const admin = await makeUser(db, "admin@example.com", "admin", "Ada Admin");
+  await asUser(db, admin);
+  await db.query(`insert into public.followup_copy (key, subject, body, button) values ('1-new', 'Hello', 'Body', 'Go')`);
+  await db.query(`insert into public.followup_pauses default values`);
+  assert.match((await errorOf(db, `insert into public.followup_pauses default values`)) ?? "", /duplicate|unique/); // one open pause at a time
+  assert.match((await errorOf(db, `insert into public.followup_copy (key, subject, body, button) values ('2-new', 'x', 'y', 'z')`)) ?? "", /check/);
+  await asUser(db, sam);
+  assert.equal(Number(await val(db, `select count(*) from public.followup_copy`)), 0);
+  await db.query(`update public.followup_copy set subject = 'Hacked'`);
+  await db.query(`update public.followup_pauses set ended_at = now()`);
+  await asOwner(db);
+  assert.equal(await val(db, `select subject from public.followup_copy where key = '1-new'`), "Hello");
+  assert.equal(Number(await val(db, `select count(*) from public.followup_pauses where ended_at is null`)), 1);
+});

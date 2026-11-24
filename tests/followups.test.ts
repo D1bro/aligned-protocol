@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dueFollowup, followupEmail, FOLLOWUP_DAYS, type FollowupDay } from "../lib/followup-content.ts";
+import { areaNamed, copyProblem, DEFAULT_COPY, dueFollowup, followupEmail, FOLLOWUP_DAYS, pausedDaysSince, sequenceDays, type FollowupDay } from "../lib/followup-content.ts";
 import { renderText } from "../lib/email-layout.ts";
 import { signupAlert } from "../lib/alert-content.ts";
 
@@ -61,8 +61,9 @@ test("the emails never carry the area or the words of someone's Next Step", () =
   const noScore = followupEmail({ day: 1, hasStep: false, firstName: null, score: null, links });
   assert.equal(noScore.heading, "Hi,");
   const noScoreText = renderText({ heading: noScore.heading, blocks: noScore.blocks });
-  assert.doesNotMatch(noScoreText, /You scored|a number like that/);
-  assert.match(noScoreText, /scores like these can sting/);
+  // The sentence holding [score] is left out; nothing unfilled shows.
+  assert.doesNotMatch(noScoreText, /You scored|\[score\]|\[first name\]/);
+  assert.match(noScoreText, /^Hi,\n\nThank you for taking the Aligned Audit yesterday\.\n/);
 });
 
 test("the right buttons: set the step, open it, check in, or see coaching", () => {
@@ -83,4 +84,56 @@ test("the sign-up alert says whether they asked for follow-ups", () => {
   assert.match(t(true), /asked for your follow-up emails/);
   assert.match(t(false), /didn’t ask for follow-up emails/);
   assert.doesNotMatch(t(undefined), /follow-up/);
+});
+
+test("Duane's saved wording is used instead of the original, with [first name] and [score] filled in", () => {
+  const copy = { subject: "A note for [first name]", preheader: "", body: "Hi again.\n\nYou scored [score]. Well done, [first name].", button: "Go on then" };
+  const m = followupEmail({ day: 3, hasStep: true, firstName: "Sam Fictional", score: 52, links, copy });
+  assert.equal(m.subject, "A note for Sam");
+  const t = renderText({ heading: m.heading, blocks: m.blocks });
+  assert.match(t, /Hi again\.\n\nYou scored 52\. Well done, Sam\./);
+  assert.match(t, /Go on then: https:\/\/x\.test\/next-step/); // the button still goes where it always does
+  assert.equal(m.preheader, "");
+});
+
+test("an edit that can't go out is refused, and naming an area is flagged", () => {
+  const ok = DEFAULT_COPY["1-new"];
+  assert.equal(copyProblem(ok), null);
+  assert.match(copyProblem({ ...ok, subject: " " }) ?? "", /subject/);
+  assert.match(copyProblem({ ...ok, button: "" }) ?? "", /button/);
+  assert.match(copyProblem({ ...ok, body: "Hello [area], how is it?" }) ?? "", /\[area\] isn’t something/);
+  assert.match(copyProblem({ ...ok, body: Array(9).fill("A paragraph.").join("\n\n") }) ?? "", /Eight paragraphs/);
+  for (const c of Object.values(DEFAULT_COPY)) {
+    assert.equal(copyProblem(c), null);
+    assert.equal(areaNamed(c), null); // the originals name no area
+  }
+  assert.equal(areaNamed({ ...ok, body: "How are things with Money & Stability?" }), "Money & Stability");
+});
+
+test("paused days don't count, so nobody loses their place", () => {
+  // Audit on 23 Nov; paused 24–27 Nov (3 days): day 1 moves to 27 Nov.
+  const pauses = [{ from: "2026-11-24", to: "2026-11-27" }];
+  assert.equal(pausedDaysSince("2026-11-23", "2026-11-26", [{ from: "2026-11-24", to: null }]), 2);
+  assert.equal(pausedDaysSince("2026-11-23", "2026-11-30", pauses), 3);
+  assert.equal(pausedDaysSince("2026-11-28", "2026-11-30", pauses), 0); // started after the pause
+  const d = (today: string) => dueFollowup({ ...base, today, pausedDays: pausedDaysSince(base.start, today, pauses) });
+  assert.equal(d("2026-11-27"), 1);
+  assert.equal(d("2026-11-29"), 3);
+});
+
+test("the console shows each person's four emails: sent, next, due, skipped or failed", () => {
+  const states = sequenceDays({
+    start: "2026-11-23",
+    today: "2026-11-30",
+    pausedDays: 0,
+    sent: { 1: { status: "sent", date: "2026-11-24", reason: null }, 3: { status: "failed", date: "2026-11-26", reason: "resend 403" } },
+    hasStep: false,
+    checkinEmailOn: false,
+  });
+  assert.deepEqual(states.map((s) => s.state), ["sent", "failed", "next", "due"]);
+  assert.equal(states[3].state === "due" && states[3].date, "2026-12-03");
+  const covered = sequenceDays({ start: "2026-11-23", today: "2026-11-25", pausedDays: 0, sent: {}, hasStep: true, checkinEmailOn: true });
+  assert.deepEqual(covered.map((s) => s.state), ["next", "due", "skipped", "due"]); // day 7: their check-in email covers it
+  const late = sequenceDays({ start: "2026-11-23", today: "2026-11-27", pausedDays: 0, sent: {}, hasStep: false, checkinEmailOn: false });
+  assert.deepEqual(late.map((s) => s.state), ["skipped", "next", "due", "due"]); // day 1 missed; day 3 goes next
 });
