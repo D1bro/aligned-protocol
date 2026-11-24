@@ -4,7 +4,7 @@ import { COACHING_ADDRESS, coachingFrom, sendEmail, SITE_URL } from "@/lib/email
 import { renderEmail, renderText } from "@/lib/email-layout";
 import { isSet } from "@/lib/next-step";
 import { localDate, toLocalParts } from "@/lib/time";
-import { dueFollowup, followupEmail, SEND_HOUR_LONDON } from "@/lib/followup-content";
+import { dueFollowup, FOLLOWUP_DAYS, followupEmail, SEND_HOUR_LONDON } from "@/lib/followup-content";
 
 // The follow-up emails after the audit, run each morning by
 // /api/cron/followups. Only for people who asked for them (profiles.
@@ -107,4 +107,55 @@ export async function sendFollowups(admin: Admin, now: Date = new Date()) {
     else skip(result.reason);
   }
   return { checked: candidates.length, sent, skipped };
+}
+
+// Site health → "Send me the follow-up emails": all eight versions, to one
+// address, exactly as a member would get them, so Duane can read them in
+// his own inbox. Nothing is logged against any member. The subject says
+// which one it is; the stop link in a preview does nothing.
+export async function sendFollowupPreviews(to: string, firstName: string | null): Promise<{ sent: number; failed: string | null }> {
+  let sent = 0;
+  let n = 0;
+  let failed: string | null = null;
+  for (const day of FOLLOWUP_DAYS) {
+    for (const hasStep of [false, true]) {
+      n += 1;
+      const m = followupEmail({
+        day,
+        firstName,
+        score: 45,
+        hasStep,
+        links: {
+          nextStep: `${SITE_URL}/next-step`,
+          checkIn: `${SITE_URL}/next-step`,
+          coaching: `${SITE_URL}/coaching`,
+          stop: `${SITE_URL}/api/reminders/unsubscribe?t=preview&list=followups`,
+        },
+      });
+      const subject = `[Preview ${n}/8 · day ${day} · ${hasStep ? "Next Step set" : "no Next Step yet"}] ${m.subject}`;
+      const result = await sendEmail({
+        to,
+        subject,
+        text: renderText({ heading: m.heading, blocks: m.blocks, signature: m.signature }),
+        html: renderEmail({ preheader: m.preheader, heading: m.heading, blocks: m.blocks, signature: m.signature }),
+        from: coachingFrom(m.signature.name),
+        replyTo: COACHING_ADDRESS,
+      }).catch(() => ({ ok: false as const, reason: "couldn’t send" }));
+      if (result.ok) sent += 1;
+      else failed ??= result.reason;
+      // Resend allows a couple of emails a second.
+      await new Promise((r) => setTimeout(r, 600));
+    }
+  }
+  return { sent, failed };
+}
+
+// For Site health: is 0037 in, how many asked, how many have gone.
+export async function getFollowupHealth(admin: Admin): Promise<{ installed: boolean; asked: number; sent: number; lastSent: string | null }> {
+  const [asked, jobs] = await Promise.all([
+    admin.from("profiles").select("id", { count: "exact", head: true }).eq("followups_email", true),
+    admin.from("message_jobs").select("sent_at").eq("kind", "followup").eq("status", "sent").order("sent_at", { ascending: false }),
+  ]);
+  if (asked.error) return { installed: false, asked: 0, sent: 0, lastSent: null };
+  return { installed: true, asked: asked.count ?? 0, sent: jobs.data?.length ?? 0, lastSent: (jobs.data?.[0]?.sent_at as string | null) ?? null };
 }
