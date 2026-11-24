@@ -44,7 +44,7 @@ export default function PrivacyPage() {
         <li><b>Your details (optional):</b> preferred name, phone number, town or city, country and time zone.</li>
         <li><b>Coaching (if you work with an Aligned Coach):</b> session dates and times, your coach&rsquo;s private notes, conversation transcripts (only with your agreement), session summaries, agreed actions, your updates and anything you choose to share before a session.</li>
         <li><b>Billing (if you pay for coaching):</b> billing name and postal address, invoices, payments, credit notes and refunds. Card payments are handled by Stripe; we never see or store your card number.</li>
-        <li><b>Emails:</b> a record of the emails we send you (for example invoices, session summaries and reminders) and whether you&rsquo;ve turned reminders off.</li>
+        <li><b>Emails:</b> a record of the emails we send you (for example invoices, session summaries and reminders) and whether you&rsquo;ve asked for reminders or follow-up emails, or turned them off.</li>
         <li><b>Coaching enquiries:</b> what you tell us when you ask about coaching.</li>
         <li><b>Site use:</b> anonymous visit counts (no cookies, nothing that identifies you) and standard security logs.</li>
       </ul>
@@ -56,6 +56,7 @@ export default function PrivacyPage() {
         <li><b>Transcripts</b> are only added when you&rsquo;ve agreed to the conversation being recorded or transcribed (consent).</li>
         <li><b>Invoices and payment records</b> — we must keep these for tax purposes (legal obligation).</li>
         <li><b>Service emails</b> — sign-in links, invoices, session summaries and reminders you&rsquo;ve set up (contract and legitimate interests). Reminders can be switched off from any reminder email or your plan.</li>
+        <li><b>Follow-up emails from Duane</b> — a few short emails after your audit, only if you ask for them when you make your account (consent). Every one has a link to stop them.</li>
         <li><b>Keeping the service secure and working</b> (legitimate interests).</li>
       </ul>
 

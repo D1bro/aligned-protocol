@@ -36,6 +36,7 @@ export function signupAlert(input: {
   email: string | null;
   route: SignupRoute;
   progress: Progress | null;
+  followups?: boolean; // ticked "Send me a few short emails from Duane"
   recordUrl: string;
 }): AlertMessage {
   const person = who(input.name, input.email);
@@ -43,6 +44,9 @@ export function signupAlert(input: {
   const blocks: Block[] = [
     { box: [`Name: ${input.name?.trim() || "—"}`, `Email: ${input.email?.trim() || "—"}`] },
     { p: ROUTE[input.route] },
+    ...(input.followups != null
+      ? [{ p: input.followups ? "They asked for your follow-up emails: the first goes the morning after their audit." : "They didn’t ask for follow-up emails, so none will go. A personal note from you is the follow-up." } as Block]
+      : []),
     { box: progressLines(input.progress) },
     { button: { href: input.recordUrl, label: "Open their record" } },
     { small: "They may still need to confirm their email address before they can sign in." },
