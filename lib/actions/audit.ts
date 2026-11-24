@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { alertAuditDone } from "@/lib/alerts";
 import { createClient } from "@/lib/supabase/server";
 
 export type LifeArea = {
@@ -176,6 +178,13 @@ export async function completeAudit(auditId: string): Promise<{ ok: false; messa
     .update({ status: "completed", total_score: total, completed_at: new Date().toISOString() })
     .eq("id", auditId);
   if (error) return { ok: false, message: "Couldn’t finish — check your connection and try again." };
+
+  // Tell Duane when someone with an account finishes. A guest's audit comes
+  // with their sign-up alert instead (until then there's no one to contact).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user && !user.is_anonymous) after(() => alertAuditDone(user.id));
 
   redirect("/audit/results");
 }

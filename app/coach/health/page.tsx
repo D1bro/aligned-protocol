@@ -2,6 +2,8 @@ import { requireAdmin, getMetrics, getReminderStatus } from "@/lib/actions/admin
 import { createClient } from "@/lib/supabase/server";
 import { EPISODES, MUSINGS, PATHS } from "@/lib/learn-content";
 import { formatDate } from "@/lib/audit-schedule";
+import { getAlertHealth } from "@/lib/alerts";
+import { TestAlert } from "./TestAlert";
 
 type Check = { label: string; ok: boolean; detail: string };
 
@@ -9,18 +11,23 @@ type Check = { label: string; ok: boolean; detail: string };
 export default async function HealthPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const [metrics, reminders, sharing, mainGoalFn] = await Promise.all([
+  const [metrics, reminders, sharing, mainGoalFn, alerts] = await Promise.all([
     getMetrics(),
     getReminderStatus(),
     supabase.from("lesson_progress").select("private").limit(1),
     supabase.rpc("set_main_goal", { p_goal_id: "00000000-0000-0000-0000-000000000000" }),
+    getAlertHealth(),
   ]);
 
   const database: Check[] = [
     { label: "Lesson sharing (0009)", ok: !sharing.error, detail: sharing.error ? "Not found — run migration 0009" : "Installed" },
     { label: "Main goal switch (0010)", ok: !mainGoalFn.error, detail: mainGoalFn.error ? "Not found — run migration 0010" : "Installed" },
     { label: "Admin console (0011)", ok: !!metrics, detail: metrics ? "Installed" : "Not found — run migration 0011" },
+    { label: "Alert log (0036)", ok: alerts.installed, detail: alerts.installed ? "Installed" : "Not found — run migration 0036" },
   ];
+
+  // A failure newer than the last success is the one that matters.
+  const failingNow = !!alerts.lastFailed && (!alerts.lastSent || alerts.lastFailed.at > alerts.lastSent.at);
 
   const email: Check[] = [
     {
@@ -33,9 +40,17 @@ export default async function HealthPage() {
         : "Off — add RESEND_API_KEY, REMINDER_FROM and CRON_SECRET in Vercel",
     },
     {
-      label: "Coaching enquiry alerts",
-      ok: Boolean(process.env.ENQUIRY_NOTIFY && process.env.RESEND_API_KEY),
-      detail: process.env.ENQUIRY_NOTIFY ? (process.env.RESEND_API_KEY ? "On" : "Waiting for Resend") : "Off — optional: add ENQUIRY_NOTIFY in Vercel",
+      label: "Alerts to you (sign-ups, finished audits, enquiries)",
+      ok: !!alerts.address && alerts.emailReady && !failingNow,
+      detail: !alerts.address
+        ? "Off — add ENQUIRY_NOTIFY (your email address) in Vercel"
+        : !alerts.emailReady
+          ? "Waiting for Resend: add RESEND_API_KEY and REMINDER_FROM in Vercel"
+          : failingNow
+            ? `The last alert didn’t send (${formatDate(alerts.lastFailed!.at)}): ${alerts.lastFailed!.reason ?? "no reason given"}`
+            : alerts.lastSent
+              ? `On · going to ${alerts.address} · last sent ${formatDate(alerts.lastSent.at)}: “${alerts.lastSent.subject}”`
+              : `On · going to ${alerts.address} · none sent yet`,
     },
   ];
 
@@ -63,6 +78,7 @@ export default async function HealthPage() {
         <section className="admin-card" aria-labelledby="h-email">
           <h2 id="h-email">Email</h2>
           <CheckList checks={email} />
+          <TestAlert />
         </section>
       </div>
 

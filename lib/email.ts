@@ -54,7 +54,11 @@ export async function sendEmail(input: Outgoing): Promise<Sent> {
         ...(input.replyTo ? { reply_to: input.replyTo } : {}),
       }),
     });
-    if (!res.ok) return { ok: false, reason: `resend ${res.status}` };
+    if (!res.ok) {
+      // Resend says why (an unverified domain, a bad address…): keep that.
+      const body = (await res.json().catch(() => null)) as { message?: string } | null;
+      return { ok: false, reason: `resend ${res.status}${body?.message ? `: ${body.message.slice(0, 200)}` : ""}` };
+    }
     const json = (await res.json().catch(() => ({}))) as { id?: string };
     return { ok: true, id: json.id ?? null };
   } catch {

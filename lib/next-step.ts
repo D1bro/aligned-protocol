@@ -107,7 +107,7 @@ export function moveLine(m: { body: string; when_text?: string | null }): string
 }
 
 // Prompts: questions to think with, never answers to tap, so nothing fails
-// to fit the area. DRAFT in Duane's voice, for him to rewrite.
+// to fit the area. Approved by Duane as written, 12 Nov 2026.
 export type Prompts = {
   now: string[];
   ten: string[];
@@ -153,7 +153,7 @@ const GENERAL: Prompts = {
 
 // Each area adds one question of its own to "what would a 10 look like?"
 // and "what's in the way?", and has its own example wording in the boxes.
-// DRAFT in Duane's voice (10 Nov 2026), for him to rewrite.
+// Drafted in Duane's voice (10 Nov 2026); approved as written, 12 Nov 2026.
 type AreaPrompts = { ten: string; way: string; examples: Prompts["examples"] };
 
 const BY_AREA: Record<string, AreaPrompts> = {

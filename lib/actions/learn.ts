@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { sendEmail, SITE_URL } from "@/lib/email";
+import { SITE_URL } from "@/lib/email";
+import { sendAlert } from "@/lib/alerts";
+import { enquiryAlert } from "@/lib/alert-content";
 
 // Academy progress, Tools answers and coaching enquiries for the signed-in
 // person. Content itself lives in lib/learn-content.ts.
@@ -119,16 +121,23 @@ export async function sendCoachingEnquiry(input: {
   revalidatePath("/coaching");
   revalidatePath("/coach");
   if (error || !data?.length) return { ok: false, message: "Couldn’t send — try again." };
-  // A heads-up for Duane (set ENQUIRY_NOTIFY on Vercel). The enquiry itself stays in the app.
-  const notify = process.env.ENQUIRY_NOTIFY;
-  if (notify) {
-    const link = `${SITE_URL}/coach`;
-    await sendEmail({
-      to: notify,
-      subject: "New coaching enquiry",
-      text: `Someone has asked about the Focus Series. Read it in the coach dashboard: ${link}`,
-      html: `<p>Someone has asked about the Focus Series.</p><p><a href="${link}">Read it in the coach dashboard</a></p>`,
-    }).catch(() => null);
-  }
+  // A heads-up for Duane, with the enquiry itself in it: replying to the
+  // email writes straight back to them. Logged either way (Site health).
+  const { data: profile } = await supabase.from("profiles").select("full_name, email").eq("id", userId).maybeSingle();
+  const tried = input.tried.trim() || null;
+  const availability = input.availability.trim() || null;
+  const email = (profile?.email as string | null) ?? null;
+  await sendAlert(
+    "enquiry",
+    enquiryAlert({
+      name: (profile?.full_name as string | null) ?? null,
+      email,
+      wantsHelp,
+      tried,
+      availability,
+      enquiriesUrl: `${SITE_URL}/coach/enquiries`,
+    }),
+    { clientId: userId, replyTo: email }
+  );
   return { ok: true };
 }

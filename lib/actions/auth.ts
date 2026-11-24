@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/email";
 import { readGuestWork, saveGuestWorkToAccount } from "@/lib/guest-transfer";
 import { joiningDestination } from "@/lib/continue-journey";
+import { alertSignup } from "@/lib/alerts";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -83,6 +85,8 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     // than waiting on email confirmation, so the account looks right
     // immediately even before they click the confirmation link.
     await supabase.from("profiles").update({ email, full_name: name, reminders_email: wantsReminders(formData) }).eq("id", current.id);
+    // Tell Duane, once the page has gone back to them.
+    after(() => alertSignup(current.id, "after-audit", { name, email }));
 
     // Where email confirmation is switched off, the profile is ready now:
     // carry straight on into their first plan.
@@ -101,6 +105,10 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     options: { data: { full_name: name, role: "client", reminders_email: wantsReminders(formData) } },
   });
   if (error) return { ok: false, message: error.message };
+  // Supabase returns a user with no identities when the email is already
+  // registered (it doesn't say so, to avoid revealing accounts): no alert then.
+  const newUser = created.user;
+  if (newUser && (newUser.identities?.length ?? 0) > 0) after(() => alertSignup(newUser.id, "direct", { name, email }));
   if (created.session) redirect("/");
 
   return { ok: true, message: "Check your email to confirm your account, then sign in." };
@@ -154,6 +162,7 @@ export async function saveGuestPlan(formData: FormData): Promise<SavePlanResult>
     };
   }
   await supabase.from("profiles").update({ email, full_name: name, reminders_email: wantsReminders(formData) }).eq("id", current.id);
+  after(() => alertSignup(current.id, "saved-plan", { name, email }));
   return { ok: true, confirmed: !!updated.user?.email && !updated.user.new_email, email };
 }
 
