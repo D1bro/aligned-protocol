@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/actions/admin";
 import { alertAddress, sendAlert } from "@/lib/alerts";
-import { sendFollowupPreviews } from "@/lib/followups";
+import { loadCopy, sendFollowupPreviews } from "@/lib/followups";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { testAlert } from "@/lib/alert-content";
 import { SITE_URL } from "@/lib/email";
 
@@ -25,7 +26,8 @@ export async function sendFollowupPreview(): Promise<{ ok: boolean; message: str
   const to = alertAddress();
   if (!to) return { ok: false, message: "Not sent: add ENQUIRY_NOTIFY (your email address) in Vercel first." };
   const first = me.full_name?.trim().split(/\s+/)[0] ?? null;
-  const { sent, failed } = await sendFollowupPreviews(to, first);
+  const { copy } = await loadCopy(createAdminClient());
+  const { sent, failed } = await sendFollowupPreviews(to, first, copy);
   if (!sent) return { ok: false, message: `Not sent: ${failed ?? "unknown reason"}` };
   return {
     ok: !failed,

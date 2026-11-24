@@ -2929,3 +2929,56 @@ button.da-strip-day:focus-visible { outline: 2px solid var(--gold); outline-offs
 .da-day .da-num { width: 4.5rem; }
 .ov-shared-text { white-space: pre-wrap; }
 .ov-daily { margin: .3rem 0 0; padding-left: 1rem; display: grid; gap: .25rem; }
+
+/* Console → Follow-up emails */
+.fu-pause { margin: 1.25rem 0 .5rem; }
+.fu-pause.is-paused { border-color: var(--gold); }
+.fu-pause.is-paused h2 { color: var(--gold); }
+.fu-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; }
+.fu-table { border: 1px solid var(--bdr2); border-radius: 14px; overflow: hidden; background: var(--bg2); margin-bottom: 1.5rem; }
+.fu-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .7fr) repeat(4, minmax(0, .8fr)) minmax(0, 1.2fr); gap: .8rem; padding: .8rem 1.1rem; border-top: 1px solid var(--bdr2); font-size: 13px; align-items: center; }
+.fu-row:first-child { border-top: 0; }
+.fu-row.head { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); background: var(--bg3); }
+.fu-who a { color: var(--text); text-decoration: none; }
+.fu-who a:hover b { text-decoration: underline; }
+.fu-who b { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.fu-who em { display: block; font-style: normal; font-size: 12px; color: var(--text3); }
+.fu-label { display: none; }
+.fu-cell { color: var(--text2); }
+.fu-cell.is-sent { color: var(--hi); }
+.fu-cell.is-next { color: var(--gold); font-weight: 600; }
+.fu-cell.is-failed { color: var(--coral, #e8836b); cursor: help; }
+.fu-cell.is-skipped { color: var(--text3); cursor: help; text-decoration: underline dotted; }
+.fu-status { font-size: 12px; color: var(--text2); }
+.fu-status.is-on { color: var(--gold); }
+.fu-status.is-done { color: var(--hi); }
+.fu-status.is-off, .fu-status.is-wait { color: var(--text3); }
+@media (max-width: 900px) {
+  .fu-row.head { display: none; }
+  .fu-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .fu-row .fu-who, .fu-row .fu-status { grid-column: 1 / -1; }
+  .fu-row .fu-start { grid-column: 1 / -1; }
+  .fu-label { display: block; font-style: normal; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+  .fu-start .fu-label { display: inline; margin-right: .4rem; }
+}
+.fu-emails { display: grid; gap: 1rem; margin-bottom: 2rem; }
+.fu-email-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .8rem; }
+.fu-email-head h3 { font-size: 15px; font-weight: 600; }
+.fu-tag { margin-left: auto; font-size: 12px; color: var(--text3); }
+.fu-tag.is-edited { color: var(--gold); }
+.fu-subject { margin: 0; font-size: 14px; color: var(--text2); overflow-wrap: anywhere; }
+.fu-toggle { justify-self: start; }
+.fu-email-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.fu-fields { display: grid; gap: .8rem; }
+.fu-fields label { display: grid; gap: .3rem; font-size: 12px; font-weight: 600; color: var(--text2); }
+.fu-fields label small { font-weight: 400; color: var(--text3); }
+.fu-fields input, .fu-fields textarea { width: 100%; padding: .6rem .75rem; border-radius: 8px; border: 1px solid var(--bdr2); background: var(--bg); color: var(--text); font: inherit; font-size: 14px; font-weight: 400; line-height: 1.55; }
+.fu-fields textarea { resize: vertical; min-height: 220px; }
+.fu-warn { margin: 0; font-size: 13px; color: var(--gold); }
+.fu-preview { display: grid; gap: .4rem; position: sticky; top: 1rem; }
+.fu-preview iframe { width: 100%; height: 640px; border: 1px solid var(--bdr2); border-radius: 10px; background: #EFEEEA; }
+@media (max-width: 900px) {
+  .fu-email-body { grid-template-columns: 1fr; }
+  .fu-preview { position: static; }
+  .fu-preview iframe { height: 520px; }
+}
