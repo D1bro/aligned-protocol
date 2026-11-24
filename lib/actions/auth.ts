@@ -55,6 +55,14 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
 // The weekly check-in email is opt-in (Duane, 11 Nov 2026): a box on each
 // sign-up form, unticked until they tick it. Changeable later on The Next Step.
 const wantsReminders = (formData: FormData) => formData.get("reminders_email") === "on";
+// The follow-up emails after the audit (Duane, 24 Nov 2026): their own box,
+// also unticked until they tick it (lib/followups.ts, migration 0037).
+const wantsFollowups = (formData: FormData) => formData.get("followups_email") === "on";
+// The profile fields a guest's choices set when they make their account.
+const emailChoices = (formData: FormData) => {
+  const followups = wantsFollowups(formData);
+  return { reminders_email: wantsReminders(formData), followups_email: followups, followups_at: followups ? new Date().toISOString() : null };
+};
 
 export async function signUp(formData: FormData): Promise<ActionResult> {
   const name = String(formData.get("name") || "").trim();
@@ -84,9 +92,9 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     // account was made) but has no email/name yet — fill those in now rather
     // than waiting on email confirmation, so the account looks right
     // immediately even before they click the confirmation link.
-    await supabase.from("profiles").update({ email, full_name: name, reminders_email: wantsReminders(formData) }).eq("id", current.id);
+    await supabase.from("profiles").update({ email, full_name: name, ...emailChoices(formData) }).eq("id", current.id);
     // Tell Duane, once the page has gone back to them.
-    after(() => alertSignup(current.id, "after-audit", { name, email }));
+    after(() => alertSignup(current.id, "after-audit", { name, email, followups: wantsFollowups(formData) }));
 
     // Where email confirmation is switched off, the profile is ready now:
     // carry straight on into their first plan.
@@ -101,14 +109,14 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
   const { data: created, error } = await supabase.auth.signUp({
     email,
     password,
-    // The new profile takes reminders_email from here (handle_new_user, 0033).
-    options: { data: { full_name: name, role: "client", reminders_email: wantsReminders(formData) } },
+    // The new profile takes both email choices from here (handle_new_user, 0033 and 0037).
+    options: { data: { full_name: name, role: "client", reminders_email: wantsReminders(formData), followups_email: wantsFollowups(formData) } },
   });
   if (error) return { ok: false, message: error.message };
   // Supabase returns a user with no identities when the email is already
   // registered (it doesn't say so, to avoid revealing accounts): no alert then.
   const newUser = created.user;
-  if (newUser && (newUser.identities?.length ?? 0) > 0) after(() => alertSignup(newUser.id, "direct", { name, email }));
+  if (newUser && (newUser.identities?.length ?? 0) > 0) after(() => alertSignup(newUser.id, "direct", { name, email, followups: wantsFollowups(formData) }));
   if (created.session) redirect("/");
 
   return { ok: true, message: "Check your email to confirm your account, then sign in." };
@@ -161,8 +169,8 @@ export async function saveGuestPlan(formData: FormData): Promise<SavePlanResult>
       message: exists ? "There’s already an account with this email. Sign in instead and your work comes with you." : error.message,
     };
   }
-  await supabase.from("profiles").update({ email, full_name: name, reminders_email: wantsReminders(formData) }).eq("id", current.id);
-  after(() => alertSignup(current.id, "saved-plan", { name, email }));
+  await supabase.from("profiles").update({ email, full_name: name, ...emailChoices(formData) }).eq("id", current.id);
+  after(() => alertSignup(current.id, "saved-plan", { name, email, followups: wantsFollowups(formData) }));
   return { ok: true, confirmed: !!updated.user?.email && !updated.user.new_email, email };
 }
 

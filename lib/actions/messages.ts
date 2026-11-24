@@ -16,8 +16,8 @@ import { stripeStatus } from "@/lib/stripe";
 // finds the same record instead of sending again.
 
 export type MessageKind = "summary_shared" | "session_update" | "invoice_issued" | "payment_received";
-// Sent automatically (the daily job), never from the console.
-export type JobKind = MessageKind | "session_reminder";
+// Sent automatically (the daily jobs), never from the console.
+export type JobKind = MessageKind | "session_reminder" | "followup";
 export type MessageJob = {
   id: string;
   kind: JobKind;
@@ -337,4 +337,33 @@ export async function getMessageJobs(clientId: string): Promise<MessageJob[]> {
     .order("created_at", { ascending: false });
   if (error) return [];
   return (data ?? []) as MessageJob[];
+}
+
+// The follow-up emails after the audit, for the client's record: did they
+// ask for them, and which have gone (lib/followups.ts, migration 0037).
+export type FollowupStatus = {
+  asked: boolean;
+  askedAt: string | null;
+  sent: { day: number; subject: string; status: MessageJob["status"]; at: string; error: string | null }[];
+} | null;
+
+export async function getFollowupStatus(clientId: string): Promise<FollowupStatus> {
+  await requireStaff();
+  const supabase = await createClient();
+  const [{ data: profile, error }, { data: jobs }] = await Promise.all([
+    supabase.from("profiles").select("followups_email, followups_at").eq("id", clientId).maybeSingle(),
+    supabase.from("message_jobs").select("dedupe_key, subject, status, error, created_at, sent_at").eq("client_id", clientId).eq("kind", "followup").order("created_at"),
+  ]);
+  if (error || !profile) return null; // migration 0037 not run yet
+  return {
+    asked: !!profile.followups_email,
+    askedAt: (profile.followups_at as string | null) ?? null,
+    sent: (jobs ?? []).map((j) => ({
+      day: Number(String(j.dedupe_key).split(":")[2]),
+      subject: j.subject as string,
+      status: j.status as MessageJob["status"],
+      at: ((j.sent_at ?? j.created_at) as string),
+      error: (j.error as string | null) ?? null,
+    })),
+  };
 }

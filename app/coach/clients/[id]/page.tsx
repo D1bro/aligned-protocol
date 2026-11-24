@@ -23,7 +23,7 @@ import { BillingTab } from "./BillingTab";
 import { getAllPackages } from "@/lib/actions/packages";
 import { formatPence } from "@/lib/money";
 import { getClientBilling } from "@/lib/actions/billing";
-import { getMessageJobs } from "@/lib/actions/messages";
+import { getFollowupStatus, getMessageJobs } from "@/lib/actions/messages";
 import { getAdminNotes, getClientRecord, getMyCoachBasics } from "@/lib/actions/staff-profiles";
 import { canBill } from "@/lib/actions/billing";
 import { DetailsTab } from "./DetailsTab";
@@ -66,6 +66,7 @@ export default async function ClientProfilePage({
   const billing = tab === "billing" || tab === "sessions" ? await getClientBilling(id) : null;
   const jobs = tab === "billing" || tab === "sessions" ? await getMessageJobs(id) : [];
   const record = await getClientRecord(id);
+  const followups = tab === "details" ? await getFollowupStatus(id) : null;
   const sharedDaily = tab === "overview" ? await getSharedDaily(id) : null;
   const mine = tab === "sessions" ? await getMyCoachBasics() : null;
   const [adminNotes, billingAccess] = tab === "details" ? await Promise.all([isAdmin ? getAdminNotes(id) : Promise.resolve(null), canBill()]) : [null, false];
@@ -184,6 +185,31 @@ export default async function ClientProfilePage({
         ) : (
           <p className="clear-err">This needs database update 0027.</p>
         )
+      ) : null}
+      {tab === "details" && followups ? (
+        <section className="admin-card" aria-labelledby="cd-followups-h">
+          <h2 id="cd-followups-h">Follow-up emails</h2>
+          <p className="admin-card-sub">
+            {followups.asked
+              ? `Asked for them${followups.askedAt ? ` on ${formatDate(followups.askedAt)}` : ""}. Four from you after their audit, at 9:21am on days 1, 3, 7 and 10; they stop if they enquire, join, get a coach or click Stop.`
+              : followups.sent.length
+                ? "Stopped: they turned them off."
+                : "Not asked for. None will go; a personal note from you is the follow-up."}
+          </p>
+          {followups.sent.length ? (
+            <ul className="admin-checks">
+              {followups.sent.map((f) => (
+                <li key={f.day} className={f.status === "failed" ? "off" : "ok"}>
+                  <span aria-hidden="true">{f.status === "failed" ? "!" : "✓"}</span>
+                  <div>
+                    <b>Day {f.day}: {f.subject}</b>
+                    <em>{f.status === "sent" ? `Sent ${formatDate(f.at)}` : f.status === "failed" ? `Not sent: ${f.error ?? "unknown reason"}` : "Sending"}</em>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
       ) : null}
       {tab === "sessions" ? <SessionsTab p={p} billing={billing} jobs={jobs} bookingDefaults={mine?.available ? { minutes: mine.defaultMinutes, link: mine.meetingLink } : undefined} /> : null}
 

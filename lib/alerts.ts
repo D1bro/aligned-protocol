@@ -91,7 +91,7 @@ async function progressFor(clientId: string): Promise<{ name: string | null; ema
 
 // A new account. `name`/`email` are what they just typed: the profile row
 // may not have caught up yet.
-export async function alertSignup(clientId: string, route: SignupRoute, typed: { name: string; email: string }) {
+export async function alertSignup(clientId: string, route: SignupRoute, typed: { name: string; email: string; followups: boolean }) {
   try {
     const found = await progressFor(clientId);
     const message = signupAlert({
@@ -99,6 +99,7 @@ export async function alertSignup(clientId: string, route: SignupRoute, typed: {
       email: typed.email || found.email,
       route,
       progress: found.progress,
+      followups: typed.followups,
       recordUrl: `${SITE_URL}/coach/clients/${clientId}`,
     });
     await sendAlert("signup", message, { clientId, replyTo: typed.email || found.email });
